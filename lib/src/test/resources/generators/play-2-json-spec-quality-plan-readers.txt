@@ -1,0 +1,9 @@
+implicit def jsonReadsQualityPlan: play.api.libs.json.Reads[Plan] = {
+  for {
+    id <- (__ \ "id").read[Long]
+    incidentId <- (__ \ "incident_id").read[Long]
+    body <- (__ \ "body").read[String]
+    grade <- (__ \ "grade").readNullable[Int]
+    createdAt <- (__ \ "created_at").read[_root_.org.joda.time.DateTime]
+  } yield Plan(id, incidentId, body, grade, createdAt)
+}

@@ -1,0 +1,847 @@
+{
+  "apidoc": {
+    "version": "0.9.6"
+  },
+  "name": "Apidoc Reference Api",
+  "organization": {
+    "key": "bryzek"
+  },
+  "application": {
+    "key": "apidoc-reference-api"
+  },
+  "namespace": "io.apibuilder.reference.api.v0",
+  "version": "0.3.47",
+  "info": {},
+  "headers": [],
+  "imports": [],
+  "enums": [
+    {
+      "name": "age_group",
+      "plural": "age_groups",
+      "values": [
+        {
+          "name": "Youth",
+          "attributes": [],
+          "description": "under 18"
+        },
+        {
+          "name": "Adult",
+          "attributes": [],
+          "description": "18 and over"
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "unions": [],
+  "models": [
+    {
+      "name": "big",
+      "plural": "bigs",
+      "fields": [
+        {
+          "name": "f1",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f2",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f3",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f4",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f5",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f6",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f7",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f8",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f9",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f10",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f11",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f12",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f13",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f14",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f15",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f16",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f17",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f18",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f19",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f20",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f21",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f22",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f23",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f24",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "f25",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "description": "A model with a lot of fields."
+    },
+    {
+      "name": "echo",
+      "plural": "echoes",
+      "fields": [
+        {
+          "name": "value",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "error",
+      "plural": "errors",
+      "fields": [
+        {
+          "name": "code",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "description": "Models an API error."
+    },
+    {
+      "name": "group",
+      "plural": "groups",
+      "fields": [
+        {
+          "name": "members",
+          "type": "[user]",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "description": "A group of users in an organization."
+    },
+    {
+      "name": "member",
+      "plural": "members",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "organization",
+          "type": "organization",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "user",
+          "type": "user",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "organization",
+      "plural": "organizations",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "user",
+      "plural": "users",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "age_group",
+          "type": "age_group",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "tags",
+          "type": "map[string]",
+          "required": false,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "user_list",
+      "plural": "user_lists",
+      "fields": [
+        {
+          "name": "users",
+          "type": "[user]",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [
+    {
+      "type": "echo",
+      "plural": "echoes",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/echoes",
+          "parameters": [
+            {
+              "name": "foo",
+              "type": "string",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "optional_messages",
+              "type": "[string]",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "required_messages",
+              "type": "[string]",
+              "location": "Query",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 204
+                }
+              },
+              "type": "unit"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/echoes/arrays-only",
+          "parameters": [
+            {
+              "name": "optional_messages",
+              "type": "[string]",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "required_messages",
+              "type": "[string]",
+              "location": "Query",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 204
+                }
+              },
+              "type": "unit"
+            }
+          ],
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "path": "/echoes"
+    },
+    {
+      "type": "group",
+      "plural": "groups",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/groups/:organization",
+          "parameters": [
+            {
+              "name": "organization",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "map[[user]]"
+            }
+          ],
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "path": "/groups"
+    },
+    {
+      "type": "member",
+      "plural": "members",
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/members",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Form",
+              "required": true
+            },
+            {
+              "name": "organization",
+              "type": "uuid",
+              "location": "Form",
+              "required": true
+            },
+            {
+              "name": "user",
+              "type": "uuid",
+              "location": "Form",
+              "required": true
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "location": "Form",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "member"
+            },
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 409
+                }
+              },
+              "type": "[error]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/members",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "organization_guid",
+              "type": "uuid",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "user_guid",
+              "type": "uuid",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "location": "Query",
+              "required": false
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[member]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/members/:organization",
+          "parameters": [
+            {
+              "name": "organization",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[member]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "POST",
+          "path": "/members/:organization/members_bulk",
+          "parameters": [
+            {
+              "name": "organization",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[member]"
+            }
+          ],
+          "attributes": [],
+          "body": {
+            "type": "[member]",
+            "attributes": []
+          }
+        }
+      ],
+      "attributes": [],
+      "path": "/members"
+    },
+    {
+      "type": "organization",
+      "plural": "organizations",
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/organizations",
+          "parameters": [
+            {
+              "name": "organization",
+              "type": "organization",
+              "location": "Form",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "organization"
+            },
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 409
+                }
+              },
+              "type": "[error]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/organizations",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "location": "Query",
+              "required": false
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[organization]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/organizations/:guid",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "organization"
+            }
+          ],
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "path": "/organizations"
+    },
+    {
+      "type": "user",
+      "plural": "users",
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/users",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Form",
+              "required": true
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "location": "Form",
+              "required": true
+            },
+            {
+              "name": "active",
+              "type": "boolean",
+              "location": "Form",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "user"
+            },
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 409
+                }
+              },
+              "type": "[error]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/users",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "organization_guids",
+              "type": "[long]",
+              "location": "Query",
+              "required": false,
+              "description": "Limits users to the specified organizations."
+            },
+            {
+              "name": "age_group",
+              "type": "age_group",
+              "location": "Query",
+              "required": false,
+              "description": "Limit to users in this age group"
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "location": "Query",
+              "required": false
+            },
+            {
+              "name": "active",
+              "type": "boolean",
+              "location": "Query",
+              "required": true,
+              "default": "true"
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[user]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/users/:age_group",
+          "parameters": [
+            {
+              "name": "age_group",
+              "type": "age_group",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[user]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "POST",
+          "path": "/users/noop",
+          "parameters": [],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "unit"
+            }
+          ],
+          "attributes": []
+        }
+      ],
+      "attributes": [],
+      "path": "/users"
+    }
+  ],
+  "attributes": [],
+  "base_url": "http://localhost:9000"
+}

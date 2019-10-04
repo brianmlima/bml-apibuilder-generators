@@ -1,0 +1,7 @@
+@deprecated("to be merged with members")
+final case class User(
+  email: String,
+  role: String = "admin",
+  groups: Seq[String],
+  @deprecated permissions: Seq[String]
+)

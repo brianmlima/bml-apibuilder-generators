@@ -1,0 +1,225 @@
+{
+  "apidoc": {
+    "version": "0.9.6"
+  },
+  "name": "test",
+  "organization": {
+    "key": "mreed"
+  },
+  "application": {
+    "key": "test"
+  },
+  "namespace": "com.gilt.test.v0",
+  "version": "0.0.1-dev",
+  "base_url": null,
+  "description": null,
+  "headers": [],
+  "info": [],
+  "imports": [],
+  "enums": [],
+  "unions": [],
+  "attributes": [],
+  "models": [
+    {
+      "name": "user",
+      "plural": "users",
+      "description": null,
+      "deprecation": {
+        "description": "to be merged with members"
+      },
+      "attributes": [],
+      "fields": [
+        {
+          "name": "email",
+          "type": "string",
+          "description": null,
+          "deprecation": null,
+          "default": null,
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "description": null,
+          "deprecation": null,
+          "default": "admin",
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        },
+        {
+          "name": "groups",
+          "type": "[string]",
+          "description": null,
+          "deprecation": null,
+          "default": null,
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        },
+        {
+          "name": "permissions",
+          "type": "[string]",
+          "description": null,
+          "deprecation": {},
+          "default": null,
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        }
+      ]
+    },
+    {
+      "name": "user_patch",
+      "plural": "user_patches",
+      "description": null,
+      "deprecation": null,
+      "attributes": [],
+      "fields": [
+        {
+          "name": "groups",
+          "type": "[string]",
+          "description": null,
+          "deprecation": null,
+          "default": null,
+          "required": false,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        },
+        {
+          "name": "permissions",
+          "type": "[string]",
+          "description": null,
+          "deprecation": null,
+          "default": "[]",
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        },
+        {
+          "name": "preferences",
+          "type": "[string]",
+          "description": null,
+          "deprecation": null,
+          "default": "[\"foo\"]",
+          "required": true,
+          "minimum": null,
+          "maximum": null,
+          "example": null,
+          "attributes": []
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "type": "user",
+      "plural": "users",
+      "description": null,
+      "deprecation": {
+        "description": "users will be transfered to the members endpoint"
+      },
+      "attributes": [],
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/users",
+          "description": null,
+          "deprecation": null,
+          "attributes": [],
+          "body": {
+            "type": "user",
+            "description": null,
+            "deprecation": null,
+            "attributes": []
+          },
+          "parameters": [],
+          "responses": [
+            {
+              "code": { "integer": { "value": 201 } },
+              "type": "user",
+              "headers": [],
+              "description": null,
+              "deprecation": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/users/:email",
+          "description": null,
+          "deprecation": {
+            "description": "to be removed"
+          },
+          "body": null,
+          "attributes": [],
+          "parameters": [
+            {
+              "name": "email",
+              "type": "string",
+              "location": "Path",
+              "description": null,
+              "deprecation": {
+              },
+              "required": true,
+              "default": null,
+              "minimum": null,
+              "maximum": null,
+              "example": null,
+              "attributes": []
+            }
+          ],
+          "responses": [
+            {
+              "code": { "integer": { "value": 200 } },
+              "type": "user",
+              "headers": [],
+              "description": null,
+              "deprecation": null
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/users",
+          "description": null,
+          "deprecation": null,
+          "attributes": [],
+          "body": {
+            "type": "user_patch",
+            "description": null,
+            "deprecation": null,
+            "attributes": []
+          },
+          "parameters": [],
+          "responses": [
+            {
+              "code": { "integer": { "value": 200 } },
+              "type": "user",
+              "headers": [],
+              "description": null,
+              "deprecation": {
+                "description": "This will return a 201 in the future"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,5 @@
+for {
+  requiredTags <- (__ \ "required_tags").read[Seq[String]]
+  optionalTags <- (__ \ "optional_tags").readNullable[Seq[String]]
+  data <- (__ \ "data").readNullable[Map[String, Long]]
+} yield Content(requiredTags, optionalTags, data)

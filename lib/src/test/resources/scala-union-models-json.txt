@@ -1,0 +1,65 @@
+implicit def jsonReadsAPIBuilderTestGuestUser: play.api.libs.json.Reads[GuestUser] = {
+  for {
+    id <- (__ \ "id").read[Long]
+    email <- (__ \ "email").read[String]
+    name <- (__ \ "name").readNullable[String]
+    bar <- (__ \ "bar").read[String]
+  } yield GuestUser(id, email, name, bar)
+}
+
+def jsObjectGuestUser(obj: test.apidoc.apidoctest.v0.models.GuestUser): play.api.libs.json.JsObject = {
+  play.api.libs.json.Json.obj(
+    "id" -> play.api.libs.json.JsNumber(obj.id),
+    "email" -> play.api.libs.json.JsString(obj.email),
+    "bar" -> play.api.libs.json.JsString(obj.bar)
+  ) ++ (obj.name match {
+    case None => play.api.libs.json.Json.obj()
+    case Some(x) => play.api.libs.json.Json.obj("name" -> play.api.libs.json.JsString(x))
+  })
+}
+
+implicit def jsonReadsAPIBuilderTestRegisteredUser: play.api.libs.json.Reads[RegisteredUser] = {
+  for {
+    id <- (__ \ "id").read[Long]
+    email <- (__ \ "email").read[String]
+    name <- (__ \ "name").readNullable[String]
+    foo <- (__ \ "foo").read[String]
+  } yield RegisteredUser(id, email, name, foo)
+}
+
+def jsObjectRegisteredUser(obj: test.apidoc.apidoctest.v0.models.RegisteredUser): play.api.libs.json.JsObject = {
+  play.api.libs.json.Json.obj(
+    "id" -> play.api.libs.json.JsNumber(obj.id),
+    "email" -> play.api.libs.json.JsString(obj.email),
+    "foo" -> play.api.libs.json.JsString(obj.foo)
+  ) ++ (obj.name match {
+    case None => play.api.libs.json.Json.obj()
+    case Some(x) => play.api.libs.json.Json.obj("name" -> play.api.libs.json.JsString(x))
+  })
+}
+
+implicit def jsonReadsAPIBuilderTestUser: play.api.libs.json.Reads[User] = {
+  (
+    (__ \ "registered_user").read(jsonReadsAPIBuilderTestRegisteredUser).asInstanceOf[play.api.libs.json.Reads[User]]
+    orElse
+    (__ \ "guest_user").read(jsonReadsAPIBuilderTestGuestUser).asInstanceOf[play.api.libs.json.Reads[User]]
+    orElse
+    play.api.libs.json.Reads(jsValue => play.api.libs.json.JsSuccess(test.apidoc.apidoctest.v0.models.UserUndefinedType(jsValue.toString))).asInstanceOf[play.api.libs.json.Reads[User]]
+  )
+}
+
+def jsObjectUser(obj: test.apidoc.apidoctest.v0.models.User): play.api.libs.json.JsObject = {
+  obj match {
+    case x: test.apidoc.apidoctest.v0.models.RegisteredUser => play.api.libs.json.Json.obj("registered_user" -> jsObjectRegisteredUser(x))
+    case x: test.apidoc.apidoctest.v0.models.GuestUser => play.api.libs.json.Json.obj("guest_user" -> jsObjectGuestUser(x))
+    case x: test.apidoc.apidoctest.v0.models.UserUndefinedType => sys.error(s"The type[test.apidoc.apidoctest.v0.models.UserUndefinedType] should never be serialized")
+  }
+}
+
+implicit def jsonWritesAPIBuilderTestUser: play.api.libs.json.Writes[User] = {
+  new play.api.libs.json.Writes[test.apidoc.apidoctest.v0.models.User] {
+    def writes(obj: test.apidoc.apidoctest.v0.models.User) = {
+      jsObjectUser(obj)
+    }
+  }
+}

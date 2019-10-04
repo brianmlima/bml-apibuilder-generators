@@ -1,0 +1,217 @@
+{
+  "apidoc": {
+    "version": "0.11.17"
+  },
+  "name": "apidoc-example-union-types",
+  "organization": {
+    "key": "bryzek"
+  },
+  "application": {
+    "key": "apidoc-example-union-types"
+  },
+  "namespace": "io.apibuilder.example.union.types.v0",
+  "version": "0.3.46",
+  "info": {},
+  "headers": [],
+  "imports": [],
+  "enums": [
+    {
+      "name": "bar",
+      "plural": "bars",
+      "values": [
+        {
+          "name": "b",
+          "attributes": [],
+          "deprecation": {}
+        }
+      ],
+      "attributes": [],
+      "deprecation": {
+        "description": "to be removed"
+      }
+    },
+    {
+      "name": "foo",
+      "plural": "foos",
+      "values": [
+        {
+          "name": "a",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "unions": [
+    {
+      "name": "foobar",
+      "plural": "foobars",
+      "types": [
+        {
+          "type": "foo",
+          "attributes": []
+        },
+        {
+          "type": "bar",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "user",
+      "plural": "users",
+      "discriminator": "discriminator",
+      "types": [
+        {
+          "type": "registered_user",
+          "attributes": [],
+          "default": true
+        },
+        {
+          "type": "guest_user",
+          "attributes": []
+        },
+        {
+          "type": "uuid",
+          "attributes": [],
+          "deprecation": {}
+        }
+      ],
+      "attributes": [],
+      "deprecation": {
+        "description": "to be removed"
+      }
+    }
+  ],
+  "models": [
+    {
+      "name": "guest_user",
+      "plural": "guest_users",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "required": true,
+          "attributes": [],
+          "description": "Internal unique identifier for this user."
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "registered_user",
+      "plural": "registered_users",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "required": true,
+          "attributes": [],
+          "description": "Internal unique identifier for this user."
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "preference",
+          "type": "foobar",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [
+    {
+      "type": "user",
+      "plural": "users",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/users",
+          "parameters": [],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[user]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/users/:guid",
+          "parameters": [
+            {
+              "name": "guid",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "user"
+            },
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 404
+                }
+              },
+              "type": "unit"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "POST",
+          "path": "/users",
+          "parameters": [],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "user"
+            }
+          ],
+          "attributes": [],
+          "body": {
+            "type": "user",
+            "attributes": []
+          }
+        }
+      ],
+      "attributes": [],
+      "path": "/users"
+    }
+  ],
+  "attributes": []
+}

@@ -1,0 +1,19 @@
+def jsObjectPlan(obj: com.gilt.quality.v0.models.Plan): play.api.libs.json.JsObject = {
+  play.api.libs.json.Json.obj(
+    "id" -> play.api.libs.json.JsNumber(obj.id),
+    "incident_id" -> play.api.libs.json.JsNumber(obj.incidentId),
+    "body" -> play.api.libs.json.JsString(obj.body),
+    "created_at" -> play.api.libs.json.JsString(_root_.org.joda.time.format.ISODateTimeFormat.dateTime.print(obj.createdAt))
+  ) ++ (obj.grade match {
+    case None => play.api.libs.json.Json.obj()
+    case Some(x) => play.api.libs.json.Json.obj("grade" -> play.api.libs.json.JsNumber(x))
+  })
+}
+
+implicit def jsonWritesQualityPlan: play.api.libs.json.Writes[Plan] = {
+  new play.api.libs.json.Writes[com.gilt.quality.v0.models.Plan] {
+    def writes(obj: com.gilt.quality.v0.models.Plan) = {
+      jsObjectPlan(obj)
+    }
+  }
+}

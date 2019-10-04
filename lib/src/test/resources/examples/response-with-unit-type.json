@@ -1,0 +1,63 @@
+{
+  "apidoc": {
+    "version": "0.9.6"
+  },
+  "name": "apidoc response with unit type",
+  "organization": {
+    "key": "bryzek"
+  },
+  "application": {
+    "key": "apidoc-response-with-unit-type"
+  },
+  "namespace": "io.apibuilder.test",
+  "version": "0.0.1-dev",
+  "headers": [],
+  "info": [],
+  "imports": [],
+  "enums": [],
+  "unions": [],
+  "attributes": [],
+
+  "models": [
+    {
+      "name": "user",
+      "plural": "users",
+      "fields": [
+        {
+          "name": "guid",
+          "type": "uuid",
+          "description": "Internal unique identifier for this user.",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [
+    {
+      "type": "user",
+      "plural": "users",
+      "attributes": [],
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/users",
+          "attributes": [],
+          "parameters": [],
+          "responses": [
+            {
+              "headers": [],
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "unit"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
