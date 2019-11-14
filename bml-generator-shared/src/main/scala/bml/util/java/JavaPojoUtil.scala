@@ -1,24 +1,17 @@
 package bml.util.java
 
-import com.google.googlejavaformat.java.Formatter
+import bml.util.GeneratorFSUtil
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.{Field, Service}
+import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import lib.Text
 
 
-trait JavaPojoUtil {
+trait JavaPojoUtil extends JavaNamespaceUtil {
 
-  private val ReservedWords = Set(
-    "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue",
-    "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto",
-    "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new",
-    "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized",
-    "this", "throw", "throws", "transient", "try", "void", "volatile", "while")
-
-  def checkForReservedWord(word: String): String =
-    if (ReservedWords.contains(word)) word + "_"
-    else word
+  def checkForReservedWord(word: String): String = {
+    JavaReservedWordUtil.checkForReservedWord(word)
+  }
 
   def textToComment(text: String): String = textToComment(Seq(text))
 
@@ -125,9 +118,9 @@ trait JavaPojoUtil {
       toClassName(modelName)
     }
     if (startingWithLowercase) {
-      checkForReservedWord(paramStartingWithUppercase.head.toLower + paramStartingWithUppercase.tail)
+      JavaReservedWordUtil.checkForReservedWord(paramStartingWithUppercase.head.toLower + paramStartingWithUppercase.tail)
     } else {
-      checkForReservedWord(paramStartingWithUppercase)
+      JavaReservedWordUtil.checkForReservedWord(paramStartingWithUppercase)
     }
   }
 
@@ -138,17 +131,11 @@ trait JavaPojoUtil {
       }.mkString
       Text.safeName(methoNameStartingWithUpperCase.head.toLower + methoNameStartingWithUpperCase.tail)
     }
-    checkForReservedWord(methodName)
+    JavaReservedWordUtil.checkForReservedWord(methodName)
   }
 
   def toEnumName(input: String): String = {
     Text.safeName(input.replaceAll("\\.", "_").replaceAll("-", "_")).toUpperCase
-  }
-
-  def makeNameSpace(namespace: String): String = {
-    namespace.split("\\.").map {
-      checkForReservedWord
-    }.mkString(".")
   }
 
   def isEnumType(service: Service, field: Field): Boolean = {
@@ -163,11 +150,16 @@ trait JavaPojoUtil {
     !service.models.filter(_.name == `type`).isEmpty
   }
 
-
-  def createDirectoryPath(namespace: String) = namespace.replace('.', '/')
+  //Legacy to keep up the contract for older stuffs.
+  def createDirectoryPath(namespace: String): String = GeneratorFSUtil.createDirectoryPath(namespace)
 
   def makeFile(name: String, path: String, nameSpace: String, builder: TypeSpec.Builder): File = {
-    File(s"${name}.java", Some(path), new Formatter().formatSource(JavaFile.builder(nameSpace, builder.build).build.toString))
+    GeneratorFSUtil.makeFile(name, path, nameSpace, builder)
   }
 
+  def hasValidation(model: Model): Boolean = {
+    model.fields.find((field) => {
+      field.required || field.maximum.isDefined || field.minimum.isDefined
+    }).isDefined
+  }
 }

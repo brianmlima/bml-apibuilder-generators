@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -51,6 +51,14 @@ lazy val gqlschemaGenerator = project
 lazy val bmlGeneratorShared = project
   .in(file("bml-generator-shared"))
   .dependsOn(lib, lib % "test->test")
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
+
+
+
+lazy val ebscoServiceGenerator = project
+  .in(file("ebsco-service-generator"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
   .settings(commonSettings: _*)
   .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
@@ -96,14 +104,14 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     "javax.persistence" % "javax.persistence-api" % "2.2",
     "org.projectlombok" % "lombok" % "1.18.4",
     "org.springframework" % "spring-context" % "5.1.8.RELEASE",
+    "org.springframework" % "spring-web" % "5.2.1.RELEASE",
     "org.springframework.security" % "spring-security-core" % "5.1.5.RELEASE",
     "org.springframework.security" % "spring-security-acl" % "5.1.5.RELEASE",
     "com.google.googlejavaformat" % "google-java-format" % "1.7",
     "org.springframework.data" % "spring-data-jpa" % "2.1.9.RELEASE",
     "org.springframework" % "spring-web" % "5.1.5.RELEASE",
-    "org.javers" % "javers-spring" % "5.6.0"
-
-
+    "org.javers" % "javers-spring" % "5.6.0",
+    "org.hibernate.validator" % "hibernate-validator" % "6.1.0.Final"
   ),
   libraryDependencies += guice,
   scalacOptions ++= Seq("-feature", "-Ycache-plugin-class-loader:last-modified", "-Ycache-macro-class-loader:last-modified"),

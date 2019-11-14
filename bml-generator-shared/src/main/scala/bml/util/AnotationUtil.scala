@@ -1,54 +1,61 @@
 package bml.util
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{AnnotationSpec, CodeBlock, TypeSpec}
-import javax.validation.constraints.{Pattern, Size}
-import lombok.experimental.Accessors
 import io.apibuilder.spec.v0.models.Attribute
 import javax.persistence.Table
+import javax.validation.constraints.{Pattern, Size}
 import lombok.EqualsAndHashCode
+import lombok.experimental.Accessors
 import org.springframework.validation.annotation.Validated
 
 object AnotationUtil {
 
   def fluentAccessor = AnnotationSpec
     .builder(classOf[Accessors])
-    .addMember("fluent",CodeBlock.builder().add("true").build).build()
+    .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
   def notNull = classOf[javax.validation.constraints.NotNull]
 
-
-  def size(min: Int,max:Int):AnnotationSpec ={
+  def size(min: Int, max: Int): AnnotationSpec = {
     AnnotationSpec.builder(classOf[Size])
-      .addMember("min","$L",new Integer(min))
-      .addMember("max","$L",new Integer(max))
+      .addMember("min", "$L", new Integer(min))
+      .addMember("max", "$L", new Integer(max))
       .build()
   }
 
-  def size(attribute: Attribute): AnnotationSpec ={
-    size((attribute.value \ "min").as[Int],(attribute.value \ "max").as[Int])
+  def size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
+    val spec = AnnotationSpec.builder(classOf[Size])
+    if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
+    if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
+    spec.build()
   }
 
-  def pattern(regexp: String):AnnotationSpec ={
-      AnnotationSpec.builder(classOf[Pattern])
-        .addMember("regexp","$S",regexp)
-        .build()
+  def size(attribute: Attribute): AnnotationSpec = {
+    size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
   }
 
-  def pattern(attribute: Attribute):AnnotationSpec ={
+  def pattern(regexp: String): AnnotationSpec = {
+    AnnotationSpec.builder(classOf[Pattern])
+      .addMember("regexp", "$S", regexp)
+      .build()
+  }
+
+  def pattern(attribute: Attribute): AnnotationSpec = {
     pattern((attribute.value \ "regexp").as[String])
   }
 
-  def table(tableName: String):AnnotationSpec ={
+  def table(tableName: String): AnnotationSpec = {
     AnnotationSpec.builder(classOf[Table])
-      .addMember("name","$S",tableName)
+      .addMember("name", "$S", tableName)
       .build()
   }
 
-  def validated():AnnotationSpec = AnnotationSpec.builder(classOf[Validated]).build()
+  def validated(): AnnotationSpec = AnnotationSpec.builder(classOf[Validated]).build()
 
-  def equalsAndHashCode(onlyExplicitlyIncluded : Boolean): AnnotationSpec ={
-      AnnotationSpec.builder(classOf[EqualsAndHashCode]).addMember("onlyExplicitlyIncluded","$L",onlyExplicitlyIncluded.toString).build()
-    }
+  def equalsAndHashCode(onlyExplicitlyIncluded: Boolean): AnnotationSpec = {
+    AnnotationSpec.builder(classOf[EqualsAndHashCode]).addMember("onlyExplicitlyIncluded", "$L", onlyExplicitlyIncluded.toString).build()
+  }
 
 
   def addDataClassAnnotations(builder: TypeSpec.Builder) {
