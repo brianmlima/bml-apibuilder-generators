@@ -34,6 +34,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     }
   }
 
+
   /**
     * Because we put enums models directory and package (scala client does the same), we need to replace
     * a.b.c.d.enums.EnumName with a.b.c.d.models.EnumName
@@ -135,7 +136,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   }
 
   def toEnumName(input: String): String = {
-    Text.safeName(input.replaceAll("\\.", "_").replaceAll("-", "_")).toUpperCase
+    JavaEnums.toEnumName(input)
   }
 
   def isEnumType(service: Service, field: Field): Boolean = {
@@ -162,4 +163,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
       field.required || field.maximum.isDefined || field.minimum.isDefined
     }).isDefined
   }
+
 }
+
+object JavaPojoUtil extends JavaPojoUtil

@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator, ebscoServiceTestingGenerator)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, ebscoServiceGenerator, ebscoServiceTestingGenerator)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -62,6 +62,11 @@ lazy val ebscoServiceGenerator = project
   .settings(commonSettings: _*)
   .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
+lazy val ebscoServiceTestingGenerator = project
+  .in(file("ebsco-service-testing-generator"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
 lazy val javaGenerator = project
   .in(file("java-generator"))

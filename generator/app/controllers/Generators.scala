@@ -56,6 +56,17 @@ object Generators {
       codeGenerator = Some(models.generator.ebscoservice.EbscoServices)
     ),
 
+    CodeGenTarget(
+      metaData = Generator(
+        key = "ebsco_spring_service_testing",
+        name = "EBSCO Spring Service Testing",
+        description = Some("Generate Tests and Test infrastructure for EBSCO specific Spring Service from the API description."),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.ebscoservice.EbcosServicesTestingGenerator)
+    ),
+
     //    CodeGenTarget(
     //      metaData = Generator(
     //        key = "java_persistance_sql",

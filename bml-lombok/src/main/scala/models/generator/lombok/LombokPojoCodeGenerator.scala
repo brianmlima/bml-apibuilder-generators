@@ -1,9 +1,9 @@
 package models.generator.lombok
 
-import bml.util.java.JavaPojoUtil
+import bml.util.java.{JavaEnums, JavaPojoUtil}
 import bml.util.{AnotationUtil, FieldUtil}
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.squareup.javapoet.{TypeSpec, _}
+import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Enum, Model, Operation, Resource, Service, Union}
 import javax.lang.model.element.Modifier
@@ -31,8 +31,6 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       else None
     new Generator(form.service, header).generateSourceFiles()
   }
-
-
 
 
   class Generator(service: Service, header: Option[String]) {
@@ -67,12 +65,12 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         generateModel(model, relatedUnions)
       }
 
-      val generatedResolvers = generateResources(service.resources)
+      //      val generatedResolvers = generateResources(service.resources)
 
       generatedEnums ++
         generatedUnionTypes ++
-        generatedModels ++
-        generatedResolvers
+        generatedModels
+      //        generatedResolvers
     }
 
     def generateResources(resources: Seq[Resource]): Seq[File] = {
@@ -96,31 +94,22 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       val className = toClassName(enum.name)
 
-      val builder =
-        TypeSpec.enumBuilder(className)
-          .addModifiers(Modifier.PUBLIC)
-          .addJavadoc(apiDocComments)
+      //val stringValueParam = "value"
+
+
+      val builder = JavaEnums.standardEnumBuilder(enum, apiDocComments)
 
       enum.attributes.foreach(attribute => {
         attribute.name match {
           case _ => {}
         }
-
       })
-
-      enum.description.map(builder.addJavadoc(_))
 
       enum.values.foreach(value => {
-
-        logger.warn(value.name)
-        builder.addEnumConstant(toEnumName(value.name))
+        val enumValBuilder = TypeSpec.anonymousClassBuilder("$S", value.name)
+        if (value.description.isDefined) enumValBuilder.addJavadoc(value.description.get)
+        builder.addEnumConstant(toEnumName(value.name), enumValBuilder.build())
       })
-
-      val nameFieldType = classOf[String]
-
-      val constructorWithParams = MethodSpec.constructorBuilder()
-      builder.addMethod(constructorWithParams.build())
-
       makeFile(className, builder)
 
     }
@@ -157,6 +146,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       model.description.map(builder.addJavadoc(_))
 
+
       addDataClassAnnotations(builder)
 
 
@@ -184,6 +174,11 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           javaDataType,
           toParamName(field.name, true)
         ).addModifiers(Modifier.PROTECTED)
+
+        if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
+          fieldBuilder.addAnnotation(AnotationUtil.singular)
+        }
+
 
         if (field.required) {
           fieldBuilder.addAnnotation(AnotationUtil.notNull)

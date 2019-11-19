@@ -5,9 +5,13 @@ import com.squareup.javapoet.{AnnotationSpec, CodeBlock, TypeSpec}
 import io.apibuilder.spec.v0.models.Attribute
 import javax.persistence.Table
 import javax.validation.constraints.{Pattern, Size}
-import lombok.EqualsAndHashCode
 import lombok.experimental.Accessors
+import lombok.extern.slf4j.Slf4j
+import lombok.{EqualsAndHashCode, Singular}
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.GetMapping
 
 object AnotationUtil {
 
@@ -16,6 +20,21 @@ object AnotationUtil {
     .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
   def notNull = classOf[javax.validation.constraints.NotNull]
+
+  def notBlank = classOf[javax.validation.constraints.NotBlank]
+
+  def `override` = classOf[Override]
+
+  def slf4j = classOf[Slf4j]
+
+  def autowired = classOf[Autowired]
+
+  def getMappingJson(path: String): AnnotationSpec = {
+    AnnotationSpec.builder(classOf[GetMapping])
+      .addMember("path", "$S", path)
+      .addMember("produces", "$T.$L", classOf[MediaType], "APPLICATION_JSON_VALUE")
+      .build()
+  }
 
   def size(min: Int, max: Int): AnnotationSpec = {
     AnnotationSpec.builder(classOf[Size])
@@ -69,4 +88,8 @@ object AnotationUtil {
           .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
       )
   }
+
+  def singular = AnnotationSpec.builder(classOf[Singular]).build()
+
+
 }
