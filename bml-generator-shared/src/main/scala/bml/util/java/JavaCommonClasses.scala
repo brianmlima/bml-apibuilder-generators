@@ -3,11 +3,8 @@ package bml.util.java
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.squareup.javapoet._
 import javax.lang.model.element.Modifier._
-import javax.persistence.MappedSuperclass
-import lombok.extern.slf4j.Slf4j
 import org.javers.spring.annotation.JaversAuditable
 import org.springframework.data.repository.NoRepositoryBean
-import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.validation.annotation.Validated
 
 import scala.collection.JavaConverters._
@@ -67,16 +64,16 @@ object JavaCommonClasses {
   def baseEntity(packageName: String): TypeSpec.Builder = TypeSpec.classBuilder("BaseEntity")
     .addModifiers(PUBLIC, ABSTRACT)
     .addTypeVariable(TypeVariableName.get("T", ClassName.get("", "BaseEntity")))
-    .addSuperinterface(classOf[ObjectIdentity])
-    .addAnnotation(classOf[MappedSuperclass])
-    .addAnnotation(classOf[Validated])
-    .addAnnotation(classOf[Slf4j])
+    .addSuperinterface(ClassNames.objectIdentity)
+    .addAnnotation(ClassNames.mappedSuperclass)
+    .addAnnotation(ClassNames.validated)
+    .addAnnotation(ClassNames.slf4j)
     .addField(serialVersionUID())
     .addMethod(abstractGetThis())
 
   def baseRepository(packageName: String): TypeSpec.Builder = {
 
-    val notNull = AnnotationSpec.builder(classOf[javax.validation.constraints.NotNull]).build()
+    val notNull = AnnotationSpec.builder(ClassNames.notNull).build()
     val javersAuditable = AnnotationSpec.builder(classOf[JaversAuditable]).build()
 
     case class TypeHelper(packagePath: String, className: String) {
@@ -90,7 +87,7 @@ object JavaCommonClasses {
 
       def optionalType() = ParameterizedTypeName.get(ClassName.get("java.util", "Optional"), clazzName())
 
-      def sliceType() = ParameterizedTypeName.get(ClassName.get("org.springframework.data.domain", "Slice"), clazzName())
+      def sliceType() = ClassNames.slice(clazzName())
 
       def param(parmaName: String) = ParameterSpec.builder(clazzName(), parmaName)
 

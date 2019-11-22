@@ -1,17 +1,13 @@
 package bml.util
 
+import bml.util.java.ClassNames
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{AnnotationSpec, CodeBlock, TypeSpec}
 import io.apibuilder.spec.v0.models.Attribute
 import javax.persistence.Table
-import javax.validation.constraints.{Pattern, Size}
 import lombok.experimental.Accessors
-import lombok.extern.slf4j.Slf4j
 import lombok.{EqualsAndHashCode, Singular}
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.MediaType
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.GetMapping
 
 object AnotationUtil {
 
@@ -19,32 +15,32 @@ object AnotationUtil {
     .builder(classOf[Accessors])
     .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
-  def notNull = classOf[javax.validation.constraints.NotNull]
+  def notNull = ClassNames.notNull
 
-  def notBlank = classOf[javax.validation.constraints.NotBlank]
+  def notBlank = ClassNames.notBlank
 
-  def `override` = classOf[Override]
+  def `override` = ClassNames.`override`
 
-  def slf4j = classOf[Slf4j]
+  def autowired = ClassNames.autowired
 
-  def autowired = classOf[Autowired]
+  def springBootTest = ClassNames.springBootTest
 
   def getMappingJson(path: String): AnnotationSpec = {
-    AnnotationSpec.builder(classOf[GetMapping])
+    AnnotationSpec.builder(ClassNames.getMapping)
       .addMember("path", "$S", path)
-      .addMember("produces", "$T.$L", classOf[MediaType], "APPLICATION_JSON_VALUE")
+      .addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
       .build()
   }
 
   def size(min: Int, max: Int): AnnotationSpec = {
-    AnnotationSpec.builder(classOf[Size])
+    AnnotationSpec.builder(ClassNames.size)
       .addMember("min", "$L", new Integer(min))
       .addMember("max", "$L", new Integer(max))
       .build()
   }
 
   def size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
-    val spec = AnnotationSpec.builder(classOf[Size])
+    val spec = AnnotationSpec.builder(ClassNames.size)
     if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
     if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
     spec.build()
@@ -55,7 +51,7 @@ object AnotationUtil {
   }
 
   def pattern(regexp: String): AnnotationSpec = {
-    AnnotationSpec.builder(classOf[Pattern])
+    AnnotationSpec.builder(ClassNames.pattern)
       .addMember("regexp", "$S", regexp)
       .build()
   }

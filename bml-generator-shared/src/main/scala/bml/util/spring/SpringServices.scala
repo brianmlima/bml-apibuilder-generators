@@ -1,12 +1,11 @@
 package bml.util.spring
 
-import bml.util.java.JavaPojoUtil
+import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
-import com.squareup.javapoet.{ClassName, MethodSpec, ParameterSpec, TypeSpec}
+import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource}
-import javax.lang.model.element.Modifier.{ABSTRACT, FINAL, PUBLIC}
-import org.springframework.http.ResponseEntity
+import javax.lang.model.element.Modifier.{ABSTRACT, FINAL, PRIVATE, PUBLIC}
 
 object SpringServices {
 
@@ -33,31 +32,43 @@ object SpringServices {
     Seq(GeneratorFSUtil.makeFile(serviceName.simpleName(), nameSpaces.service.path, nameSpaces.service.nameSpace, serviceBuilder))
   }
 
-  def generateServiceMock(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+  def generateServiceMockTests(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val serviceName = toServiceClassName(nameSpaces, resource)
     val implName = toServiceMockClassName(nameSpaces, resource)
     val implBuilder = TypeSpec.classBuilder(implName).addModifiers(PUBLIC)
-      .addSuperinterface(serviceName)
+      .addAnnotation(ClassNames.springBootTest)
+      .addField(
+        FieldSpec.builder(serviceName, JavaPojoUtil.toParamName(serviceName.simpleName(), true), PRIVATE)
+          .addAnnotation(ClassNames.mock)
+          .build()
+      )
+    //.addSuperinterface(serviceName)
+
+
     //Generate Service methods from operations and add them to the Service Interface
-    resource.operations.flatMap(generateServiceOperation(nameSpaces, resource, _, true))
-      .map(_.addAnnotation(AnotationUtil.`override`))
-      .map(_.build())
-      .foreach(implBuilder.addMethod)
+    //    resource.operations.flatMap(generateServiceMockTestOperation(nameSpaces, resource, _))
+    //      .map(_.addAnnotation(AnotationUtil.`override`))
+    //      .map(_.build())
+    //      .foreach(implBuilder.addMethod)
     //Return the generated Service interface
-    Seq(GeneratorFSUtil.makeFile(serviceName.simpleName(), nameSpaces.service.path, nameSpaces.service.nameSpace, implBuilder))
+    Seq(GeneratorFSUtil.makeFile(implName.simpleName(), nameSpaces.service.path, nameSpaces.service.nameSpace, implBuilder))
+  }
+
+  private def generateServiceMockTestOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec.Builder] = {
+    val builder = generateServiceOperation(nameSpaces, resource, operation, true).get
+    //builder.addStatement("return null")
+    Some(builder)
   }
 
   private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
     val methodName = toOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
-      .returns(classOf[ResponseEntity[Object]])
-
+      .returns(ClassNames.responseEntity)
     if (isconcrete) {
       methodSpec.addModifiers(PUBLIC)
     } else {
       methodSpec.addModifiers(PUBLIC, ABSTRACT)
     }
-
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)

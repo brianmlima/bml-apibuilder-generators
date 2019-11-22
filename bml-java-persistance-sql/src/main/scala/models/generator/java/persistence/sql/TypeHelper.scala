@@ -1,8 +1,8 @@
 package models.generator.java.persistence.sql
 
+import com.squareup.javapoet._
+
 import scala.collection.JavaConverters._
-import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterSpec, ParameterizedTypeName, TypeVariableName}
-import org.springframework.http.ResponseEntity
 
 case class TypeHelper(packagePath: String, className: String) {
   def typeVar() = TypeVariableName.get(className)

@@ -90,6 +90,11 @@ lazy val javaPersistanceSql = project
     Seq(ScoverageKeys.coverageMinimum := 69.5)
   )
 
+
+
+val springFrameworkVersion = "5.2.1.RELEASE"
+val springBootVersion = "2.2.1.RELEASE"
+
 lazy val commonSettings: Seq[Setting[_]] = Seq(
   name ~= ("bml-generator-" + _),
   organization := "bml",
@@ -105,18 +110,18 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     "com.squareup.retrofit2" % "retrofit" % "2.5.0",
     "io.reactivex.rxjava2" % "rxjava" % "2.2.4",
     "com.graphql-java" % "graphql-java-tools" % "5.2.4",
-    "javax.validation" % "validation-api" % "2.0.1.Final",
+    //            "javax.validation" % "validation-api" % "2.0.1.Final",
     "javax.persistence" % "javax.persistence-api" % "2.2",
     "org.projectlombok" % "lombok" % "1.18.4",
-    "org.springframework" % "spring-context" % "5.1.8.RELEASE",
-    "org.springframework" % "spring-web" % "5.2.1.RELEASE",
-    "org.springframework.security" % "spring-security-core" % "5.1.5.RELEASE",
-    "org.springframework.security" % "spring-security-acl" % "5.1.5.RELEASE",
     "com.google.googlejavaformat" % "google-java-format" % "1.7",
-    "org.springframework.data" % "spring-data-jpa" % "2.1.9.RELEASE",
-    "org.springframework" % "spring-web" % "5.1.5.RELEASE",
     "org.javers" % "javers-spring" % "5.6.0",
-    "org.hibernate.validator" % "hibernate-validator" % "6.1.0.Final"
+
+    "org.junit.jupiter" % "junit-jupiter-api" % "5.6.0-M1",
+    "org.junit.jupiter" % "junit-jupiter-engine" % "5.6.0-M1",
+
+    "org.mockito" % "mockito-junit-jupiter" % "3.1.0"
+
+
   ),
   libraryDependencies += guice,
   scalacOptions ++= Seq("-feature", "-Ycache-plugin-class-loader:last-modified", "-Ycache-macro-class-loader:last-modified"),

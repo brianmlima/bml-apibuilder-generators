@@ -1,17 +1,14 @@
 package bml.util.spring
 
-import bml.util.java.JavaPojoUtil
+import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
-import com.squareup.javapoet._
+import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.Get
-import io.apibuilder.spec.v0.models.ParameterLocation._
+import io.apibuilder.spec.v0.models.ParameterLocation.{UNDEFINED, _}
 import io.apibuilder.spec.v0.models.{Operation, Parameter, ParameterLocation, Resource}
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
-import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.{PathVariable, RequestHeader, RequestParam}
 
 class SpringControllers {
 
@@ -36,8 +33,8 @@ object SpringControllers {
 
     val name = SpringControllers.toControllerName(resource)
     val builder = TypeSpec.classBuilder(name)
-      .addAnnotation(classOf[Controller])
-      .addAnnotation(AnotationUtil.slf4j)
+      .addAnnotation(ClassNames.controller)
+      .addAnnotation(ClassNames.slf4j)
       .addField(
         FieldSpec.builder(
           ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource)),
@@ -57,7 +54,7 @@ object SpringControllers {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
-      .returns(classOf[ResponseEntity[Object]])
+      .returns(ClassNames.responseEntityOfObject)
     if (operation.method.equals(Get)) {
       methodSpec.addAnnotation(AnotationUtil.getMappingJson(operation.path))
     }
@@ -80,10 +77,13 @@ object SpringControllers {
 
   private def getParamAnnotation(location: ParameterLocation) = {
     location match {
-      case Query => Some(classOf[RequestParam])
-      case Header => Some(classOf[RequestHeader])
-      case Form => Some(classOf[RequestParam])
-      case Path => Some(classOf[PathVariable])
+      case Query => Some(ClassNames.requestParam)
+      case Header => Some(ClassNames.requestHeader)
+      case Form => Some(ClassNames.requestParam)
+      case Path => Some(ClassNames.pathVariable)
+      case UNDEFINED(_) => {
+        None
+      }
     }
   }
 
@@ -97,20 +97,26 @@ object SpringControllers {
 
     val paramAnnotation = getParamAnnotation(parameter.location)
     if (paramAnnotation.isDefined) {
-      builder.addAnnotation(
-        AnnotationSpec.builder(paramAnnotation.get)
-          .addMember("name", "$S", parameter.name)
-          .addMember("required", "$L", parameter.required.toString)
-          .build()
-      )
+      //Build anno
+      val paramAnnotationBuilder = AnnotationSpec.builder(paramAnnotation.get)
+        .addMember("name", "$S", parameter.name)
+        .addMember("required", "$L", parameter.required.toString)
+      //Add default
+      if (parameter.default.isDefined) {
+        paramAnnotationBuilder.addMember("defaultValue", "$S", parameter.default.get.toString)
+      }
+      //set anno
+      builder.addAnnotation(paramAnnotationBuilder.build())
     }
     if (parameter.required) {
       if (parameter.`type` == "string") {
-        builder.addAnnotation(AnotationUtil.notBlank)
+        builder.addAnnotation(ClassNames.notBlank)
       } else {
-        builder.addAnnotation(AnotationUtil.notNull)
+        builder.addAnnotation(ClassNames.notNull)
       }
     }
+
+
     if (parameter.minimum.isDefined || parameter.maximum.isDefined) {
       builder.addAnnotation(AnotationUtil.size(parameter.minimum, parameter.maximum))
     }

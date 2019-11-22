@@ -1,13 +1,11 @@
 package models.generator.java.persistence.sql.generators
 
-import bml.util.java.JavaPojoUtil
+import bml.util.java.{ClassNames, JavaPojoUtil}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Method, Operation, Parameter}
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
-import lombok.extern.slf4j.Slf4j
 import models.generator.java.persistence.sql.{GenUtils, ResourceData}
-import org.springframework.web.bind.annotation._
 
 class ControllerGenerator {
 
@@ -16,15 +14,13 @@ class ControllerGenerator {
 object ControllerGenerator extends JavaPojoUtil {
 
   def generate(resourceData: ResourceData): ResourceData = {
-
     val config = resourceData.config
-
     resourceData.controllerBuilder = Some(
       TypeSpec.classBuilder(resourceData.controllerClassName).addJavadoc(config.apiDocComments)
         //Is a public class
         .addModifiers(PUBLIC)
-        .addAnnotation(classOf[Slf4j])
-        .addAnnotation(classOf[RestController])
+        .addAnnotation(ClassNames.slf4j)
+        .addAnnotation(ClassNames.restController)
     )
 
     val classBuilder: TypeSpec.Builder = resourceData.controllerBuilder.get
@@ -54,9 +50,7 @@ object ControllerGenerator extends JavaPojoUtil {
     val methodBuilder = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
       .addAnnotation(makeRequestMapping(operation))
-      .returns(ClassName.get("org.springframework.http", "ResponseEntity"))
-
-
+      .returns(ClassNames.responseEntity)
     operation.parameters.foreach(
       param => {
         val paramSpec: ParameterSpec = ControllerGenerator.toParameterSpec(param, operation, resourceData)
@@ -72,7 +66,7 @@ object ControllerGenerator extends JavaPojoUtil {
     ))
 
     val badRequest = operation.responses.find(_.code == 400);
-    if(badRequest.isDefined){
+    if (badRequest.isDefined) {
       methodBuilder
     }
 
@@ -87,11 +81,11 @@ object ControllerGenerator extends JavaPojoUtil {
     var paramAnnotation: AnnotationSpec.Builder = null;
 
     if (isPathVariable(param, operation)) {
-      paramAnnotation = AnnotationSpec.builder(classOf[PathVariable])
+      paramAnnotation = AnnotationSpec.builder(ClassNames.pathVariable)
         .addMember("name", "$S", paramName)
 
     } else {
-      paramAnnotation = AnnotationSpec.builder(classOf[RequestParam])
+      paramAnnotation = AnnotationSpec.builder(ClassNames.requestParam)
         .addMember("name", "$S", paramName)
     }
 
@@ -114,12 +108,12 @@ object ControllerGenerator extends JavaPojoUtil {
   def makeRequestMapping(operation: Operation): AnnotationSpec = {
     val annotationSpec = operation.method match {
       case Method.Get =>
-        AnnotationSpec.builder(classOf[GetMapping])
+        AnnotationSpec.builder(ClassNames.getMapping)
       case Method.Post =>
-        AnnotationSpec.builder(classOf[PostMapping])
+        AnnotationSpec.builder(ClassNames.postMapping)
       case Method.Put =>
-        AnnotationSpec.builder(classOf[PutMapping])
-      case _ => AnnotationSpec.builder(classOf[RequestMapping])
+        AnnotationSpec.builder(ClassNames.putMapping)
+      case _ => AnnotationSpec.builder(ClassNames.requestMapping)
     }
     annotationSpec
       .addMember("path", "$S", toSpringRequestMappingPath(operation))

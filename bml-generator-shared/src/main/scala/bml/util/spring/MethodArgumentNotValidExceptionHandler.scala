@@ -1,64 +1,58 @@
 package bml.util.spring
 
-import bml.util.java.JavaArrays
-import bml.util.{GeneratorFSUtil, NameSpaces}
+import bml.util.GeneratorFSUtil.makeFile
+import bml.util.NameSpaces
+import bml.util.java.ClassNames._
+import bml.util.java.JavaArrays.arrayOf
+import com.squareup.javapoet.CodeBlock.of
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.http.HttpStatus
-import org.springframework.validation.{BindingResult, FieldError}
-import org.springframework.web.bind.MethodArgumentNotValidException
-import org.springframework.web.bind.annotation.{ControllerAdvice, ExceptionHandler, ResponseBody, ResponseStatus}
+
 
 object MethodArgumentNotValidExceptionHandler {
 
+  /**
+    * The generated class simple name
+    */
+  val name = "MethodArgumentNotValidExceptionHandler"
 
-  private def fieldValidationResponse = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationResponse")
-
-  private def fieldValidationError = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationError")
-
-
-  private def fieldValidationResponseBuilder = ClassName.get("org.bml.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
-
-
+  /**
+    * Generats a spring @ControllerAdvice that handles validation errors and responses for all endpoints.
+    * This was much easier than writing a handler for each @Controller
+    *
+    * @param nameSpaces the NameSpaces object we are generating in
+    * @return a @ControllerAdvice impl class
+    */
   def get(nameSpaces: NameSpaces): Seq[File] = {
 
-    val name = "MethodArgumentNotValidExceptionHandler"
     val builder = TypeSpec.classBuilder(name)
-      .addAnnotation(
-        AnnotationSpec.builder(classOf[Order])
-          .addMember("value", "$T.HIGHEST_PRECEDENCE", classOf[Ordered])
-          .build()
-      )
-      .addAnnotation(
-        AnnotationSpec.builder(classOf[ControllerAdvice]).build()
-      )
+      .addAnnotation(AnnotationSpec.builder(order).addMember("value", "$T.HIGHEST_PRECEDENCE", ordered).build())
+      .addAnnotation(controllerAdvice)
       .addMethod(
         MethodSpec.methodBuilder("methodArgumentNotValidException")
           .returns(fieldValidationResponse)
-          .addParameter(classOf[MethodArgumentNotValidException], "ex")
+          .addParameter(methodArgumentNotValidException, "ex")
           .addModifiers(PUBLIC)
-          .addAnnotation(AnnotationSpec.builder(classOf[ResponseStatus]).addMember("value", "$T.BAD_REQUEST", classOf[HttpStatus]).build())
-          .addAnnotation(AnnotationSpec.builder(classOf[ResponseBody]).build())
-          .addAnnotation(AnnotationSpec.builder(classOf[ExceptionHandler]).addMember("value", "$T.class", classOf[MethodArgumentNotValidException]).build())
-          .addStatement(CodeBlock.of("final $T result = ex.getBindingResult()", classOf[BindingResult]))
-          .addStatement(CodeBlock.of("final $T fieldErrors = result.getFieldErrors()", JavaArrays.arrayOf(classOf[FieldError])))
-          .addStatement(CodeBlock.of("return processFieldErrors(fieldErrors)"))
+          .addAnnotation(responseStatusBadRequest)
+          .addAnnotation(responseBody)
+          .addAnnotation(badArgExceptionHandler)
+          .addStatement(of("$T result = ex.getBindingResult()", bindingResult))
+          .addStatement(of("$T fieldErrors = result.getFieldErrors()", arrayOf(fieldError)))
+          .addStatement(of("return processFieldErrors(fieldErrors)"))
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("processFieldErrors")
           .returns(fieldValidationResponse)
-          .addParameter(JavaArrays.arrayOf(classOf[FieldError]), "fieldErrors", FINAL)
+          .addParameter(arrayOf(fieldError), "fieldErrors", FINAL)
           .addModifiers(PRIVATE)
           .addCode("final $T responseBuilder = $T.builder()", fieldValidationResponseBuilder, fieldValidationResponse)
-          .addCode(".status($T.BAD_REQUEST.value())", classOf[HttpStatus])
+          .addCode(".status($T.BAD_REQUEST.value())", httpStatus)
           .addCode(".message($S);", "validation error")
           .addCode(
             CodeBlock.builder()
-              .beginControlFlow("for($T fieldError: fieldErrors)", classOf[FieldError])
+              .beginControlFlow("for($T fieldError: fieldErrors)", fieldError)
               .add(
                 CodeBlock.builder()
                   .add("responseBuilder.error(")
@@ -74,7 +68,19 @@ object MethodArgumentNotValidExceptionHandler {
       )
 
 
-    Seq(GeneratorFSUtil.makeFile(name, nameSpaces.controller.path, nameSpaces.controller.nameSpace, builder))
+    Seq(makeFile(name, nameSpaces.controller, builder))
   }
+
+
+  private def fieldValidationResponse = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationResponse")
+
+  private def fieldValidationError = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationError")
+
+  private def fieldValidationResponseBuilder = ClassName.get("org.bml.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
+
+  private def responseStatusBadRequest = AnnotationSpec.builder(responseStatus).addMember("value", "$T.BAD_REQUEST", httpStatus).build()
+
+  private def badArgExceptionHandler = AnnotationSpec.builder(exceptionHandler).addMember("value", "$T.class", methodArgumentNotValidException).build()
+
 
 }

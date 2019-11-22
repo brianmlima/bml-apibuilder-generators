@@ -64,7 +64,8 @@ object Generators {
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
-      codeGenerator = Some(models.generator.ebscoservice.EbcosServicesTestingGenerator)
+
+      codeGenerator = Some(models.generator.ebscoservicetesting.EbscoServicesTesting)
     ),
 
     //    CodeGenTarget(

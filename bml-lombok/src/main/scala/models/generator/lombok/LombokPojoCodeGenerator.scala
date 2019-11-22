@@ -1,13 +1,12 @@
 package models.generator.lombok
 
-import bml.util.java.{JavaEnums, JavaPojoUtil}
+import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil}
 import bml.util.{AnotationUtil, FieldUtil}
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Enum, Model, Operation, Resource, Service, Union}
 import javax.lang.model.element.Modifier
-import javax.validation.constraints.Email
 import lib.generator.{CodeGenerator, GeneratorUtil}
 import lombok.experimental.Accessors
 import play.api.Logger
@@ -205,7 +204,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
               fieldBuilder.addAnnotation(AnotationUtil.pattern(attribute))
             }
             case "email" => {
-              fieldBuilder.addAnnotation(classOf[Email])
+              fieldBuilder.addAnnotation(ClassNames.email)
             }
             case _ =>
           }
