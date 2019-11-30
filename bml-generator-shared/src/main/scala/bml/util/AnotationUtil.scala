@@ -25,6 +25,11 @@ object AnotationUtil {
 
   def springBootTest = ClassNames.springBootTest
 
+  def jsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
+    .addMember("value", "$S", name)
+    .addMember("required", "$L", required.toString)
+    .build()
+
   def getMappingJson(path: String): AnnotationSpec = {
     AnnotationSpec.builder(ClassNames.getMapping)
       .addMember("path", "$S", path)

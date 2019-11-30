@@ -136,7 +136,6 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             AnnotationSpec.builder(classOf[JsonIgnoreProperties])
               .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
           )
-
       }
 
       val builder = TypeSpec.classBuilder(className)
@@ -169,10 +168,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       model.fields.foreach(field => {
         val javaDataType = dataTypeFromField(field.`type`, modelsNameSpace)
 
-        val fieldBuilder = FieldSpec.builder(
-          javaDataType,
-          toParamName(field.name, true)
-        ).addModifiers(Modifier.PROTECTED)
+        val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
+          .addModifiers(Modifier.PROTECTED)
+          .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
           fieldBuilder.addAnnotation(AnotationUtil.singular)

@@ -101,4 +101,7 @@ object ClassNames {
 
   val pageable: ClassName = ClassName.get("org.springframework.data.domain", "Pageable")
 
+  val jsonProperty = ClassName.bestGuess("com.fasterxml.jackson.annotation.JsonProperty")
+
+
 }
