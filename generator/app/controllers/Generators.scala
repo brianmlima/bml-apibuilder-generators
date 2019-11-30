@@ -47,15 +47,26 @@ object Generators {
     ),
     CodeGenTarget(
       metaData = Generator(
-        key = "ebsco_spring_service",
+        key = "spring_service",
         name = "EBSCO Spring Service",
         description = Some("Generate EBSCO specific Spring Service from the API description."),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
-      codeGenerator = Some(models.generator.ebscoservice.EbscoServices)
+      codeGenerator = Some(models.generator.spring.service.SpringService)
     ),
 
+
+    CodeGenTarget(
+      metaData = Generator(
+        key = "spring_cloud_contract",
+        name = "Spring Clound Contract Generator",
+        description = Some("Generates Spring Clound Contracts for an api definition"),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.spring.cloud.contract.SpringCloudContract)
+    ),
     CodeGenTarget(
       metaData = Generator(
         key = "ebsco_spring_service_testing",
@@ -64,7 +75,6 @@ object Generators {
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
-
       codeGenerator = Some(models.generator.ebscoservicetesting.EbscoServicesTesting)
     ),
 

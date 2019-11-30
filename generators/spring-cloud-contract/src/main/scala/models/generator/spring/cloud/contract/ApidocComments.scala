@@ -1,4 +1,4 @@
-package models.generator.ebscoservice
+package models.generator.spring.cloud.contract
 
 import lib.Constants
 
@@ -9,5 +9,5 @@ class ApidocComments(version: String, userAgent: Option[String]) {
     Some(s"Service version: $version"),
     userAgent
   ).flatten
-  val forClassFile: String = elements.mkString("", "\n","\n")
+  val forClassFile: String = elements.mkString("", "\n", "\n")
 }

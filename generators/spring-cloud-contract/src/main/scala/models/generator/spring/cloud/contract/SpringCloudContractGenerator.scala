@@ -1,15 +1,13 @@
-package models.generator.ebscoservice
+package models.generator.spring.cloud.contract
 
 import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
-import bml.util.spring.{MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices}
+import bml.util.spring.SpringServices
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Resource, Service}
 import lib.generator.{CodeGenerator, GeneratorUtil}
 
-
-class EbscoServiceGenerator extends CodeGenerator with JavaPojoUtil {
-
+class SpringCloudContractGenerator extends CodeGenerator with JavaPojoUtil {
   def getJavaDocFileHeader() = "WARNING: not all features (notably unions) and data types work with the java generator yet. \nplease contact brianmlima@gmail.com"
 
   override def invoke(form: InvocationForm): Either[Seq[String], Seq[File]] = invoke(form, addHeader = true)
@@ -30,22 +28,12 @@ class EbscoServiceGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Run Generation
     def generateSourceFiles(): Seq[File] = {
-      generateServices(service.resources) ++
-      generateControllers(service.resources) ++
-      MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
-      SpringBootApps.foo(nameSpaces, service)
+      generateResources(service.resources)
     }
 
     //Generates Services from Resources
-    def generateControllers(resources: Seq[Resource]): Seq[File] = {
-      resources.flatMap(SpringControllers.generateController(nameSpaces, _))
-      //      Seq[File]()
-    }
-
-    //Generates Services from Resources
-    def generateServices(resources: Seq[Resource]): Seq[File] = {
-      resources.flatMap(SpringServices.generateService(nameSpaces, _))
-      //      Seq[File]()
+    def generateResources(resources: Seq[Resource]): Seq[File] = {
+      Seq[File]()
     }
 
   }
