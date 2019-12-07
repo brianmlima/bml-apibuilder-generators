@@ -32,6 +32,7 @@ object JavaEnums {
   }
 
 
+
   def standardEnumBuilder(enum: Enum, apiDocComments: String): TypeSpec.Builder = {
     val className = ClassName.bestGuess(JavaPojoUtil.toClassName(enum.name))
     val genericDoc = List(
@@ -40,6 +41,10 @@ object JavaEnums {
       "that has enumeration values that do not necessarily conform to java enum naming conventions",
       ""
     )
+
+    //enum.attributes.filter(ExampleAttribute.isThisAttribute).map(ExampleAttribute.asThisAttribute)
+
+
 
     TypeSpec.enumBuilder(className)
       .addModifiers(PUBLIC)

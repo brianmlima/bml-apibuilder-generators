@@ -25,10 +25,12 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
       if (word == word.toUpperCase) word.toLowerCase
       else word
 
-    if (isModelNameWithPackage(modelName)) {
-      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(modelName))
+    val cleanedName = modelName.split("\\.").last
+
+    if (isModelNameWithPackage(cleanedName)) {
+      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName))
     } else {
-      Text.safeName(Text.splitIntoWords(modelName).map {
+      Text.safeName(Text.splitIntoWords(cleanedName).map {
         checkForUpperCase(_).capitalize
       }.mkString)
     }
@@ -102,13 +104,18 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
   def dataTypeFromField(`type`: String, modelsNameSpace: String): TypeName = {
     dataTypes.get(`type`).getOrElse {
+      //Helps with external mapped classes IE imports
+      val hasNamespace = `type`.contains(".")
+      val nameSpace = if(hasNamespace)  `type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
+
       val name = toParamName(`type`, false)
       if (isParameterArray(`type`))
-        ParameterizedTypeName.get(ClassName.get("java.util", "List"), dataTypeFromField(getArrayType(`type`), modelsNameSpace))
+        ParameterizedTypeName.get(ClassName.get("java.util", "List"), dataTypeFromField(getArrayType(`type`), nameSpace))
       else if (isParameterMap(`type`))
-        ParameterizedTypeName.get(ClassName.get("java.util", "Map"), ClassName.get("java.lang", "String"), dataTypeFromField(getMapType(`type`), modelsNameSpace))
+        ParameterizedTypeName.get(ClassName.get("java.util", "Map"), ClassName.get("java.lang", "String"), dataTypeFromField(getMapType(`type`), nameSpace))
       else
-        ClassName.get(modelsNameSpace, name)
+        ClassName.get(nameSpace, name)
+
     }
   }
 

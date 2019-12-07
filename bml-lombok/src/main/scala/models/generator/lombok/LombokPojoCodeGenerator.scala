@@ -5,9 +5,9 @@ import bml.util.{AnotationUtil, FieldUtil}
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Enum, Model, Operation, Resource, Service, Union}
+import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
 import javax.lang.model.element.Modifier
-import lib.generator.{CodeGenerator, GeneratorUtil}
+import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
 import play.api.Logger
 
@@ -72,21 +72,21 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       //        generatedResolvers
     }
 
-    def generateResources(resources: Seq[Resource]): Seq[File] = {
-      //Resolves data types for built in types and models
-      val datatypeResolver = GeneratorUtil.datatypeResolver(service)
-
-      def generateOperation(resource: Resource, operation: Operation): Option[MethodSpec] = {
-        //val gqlMethodModel = GqlMethodModel(datatypeResolver,)
-        Option.empty
-      }
-
-      val methodSpecs = resources.map(resource => resource.operations.map(generateOperation(resource, _))).flatten.flatten
-      val interfaceName = toClassName("query_resolver")
-      var builder = TypeSpec.interfaceBuilder(interfaceName)
-      methodSpecs.foreach(builder.addMethod)
-      Seq(makeFile(interfaceName, builder))
-    }
+//    def generateResources(resources: Seq[Resource]): Seq[File] = {
+//      //Resolves data types for built in types and models
+//      val datatypeResolver = GeneratorUtil.datatypeResolver(service)
+//
+//      def generateOperation(resource: Resource, operation: Operation): Option[MethodSpec] = {
+//        //val gqlMethodModel = GqlMethodModel(datatypeResolver,)
+//        Option.empty
+//      }
+//
+//      val methodSpecs = resources.map(resource => resource.operations.map(generateOperation(resource, _))).flatten.flatten
+//      val interfaceName = toClassName("query_resolver")
+//      var builder = TypeSpec.interfaceBuilder(interfaceName)
+//      methodSpecs.foreach(builder.addMethod)
+//      Seq(makeFile(interfaceName, builder))
+//    }
 
 
     def generateEnum(enum: Enum): File = {
@@ -143,13 +143,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addJavadoc(apiDocComments)
 
       model.description.map(builder.addJavadoc(_))
-
-
       addDataClassAnnotations(builder)
-
-
-
-
       //Eventually do something with the model attributes.
       model.attributes.foreach(attribute => {
         attribute.name match {
@@ -158,9 +152,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       })
 
       val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
-
       val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
-
       val unionClassTypeNames = relatedUnions.map { u => ClassName.get(modelsNameSpace, toClassName(u.name)) }
       builder.addSuperinterfaces(unionClassTypeNames.asJava)
       //      val shouldAnnotateAsDyanmoDb = isDynamoDbModel(model)
@@ -171,6 +163,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(Modifier.PROTECTED)
           .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
+          .addAnnotation(ClassNames.getter)
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
           fieldBuilder.addAnnotation(AnotationUtil.singular)

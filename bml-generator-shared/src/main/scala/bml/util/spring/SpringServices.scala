@@ -1,11 +1,12 @@
 package bml.util.spring
 
+import bml.util.java.ClassNames._
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource}
-import javax.lang.model.element.Modifier.{ABSTRACT, FINAL, PRIVATE, PUBLIC}
+import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource, Service}
+import javax.lang.model.element.Modifier._
 
 object SpringServices {
 
@@ -21,9 +22,94 @@ object SpringServices {
 
   private def modelDataType(nameSpaces: NameSpaces, parameter: Parameter) = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
 
+
+  def generateBaseConfiguration(nameSpaces: NameSpaces, service: Service): Seq[File] = {
+    val serviceName = JavaPojoUtil.toClassName(service.name + "-base-confiuration")
+
+    val mediaTypeYaml="MEDIA_TYPE_YAML"
+    val mediaTypeYml="MEDIA_TYPE_YML"
+
+    val serviceBuilder = TypeSpec.classBuilder(serviceName)
+      .addModifiers(PUBLIC)
+      .addSuperinterface(webMvcConfigurer)
+      .addAnnotation(configuration)
+      .addAnnotation(enableWebMvc)
+      .addField(FieldSpec.builder(mediaType, mediaTypeYaml, PUBLIC, STATIC, FINAL).initializer(" MediaType.valueOf(\"text/yaml\")").build())
+      .addField(FieldSpec.builder(mediaType, mediaTypeYml, PUBLIC, STATIC, FINAL).initializer(" MediaType.valueOf(\"text/yml\")").build())
+      .addMethod(
+        MethodSpec.methodBuilder("jsonObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
+          .addAnnotation(primary)
+          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "jsonObjectMapper").build())
+          .addStatement(CodeBlock.of("return new $T()", objectMapper))
+          .build()
+      )
+      .addMethod(
+        MethodSpec.methodBuilder("yamlObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
+          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "yamlObjectMapper").build())
+          .addStatement(CodeBlock.of("return new $T(new $T())", objectMapper, yAMLFactory))
+          .build()
+      ).addMethod(
+      MethodSpec.methodBuilder("configureContentNegotiation")
+        .addModifiers(PUBLIC)
+        .addAnnotation(`override`)
+        .addParameter(ParameterSpec.builder(contentNegotiationConfigurer, "configurer", FINAL).build())
+        .addCode(
+          CodeBlock.builder()
+            .add("configurer")
+            .add(".favorPathExtension($L)", true.toString)
+            .add(".favorParameter($L)", false.toString)
+            .add(".ignoreAcceptHeader($L)", false.toString)
+            .add(".defaultContentType($T.APPLICATION_JSON)", mediaType)
+            .add(".mediaType($T.APPLICATION_JSON.getSubtype(),", mediaType)
+            .add("$T.APPLICATION_JSON)", mediaType)
+            .add(".mediaType($L.getSubtype(), $L)",mediaTypeYaml,mediaTypeYaml)
+            .addStatement(".mediaType($L.getSubtype(), $L)",mediaTypeYml,mediaTypeYml)
+            .build()
+        ).build()
+    ).addMethod(
+
+      MethodSpec.methodBuilder("extendMessageConverters")
+        .addModifiers(PUBLIC)
+        .addAnnotation(`override`)
+        .addParameter(
+          ParameterSpec.builder(
+            ParameterizedTypeName.get(list, ParameterizedTypeName.get(httpMessageConverter, ClassName.get("", "?"))),
+            "converters",
+            FINAL
+          ).build()
+        ).addStatement("converters.add(new $T())", ClassName.get("", "YamlMessageConverter"))
+        .build()
+    ).addType(
+      TypeSpec.classBuilder("YamlMessageConverter").addModifiers(PUBLIC, STATIC)
+        .superclass(mappingJackson2HttpMessageConverter)
+        .addMethod(
+          MethodSpec.constructorBuilder()
+            .addComment("can use overloaded constructor to set supported MediaType")
+            .addStatement("super(new $T(new $T()))", objectMapper, yAMLFactory)
+            .addStatement("this.setSupportedMediaTypes($T.of(MEDIA_TYPE_YML, MEDIA_TYPE_YAML))", immutableList)
+            .build()
+        ).build()
+    )
+    //
+    //    @Component
+    //    public static class YamlMessageConverter extends MappingJackson2HttpMessageConverter {
+    //      public YamlMessageConverter() {
+    //        //can use overloaded constructor to set supported MediaType
+    //        super(new ObjectMapper(new YAMLFactory()));
+    //        this.setSupportedMediaTypes(ImmutableList.of(MEDIA_TYPE_YML, MEDIA_TYPE_YAML));
+    //      }
+    //    }
+
+
+    //Return the generated Service interface
+    Seq(GeneratorFSUtil.makeFile(serviceName, nameSpaces.config, serviceBuilder))
+  }
+
+
   def generateService(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val serviceName = toServiceClassName(nameSpaces, resource)
     val serviceBuilder = TypeSpec.interfaceBuilder(serviceName).addModifiers(PUBLIC)
+      .addJavadoc(resource.description.getOrElse(""))
     //Generate Service methods from operations and add them to the Service Interface
     resource.operations.flatMap(generateServiceOperation(nameSpaces, resource, _, false))
       .map(_.build())
@@ -51,7 +137,7 @@ object SpringServices {
     //      .map(_.build())
     //      .foreach(implBuilder.addMethod)
     //Return the generated Service interface
-    Seq(GeneratorFSUtil.makeFile(implName.simpleName(), nameSpaces.service.path, nameSpaces.service.nameSpace, implBuilder))
+    Seq(GeneratorFSUtil.makeFile(implName.simpleName(), nameSpaces.service, implBuilder))
   }
 
   private def generateServiceMockTestOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec.Builder] = {
@@ -69,15 +155,28 @@ object SpringServices {
     } else {
       methodSpec.addModifiers(PUBLIC, ABSTRACT)
     }
+    methodSpec.addJavadoc(operation.description.getOrElse(""))
+    methodSpec.addJavadoc("\n")
+
+    methodSpec.addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
+    methodSpec.addJavadoc("\n")
+    methodSpec.addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
+
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)
   }
 
+  private def serviceParamJavadoc(nameSpaces: NameSpaces, parameter: Parameter): String = {
+    val paramName = JavaPojoUtil.toParamName(parameter.name, true)
+    val javaDataType = modelDataType(nameSpaces, parameter)
+    s"@param $paramName ${javaDataType.toString} ${parameter.description.getOrElse("")}".trim
+  }
+
   private def operationParamToServiceParam(nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
     val javaDataType = modelDataType(nameSpaces, parameter)
-    val builder = ParameterSpec.builder(javaDataType, paramName, FINAL)
+    val builder = ParameterSpec.builder(javaDataType, paramName)
     if (parameter.required || parameter.default.isDefined) builder.addAnnotation(AnotationUtil.notNull)
     builder.build()
   }

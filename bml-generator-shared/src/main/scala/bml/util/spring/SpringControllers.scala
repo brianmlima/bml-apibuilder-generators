@@ -6,7 +6,7 @@ import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.Get
 import io.apibuilder.spec.v0.models.ParameterLocation.{UNDEFINED, _}
-import io.apibuilder.spec.v0.models.{Operation, Parameter, ParameterLocation, Resource}
+import io.apibuilder.spec.v0.models.{Operation, Parameter, ParameterLocation, Resource, Service}
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
 
@@ -29,8 +29,7 @@ object SpringControllers {
   }
 
 
-  def generateController(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
-
+  def generateController(service: Service,nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val name = SpringControllers.toControllerName(resource)
     val builder = TypeSpec.classBuilder(name)
       .addAnnotation(ClassNames.controller)
@@ -44,19 +43,25 @@ object SpringControllers {
           .build()
       )
     //Generate Controller methods from operations
-    resource.operations.flatMap(SpringControllers.generateControllerOperation(nameSpaces, resource, _)).foreach(builder.addMethod)
+    resource.operations.flatMap(SpringControllers.generateControllerOperation(service,nameSpaces, resource, _)).foreach(builder.addMethod)
     //Return the generated Service interface
     Seq(GeneratorFSUtil.makeFile(name, nameSpaces.controller.path, nameSpaces.controller.nameSpace, builder))
   }
 
 
-  def generateControllerOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
+  def generateControllerOperation(service: Service,nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
       .returns(ClassNames.responseEntityOfObject)
+
+
+    val version=nameSpaces.base.nameSpace.split("\\.").last
+    val path=operation.path
+
+
     if (operation.method.equals(Get)) {
-      methodSpec.addAnnotation(AnotationUtil.getMappingJson(operation.path))
+      methodSpec.addAnnotation(AnotationUtil.getMappingJson(s"/$version$path"))
     }
     //Add Parameters
     operation.parameters.map(SpringControllers.operationParamToControllerParam(nameSpaces, _)).foreach(methodSpec.addParameter)

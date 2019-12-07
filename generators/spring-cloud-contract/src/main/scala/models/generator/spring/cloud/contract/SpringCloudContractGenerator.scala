@@ -2,7 +2,7 @@ package models.generator.spring.cloud.contract
 
 import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
-import bml.util.spring.SpringServices
+import bml.util.spring.SpringCloudContracts
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Resource, Service}
 import lib.generator.{CodeGenerator, GeneratorUtil}
@@ -20,7 +20,6 @@ class SpringCloudContractGenerator extends CodeGenerator with JavaPojoUtil {
       else None
     new Generator(form.service, header).generateSourceFiles()
   }
-
   class Generator(service: Service, header: Option[String]) {
     private val nameSpaces = new NameSpaces(service)
     //Resolves data types for built in types and models
@@ -28,6 +27,7 @@ class SpringCloudContractGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Run Generation
     def generateSourceFiles(): Seq[File] = {
+      SpringCloudContracts.baseTestClass(nameSpaces,service)++
       generateResources(service.resources)
     }
 
@@ -35,6 +35,10 @@ class SpringCloudContractGenerator extends CodeGenerator with JavaPojoUtil {
     def generateResources(resources: Seq[Resource]): Seq[File] = {
       Seq[File]()
     }
+
+
+
+
 
   }
 

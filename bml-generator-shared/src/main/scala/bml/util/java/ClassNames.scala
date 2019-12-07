@@ -1,6 +1,7 @@
 package bml.util.java
 
 import com.squareup.javapoet.{ClassName, ParameterizedTypeName}
+import lombok.Getter
 
 object ClassNames {
 
@@ -37,8 +38,6 @@ object ClassNames {
   val `override` = classOf[Override]
 
   val autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
-
-  val mediaType = ClassName.bestGuess("org.springframework.http.MediaType")
 
   val getMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
 
@@ -102,6 +101,44 @@ object ClassNames {
   val pageable: ClassName = ClassName.get("org.springframework.data.domain", "Pageable")
 
   val jsonProperty = ClassName.bestGuess("com.fasterxml.jackson.annotation.JsonProperty")
+
+  val extendWith = ClassName.bestGuess("org.junit.jupiter.api.extension.ExtendWith")
+
+  val springExtension = ClassName.bestGuess("org.springframework.test.context.junit.jupiter.SpringExtension")
+
+  val dirtiesContext = ClassName.bestGuess("org.springframework.test.annotation.DirtiesContext")
+
+  val autoConfigureMessageVerifier = ClassName.bestGuess("org.springframework.cloud.contract.verifier.messaging.boot.AutoConfigureMessageVerifier")
+
+  val getter = ClassName.get(classOf[Getter])
+
+  val list = ClassName.get("java.util","List")
+
+  val objectMapper = ClassName.get("com.fasterxml.jackson.databind","ObjectMapper")
+  val yAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml","YAMLFactory")
+  val immutableList = ClassName.get("com.google.common.collect","ImmutableList")
+  val bean = ClassName.get("org.springframework.context.annotation","Bean")
+  val configuration = ClassName.get("org.springframework.context.annotation","Configuration")
+  val primary = ClassName.get("org.springframework.context.annotation","Primary")
+  val mediaType = ClassName.get("org.springframework.http","MediaType")
+  val httpMessageConverter = ClassName.get("org.springframework.http.converter","HttpMessageConverter")
+  val mappingJackson2HttpMessageConverter = ClassName.get("org.springframework.http.converter.json","MappingJackson2HttpMessageConverter")
+  val enableWebSecurity = ClassName.get("org.springframework.security.config.annotation.web.configuration","EnableWebSecurity")
+  val component = ClassName.get("org.springframework.stereotype","Component")
+  val contentNegotiationConfigurer = ClassName.get("org.springframework.web.servlet.config.annotation","ContentNegotiationConfigurer")
+  val enableWebMvc = ClassName.get("org.springframework.web.servlet.config.annotation","EnableWebMvc")
+  val webMvcConfigurer = ClassName.get("org.springframework.web.servlet.config.annotation","WebMvcConfigurer")
+
+  //val  = ClassName.bestGuess("")
+
+
+
+
+
+
+
+
+
 
 
 }

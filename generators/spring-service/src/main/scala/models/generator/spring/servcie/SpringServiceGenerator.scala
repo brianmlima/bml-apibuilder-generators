@@ -4,7 +4,7 @@ import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
 import bml.util.spring.{MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Resource, Service}
+import io.apibuilder.spec.v0.models.Service
 import lib.generator.{CodeGenerator, GeneratorUtil}
 
 
@@ -24,27 +24,37 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
   }
 
   class Generator(service: Service, header: Option[String]) {
+
+
     private val nameSpaces = new NameSpaces(service)
     //Resolves data types for built in types and models
     private val datatypeResolver = GeneratorUtil.datatypeResolver(service)
 
     //Run Generation
     def generateSourceFiles(): Seq[File] = {
-      generateServices(service.resources) ++
-        generateControllers(service.resources) ++
+      generateServices(service) ++
+        generateControllers(service) ++
         MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
-        SpringBootApps.foo(nameSpaces, service)
+        SpringBootApps.foo(nameSpaces, service)++
+        generateBaseConfigration(service)
+
     }
 
     //Generates Services from Resources
-    def generateControllers(resources: Seq[Resource]): Seq[File] = {
-      resources.flatMap(SpringControllers.generateController(nameSpaces, _))
+    def generateControllers(service: Service): Seq[File] = {
+      service.resources.flatMap(SpringControllers.generateController(service,nameSpaces, _))
     }
 
     //Generates Services from Resources
-    def generateServices(resources: Seq[Resource]): Seq[File] = {
-      resources.flatMap(SpringServices.generateService(nameSpaces, _))
+    def generateServices(service: Service): Seq[File] = {
+      service.resources.flatMap(SpringServices.generateService(nameSpaces, _))
     }
+
+    def generateBaseConfigration(service: Service): Seq[File] = {
+      SpringServices.generateBaseConfiguration(nameSpaces,service)
+    }
+
+
 
   }
 

@@ -1,6 +1,6 @@
 package bml.util
 
-import com.google.googlejavaformat.java.Formatter
+import com.google.googlejavaformat.java.{Formatter, JavaFormatterOptions}
 import com.squareup.javapoet.{JavaFile, TypeSpec}
 import io.apibuilder.generator.v0.models.File
 import org.slf4j.LoggerFactory
@@ -21,7 +21,14 @@ object GeneratorFSUtil {
   def makeFile(name: String, path: String, nameSpace: String, builder: TypeSpec.Builder): File = {
     val javaFile = JavaFile.builder(nameSpace, builder.build)
     try {
-      File(s"${name}.java", Some(path), new Formatter().formatSource(javaFile.build.toString))
+
+
+      val options =JavaFormatterOptions.builder().style(JavaFormatterOptions.Style.GOOGLE).build()
+
+
+
+      File(s"${name}.java", Some(path), new Formatter(options).formatSource(javaFile.build.toString))
+//      File(s"${name}.java", Some(path), javaFile.build.toString)
     } catch {
       case x: com.google.googlejavaformat.java.FormatterException => {
         LOG.error(javaFile.build().toString)
