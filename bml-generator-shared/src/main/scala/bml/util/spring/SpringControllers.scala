@@ -29,9 +29,10 @@ object SpringControllers {
   }
 
 
-  def generateController(service: Service,nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+  def generateController(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val name = SpringControllers.toControllerName(resource)
     val builder = TypeSpec.classBuilder(name)
+      .addModifiers(PUBLIC)
       .addAnnotation(ClassNames.controller)
       .addAnnotation(ClassNames.slf4j)
       .addField(
@@ -43,21 +44,21 @@ object SpringControllers {
           .build()
       )
     //Generate Controller methods from operations
-    resource.operations.flatMap(SpringControllers.generateControllerOperation(service,nameSpaces, resource, _)).foreach(builder.addMethod)
+    resource.operations.flatMap(SpringControllers.generateControllerOperation(service, nameSpaces, resource, _)).foreach(builder.addMethod)
     //Return the generated Service interface
     Seq(GeneratorFSUtil.makeFile(name, nameSpaces.controller.path, nameSpaces.controller.nameSpace, builder))
   }
 
 
-  def generateControllerOperation(service: Service,nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
+  def generateControllerOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
       .returns(ClassNames.responseEntityOfObject)
 
 
-    val version=nameSpaces.base.nameSpace.split("\\.").last
-    val path=operation.path
+    val version = nameSpaces.base.nameSpace.split("\\.").last
+    val path = operation.path
 
 
     if (operation.method.equals(Get)) {

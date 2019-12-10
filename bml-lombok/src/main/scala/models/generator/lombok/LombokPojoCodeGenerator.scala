@@ -1,15 +1,20 @@
 package models.generator.lombok
 
-import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil}
-import bml.util.{AnotationUtil, FieldUtil}
+import bml.util.java.ClassNames.{builder, _}
+import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil}
+import bml.util.{AnotationUtil, FieldUtil, NameSpaces}
+import bml.util.GeneratorFSUtil.makeFile
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
-import javax.lang.model.element.Modifier
+import io.apibuilder.spec.v0.models.{Attribute, Enum, Field, Model, Service, Union}
+import javax.lang.model.element.Modifier._
 import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
+import org.checkerframework.checker.units.qual.min
 import play.api.Logger
+import lib.Text._
+import org.apache.commons.lang3.StringUtils
 
 import scala.collection.JavaConverters._
 
@@ -33,6 +38,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
 
   class Generator(service: Service, header: Option[String]) {
+
+
+    private val nameSpaces = new NameSpaces(service)
 
     private val nameSpace = makeNameSpace(service.namespace)
     private val modelsNameSpace = nameSpace + ".models"
@@ -72,21 +80,21 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       //        generatedResolvers
     }
 
-//    def generateResources(resources: Seq[Resource]): Seq[File] = {
-//      //Resolves data types for built in types and models
-//      val datatypeResolver = GeneratorUtil.datatypeResolver(service)
-//
-//      def generateOperation(resource: Resource, operation: Operation): Option[MethodSpec] = {
-//        //val gqlMethodModel = GqlMethodModel(datatypeResolver,)
-//        Option.empty
-//      }
-//
-//      val methodSpecs = resources.map(resource => resource.operations.map(generateOperation(resource, _))).flatten.flatten
-//      val interfaceName = toClassName("query_resolver")
-//      var builder = TypeSpec.interfaceBuilder(interfaceName)
-//      methodSpecs.foreach(builder.addMethod)
-//      Seq(makeFile(interfaceName, builder))
-//    }
+    //    def generateResources(resources: Seq[Resource]): Seq[File] = {
+    //      //Resolves data types for built in types and models
+    //      val datatypeResolver = GeneratorUtil.datatypeResolver(service)
+    //
+    //      def generateOperation(resource: Resource, operation: Operation): Option[MethodSpec] = {
+    //        //val gqlMethodModel = GqlMethodModel(datatypeResolver,)
+    //        Option.empty
+    //      }
+    //
+    //      val methodSpecs = resources.map(resource => resource.operations.map(generateOperation(resource, _))).flatten.flatten
+    //      val interfaceName = toClassName("query_resolver")
+    //      var builder = TypeSpec.interfaceBuilder(interfaceName)
+    //      methodSpecs.foreach(builder.addMethod)
+    //      Seq(makeFile(interfaceName, builder))
+    //    }
 
 
     def generateEnum(enum: Enum): File = {
@@ -109,41 +117,46 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         if (value.description.isDefined) enumValBuilder.addJavadoc(value.description.get)
         builder.addEnumConstant(toEnumName(value.name), enumValBuilder.build())
       })
-      makeFile(className, builder)
+
+      makeFile(className, nameSpaces.model, builder)
+
+      //makeFile(className, builder)
 
     }
 
     def generateUnionType(union: Union): File = {
       val className = toClassName(union.name)
       val builder = TypeSpec.interfaceBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
+        .addModifiers(PUBLIC)
         .addJavadoc(apiDocComments)
       union.description.map(builder.addJavadoc(_))
-      makeFile(className, builder)
+
+      makeFile(className, nameSpaces.model, builder)
     }
 
     def generateModel(model: Model, relatedUnions: Seq[Union]): File = {
       val className = toClassName(model.name)
-      logger.info("Generating Model Class ${className}")
+      logger.info(s"Generating Model Class ${className}")
 
-      def addDataClassAnnotations(builder: TypeSpec.Builder) {
-        builder.addAnnotation(AnnotationSpec.builder(classOf[Accessors])
+      def addDataClassAnnotations(classBuilder: TypeSpec.Builder) {
+        classBuilder.addAnnotation(AnnotationSpec.builder(classOf[Accessors])
           .addMember("fluent", CodeBlock.builder().add("true").build).build())
-          .addAnnotation(classOf[lombok.Builder])
-          .addAnnotation(classOf[lombok.AllArgsConstructor])
-          .addAnnotation(classOf[lombok.NoArgsConstructor])
+          .addAnnotation(builder)
+          .addAnnotation(allArgsConstructor)
+          .addAnnotation(noArgsConstructor)
+          .addAnnotation(fieldNameConstants)
           .addAnnotation(
             AnnotationSpec.builder(classOf[JsonIgnoreProperties])
               .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
           )
       }
 
-      val builder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
+      val classBuilder = TypeSpec.classBuilder(className)
+        .addModifiers(PUBLIC)
         .addJavadoc(apiDocComments)
 
-      model.description.map(builder.addJavadoc(_))
-      addDataClassAnnotations(builder)
+      model.description.map(classBuilder.addJavadoc(_))
+      addDataClassAnnotations(classBuilder)
       //Eventually do something with the model attributes.
       model.attributes.foreach(attribute => {
         attribute.name match {
@@ -151,17 +164,17 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
       })
 
-      val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
-      val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
+      val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
+      val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
       val unionClassTypeNames = relatedUnions.map { u => ClassName.get(modelsNameSpace, toClassName(u.name)) }
-      builder.addSuperinterfaces(unionClassTypeNames.asJava)
+      classBuilder.addSuperinterfaces(unionClassTypeNames.asJava)
       //      val shouldAnnotateAsDyanmoDb = isDynamoDbModel(model)
 
       model.fields.foreach(field => {
         val javaDataType = dataTypeFromField(field.`type`, modelsNameSpace)
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
-          .addModifiers(Modifier.PROTECTED)
+          .addModifiers(PROTECTED)
           .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
           .addAnnotation(ClassNames.getter)
 
@@ -174,7 +187,33 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           fieldBuilder.addAnnotation(AnotationUtil.notNull)
         }
         if (field.minimum.isDefined || field.maximum.isDefined) {
-          fieldBuilder.addAnnotation(AnotationUtil.size(field.minimum, field.maximum))
+
+          def handleSizeAttribute(field: Field) = {
+            logger.info("handleSizeAttribute")
+            val isString = (field.`type` == "string")
+            val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
+            val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
+            val spec = AnnotationSpec.builder(ClassNames.size)
+            if (field.minimum.isDefined) {
+              spec.addMember("min", "$L", minStaticParamName)
+              classBuilder.addField(
+                FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
+                  .initializer("$L", field.minimum.get.toInt.toString)
+                  .build()
+              )
+            }
+            if (field.maximum.isDefined) {
+              spec.addMember("max", "$L", maxStaticParamName)
+              classBuilder.addField(
+                FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
+                  .initializer("$L", field.maximum.get.toString)
+                  .build()
+              )
+            }
+            spec.build()
+          }
+
+          fieldBuilder.addAnnotation(handleSizeAttribute(field))
         }
 
 
@@ -187,10 +226,8 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         ///////////////////////////////////////
 
         field.attributes.foreach(attribute => {
+          logger.info(s"Working on Attribute ${attribute.name}")
           attribute.name match {
-            case "size" => {
-              fieldBuilder.addAnnotation(AnotationUtil.size(attribute))
-            }
             case "pattern" => {
               fieldBuilder.addAnnotation(AnotationUtil.pattern(attribute))
             }
@@ -200,10 +237,11 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             case _ =>
           }
         })
-        builder.addField(fieldBuilder.build)
+        classBuilder.addField(fieldBuilder.build)
       })
-      makeFile(className, builder)
+      makeFile(className, nameSpaces.model, classBuilder)
     }
+
 
     private def toMap(cc: AnyRef): Map[String, Any] =
       (Map[String, Any]() /: cc.getClass.getDeclaredFields) { (a, f) =>
@@ -224,10 +262,36 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       m.group(1).toUpperCase()
     })
 
-    def makeFile(name: String, builder: TypeSpec.Builder): File = {
-      File(s"${name}.java", Some(modelsDirectoryPath), JavaFile.builder(modelsNameSpace, builder.build).build.toString)
-    }
+    //def makeFile(name: String, builder: TypeSpec.Builder): File = {
+    //      makeFile(name, nameSpaces.model, builder)
+    //}
 
   }
+
+  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
+    logger.info("handleSizeAttribute")
+    val isString = (field.`type` == "string")
+    val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
+    val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
+    val spec = AnnotationSpec.builder(ClassNames.size)
+    if (field.minimum.isDefined) {
+      spec.addMember("min", "$L", minStaticParamName)
+      classSpec.addField(
+        FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
+          .initializer("$L", field.minimum.get.toInt.toString)
+          .build()
+      )
+    }
+    if (field.maximum.isDefined) {
+      spec.addMember("max", "$L", maxStaticParamName)
+      classSpec.addField(
+        FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
+          .initializer("$L", field.maximum.get.toString)
+          .build()
+      )
+    }
+    spec.build()
+  }
+
 
 }

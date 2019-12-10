@@ -1,5 +1,6 @@
 package models.generator.java.persistence.sql
 
+import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.JavaPojoUtil
 import com.squareup.javapoet.{ClassName, TypeSpec}
 import io.apibuilder.generator.v0.models.File

@@ -1,8 +1,7 @@
 package bml.util.java
 
-import bml.util.GeneratorFSUtil
+import bml.util.{GeneratorFSUtil, JavaNameSpace}
 import com.squareup.javapoet._
-import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import lib.Text
 
@@ -17,6 +16,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
   def textToComment(text: Seq[String]): String = {
     "/**\n * " + text.mkString("\n * ") + "\n */"
+  }
+
+  def toClassName(model: Model): String = {
+    toClassName(model.name)
   }
 
   def toClassName(modelName: String): String = {
@@ -36,14 +39,27 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     }
   }
 
+  def toStaticFieldName(fieldName: String): String = {
+    //Produce all caps snake case
+    val cleanedName = fieldName.split("\\.").last
+    Text.safeName(Text.splitIntoWords(cleanedName).map {
+      _.toUpperCase()
+    }.mkString("_"))
+  }
+
+
+  def toBuilderClassName(className: ClassName): ClassName = {
+    ClassName.get(className.packageName() + '.' + className.simpleName(), className.simpleName() + "Builder")
+  }
+
 
   /**
-    * Because we put enums models directory and package (scala client does the same), we need to replace
-    * a.b.c.d.enums.EnumName with a.b.c.d.models.EnumName
-    *
-    * @param str
-    * @return
-    */
+   * Because we put enums models directory and package (scala client does the same), we need to replace
+   * a.b.c.d.enums.EnumName with a.b.c.d.models.EnumName
+   *
+   * @param str
+   * @return
+   */
 
   def replaceEnumsPrefixWithModels(str: String): String = {
     val arr = str.split("\\.")
@@ -102,11 +118,19 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   )
 
 
+  def dataTypeFromField(field: Field, nameSpace: JavaNameSpace): TypeName = {
+    dataTypeFromField(field.`type`, nameSpace.nameSpace)
+  }
+
+  def dataTypeFromField(`type`: String, nameSpace: JavaNameSpace): TypeName = {
+    dataTypeFromField(`type`, nameSpace.nameSpace)
+  }
+
   def dataTypeFromField(`type`: String, modelsNameSpace: String): TypeName = {
     dataTypes.get(`type`).getOrElse {
       //Helps with external mapped classes IE imports
       val hasNamespace = `type`.contains(".")
-      val nameSpace = if(hasNamespace)  `type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
+      val nameSpace = if (hasNamespace) `type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
 
       val name = toParamName(`type`, false)
       if (isParameterArray(`type`))
@@ -117,6 +141,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
         ClassName.get(nameSpace, name)
 
     }
+  }
+
+  def toFieldName(field: Field): String = {
+    toParamName(field.name, true)
   }
 
   def toParamName(modelName: String, startingWithLowercase: Boolean): String = {
@@ -161,9 +189,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   //Legacy to keep up the contract for older stuffs.
   def createDirectoryPath(namespace: String): String = GeneratorFSUtil.createDirectoryPath(namespace)
 
-  def makeFile(name: String, path: String, nameSpace: String, builder: TypeSpec.Builder): File = {
-    GeneratorFSUtil.makeFile(name, path, nameSpace, builder)
-  }
+  //  def makeFile(name: String, path: String, nameSpace: String, builder: TypeSpec.Builder): File = {
+  //    GeneratorFSUtil.makeFile(name, path, nameSpace, builder)
+  //  }
+
 
   def hasValidation(model: Model): Boolean = {
     model.fields.find((field) => {

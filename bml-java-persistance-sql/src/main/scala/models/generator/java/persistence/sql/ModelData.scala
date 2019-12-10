@@ -1,5 +1,6 @@
 package models.generator.java.persistence.sql
 
+import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java._
 import bml.util.persist.PersistModelAttribute
 import com.squareup.javapoet.{ClassName, TypeName, TypeSpec}

@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -54,7 +54,11 @@ lazy val bmlGeneratorShared = project
   .settings(commonSettings: _*)
   .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
-
+lazy val bmlLombokTest = project
+  .in(file("generators/bml-lombok-test"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
 lazy val springServiceGenerator = project
   .in(file("generators/spring-service"))
