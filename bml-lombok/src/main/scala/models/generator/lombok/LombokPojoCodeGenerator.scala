@@ -124,6 +124,8 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           AnnotationSpec.builder(classOf[JsonIgnoreProperties])
             .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
         )
+      // Add in static booleans for each field to tell if the field is required.
+      model.fields.foreach(JavaPojos.handleRequiredFieldAddition(classBuilder, _))
 
       val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
       val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
@@ -208,31 +210,5 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
     //}
 
   }
-
-  //  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
-  //    logger.info("handleSizeAttribute")
-  //    val isString = (field.`type` == "string")
-  //    val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
-  //    val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
-  //    val spec = AnnotationSpec.builder(ClassNames.size)
-  //    if (field.minimum.isDefined) {
-  //      spec.addMember("min", "$L", minStaticParamName)
-  //      classSpec.addField(
-  //        FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
-  //          .initializer("$L", field.minimum.get.toInt.toString)
-  //          .build()
-  //      )
-  //    }
-  //    if (field.maximum.isDefined) {
-  //      spec.addMember("max", "$L", maxStaticParamName)
-  //      classSpec.addField(
-  //        FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
-  //          .initializer("$L", field.maximum.get.toString)
-  //          .build()
-  //      )
-  //    }
-  //    spec.build()
-  //  }
-
 
 }

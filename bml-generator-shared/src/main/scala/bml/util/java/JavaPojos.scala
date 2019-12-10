@@ -1,13 +1,15 @@
 package bml.util.java
 
-import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeName, TypeSpec}
+
 import io.apibuilder.spec.v0.models.{Enum, Field}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.size
-import com.squareup.javapoet.TypeName.INT
+import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeSpec}
+import com.squareup.javapoet.TypeName.{INT, BOOLEAN}
 import io.apibuilder.generator.v0.models.File
+import javax.print.DocFlavor.STRING
 import net.bytebuddy.implementation.bytecode.Throw
 import play.api.Logger
 import play.api.libs.json.JsResult.Exception
@@ -15,16 +17,35 @@ import play.api.libs.json.JsResult.Exception
 import scala.collection.JavaConverters._
 
 object JavaPojos {
-  val LOG: Logger = Logger.apply(this.getClass())
+  private val LOG: Logger = Logger.apply(this.getClass())
 
+  def toMinFieldStaticFieldName(field: Field): String = {
+    toStaticFieldName(field.name) + "_MIN" + (if (field.`type` == "string") "_LENGTH" else "_SIZE")
+  }
 
+  def toMaxFieldStaticFieldName(field: Field): String = {
+    toStaticFieldName(field.name) + "_MAX" + (if (field.`type` == "string") "_LENGTH" else "_SIZE")
+  }
 
+  def requiredFieldStaticFieldName(field: Field): String = {
+    toStaticFieldName(field.name) + "_REQUIRED"
+  }
+
+  def handleRequiredFieldAddition(classSpec: TypeSpec.Builder, field: Field): Unit = {
+    val staticParamName = requiredFieldStaticFieldName(field)
+    classSpec.addField(
+      FieldSpec.builder(BOOLEAN, staticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.required.toString)
+        .addJavadoc(s" Is the field ${JavaPojoUtil.toParamName(field.name, true)} is a required. Useful for reflection test rigging.")
+        .build()
+    )
+  }
 
 
   def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
     val isString = (field.`type` == "string")
-    val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
-    val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
+
+    val minStaticParamName = toMinFieldStaticFieldName(field)
+    val maxStaticParamName = toMaxFieldStaticFieldName(field)
     val spec = AnnotationSpec.builder(size)
 
     val hasMin = field.minimum.isDefined
@@ -34,7 +55,9 @@ object JavaPojos {
       LOG.info("field.minimum.isDefined")
       spec.addMember("min", "$L", minStaticParamName)
       classSpec.addField(
-        FieldSpec.builder(INT, minStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.minimum.getOrElse(1).toString).build()
+        FieldSpec.builder(INT, minStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.minimum.getOrElse(1).toString)
+          .addJavadoc(s"The minimum ${if (isString) "length" else "size"} of the field ${JavaPojoUtil.toParamName(field.name, true)}. Useful for reflection test rigging.")
+          .build()
       )
     }
 
@@ -42,7 +65,9 @@ object JavaPojos {
       LOG.info("{} field.maximum.isDefined=true")
       spec.addMember("max", "$L", maxStaticParamName)
       classSpec.addField(
-        FieldSpec.builder(INT, maxStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.maximum.get.toString).build()
+        FieldSpec.builder(INT, maxStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.maximum.get.toString)
+          .addJavadoc(s"The maximum ${if (isString) "length" else "size"} of the field ${JavaPojoUtil.toParamName(field.name, true)}. Useful for reflection test rigging.")
+          .build()
       )
     } else {
       throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
