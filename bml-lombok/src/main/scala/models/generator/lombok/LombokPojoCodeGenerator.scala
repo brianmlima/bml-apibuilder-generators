@@ -59,77 +59,41 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
     def createDirectoryPath(namespace: String) = namespace.replace('.', '/')
 
     def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
-
       val errors = SpecValidation.validate(service: Service, header: Option[String])
-
       if (errors.isDefined) {
         return Left(errors.get)
       }
-      //Build enum classes
-      val generatedEnums = service.enums.map {
-        generateEnum
-      }
 
-      //Build Union Types
-      val generatedUnionTypes = service.unions.map {
-        generateUnionType
-      }
+      Right(generateEnums(service) ++
+        generateUnionTypes(service) ++
+        generateModels(service))
+    }
 
-      val generatedModels = service.models.map { model =>
+    def generateEnums(service: Service): Seq[File] = {
+      service.enums.map(generateEnum)
+    }
+
+    def generateModels(service: Service): Seq[File] = {
+      service.models.map { model =>
         val relatedUnions = service.unions.filter(_.types.exists(_.`type` == model.name))
         generateModel(model, relatedUnions)
       }
-
-      //      val generatedResolvers = generateResources(service.resources)
-
-      Right(generatedEnums ++
-        generatedUnionTypes ++
-        generatedModels)
-      //        generatedResolvers
     }
 
-    //    def generateResources(resources: Seq[Resource]): Seq[File] = {
-    //      //Resolves data types for built in types and models
-    //      val datatypeResolver = GeneratorUtil.datatypeResolver(service)
-    //
-    //      def generateOperation(resource: Resource, operation: Operation): Option[MethodSpec] = {
-    //        //val gqlMethodModel = GqlMethodModel(datatypeResolver,)
-    //        Option.empty
-    //      }
-    //
-    //      val methodSpecs = resources.map(resource => resource.operations.map(generateOperation(resource, _))).flatten.flatten
-    //      val interfaceName = toClassName("query_resolver")
-    //      var builder = TypeSpec.interfaceBuilder(interfaceName)
-    //      methodSpecs.foreach(builder.addMethod)
-    //      Seq(makeFile(interfaceName, builder))
-    //    }
+    def generateUnionTypes(service: Service): Seq[File] = {
+      service.unions.map(generateUnionType)
+    }
 
 
     def generateEnum(enum: Enum): File = {
-
       val className = toClassName(enum.name)
-
-      //val stringValueParam = "value"
-
-
       val builder = JavaEnums.standardEnumBuilder(enum, apiDocComments)
-
-      enum.attributes.foreach(attribute => {
-        attribute.name match {
-          case _ => {}
-        }
-      })
-
       enum.values.foreach(value => {
         val enumValBuilder = TypeSpec.anonymousClassBuilder("$S", value.name)
         if (value.description.isDefined) enumValBuilder.addJavadoc(value.description.get)
         builder.addEnumConstant(toEnumName(value.name), enumValBuilder.build())
       })
-
       makeFile(className, nameSpaces.model, builder)
-
-      //makeFile(className, builder)
-
     }
 
     def generateUnionType(union: Union): File = {
@@ -138,7 +102,6 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addModifiers(PUBLIC)
         .addJavadoc(apiDocComments)
       union.description.map(builder.addJavadoc(_))
-
       makeFile(className, nameSpaces.model, builder)
     }
 
@@ -146,31 +109,21 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       val className = toClassName(model.name)
       logger.info(s"Generating Model Class ${className}")
 
-      def addDataClassAnnotations(classBuilder: TypeSpec.Builder) {
-        classBuilder.addAnnotation(AnnotationSpec.builder(classOf[Accessors])
-          .addMember("fluent", CodeBlock.builder().add("true").build).build())
-          .addAnnotation(builder)
-          .addAnnotation(allArgsConstructor)
-          .addAnnotation(noArgsConstructor)
-          .addAnnotation(fieldNameConstants)
-          .addAnnotation(
-            AnnotationSpec.builder(classOf[JsonIgnoreProperties])
-              .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
-          )
-      }
-
       val classBuilder = TypeSpec.classBuilder(className)
         .addModifiers(PUBLIC)
         .addJavadoc(apiDocComments)
-
-      model.description.map(classBuilder.addJavadoc(_))
-      addDataClassAnnotations(classBuilder)
-      //Eventually do something with the model attributes.
-      model.attributes.foreach(attribute => {
-        attribute.name match {
-          case _ => {}
-        }
-      })
+        .addJavadoc("\n")
+        .addJavadoc(model.description.getOrElse(""))
+        .addAnnotation(AnnotationSpec.builder(classOf[Accessors])
+          .addMember("fluent", CodeBlock.builder().add("true").build).build())
+        .addAnnotations(
+          Seq(builder, allArgsConstructor, noArgsConstructor, fieldNameConstants)
+            .map(AnnotationSpec.builder(_).build()).asJava
+        )
+        .addAnnotation(
+          AnnotationSpec.builder(classOf[JsonIgnoreProperties])
+            .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
+        )
 
       val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
       val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)

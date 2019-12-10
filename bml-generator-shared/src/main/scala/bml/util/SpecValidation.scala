@@ -7,13 +7,25 @@ import lombok.extern.slf4j.Slf4j
 object SpecValidation {
   def validate(service: Service, header: Option[String]): Option[Seq[String]] = {
     val errors =
-      (checkAllPathVarOperationsHave404(service) ++
-        checkAllFieldsWithMinRequirementHaveAMax(service))
+      checkAllPathVarOperationsHave404(service) ++
+        checkAllFieldsWithMinRequirementHaveAMax(service) ++
+        checkAllModelsHaveADescription(service)
     if (errors.isEmpty) {
       None
     } else {
       Some(errors)
     }
+  }
+
+  def checkAllModelsHaveADescription(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        if (model.description.isEmpty) {
+          out = out ++ Seq(s"ERROR: All Models must have a description. Service='${service.name}' Model '${model.name}'")
+        }
+    )
+    out
   }
 
   def checkAllFieldsWithMinRequirementHaveAMax(service: Service): Seq[String] = {

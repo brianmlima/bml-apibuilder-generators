@@ -1,11 +1,13 @@
 package bml.util.java
 
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeName, TypeSpec}
-import io.apibuilder.spec.v0.models.Field
+import io.apibuilder.spec.v0.models.{Enum, Field}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
+import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.size
 import com.squareup.javapoet.TypeName.INT
+import io.apibuilder.generator.v0.models.File
 import net.bytebuddy.implementation.bytecode.Throw
 import play.api.Logger
 import play.api.libs.json.JsResult.Exception
@@ -14,6 +16,10 @@ import scala.collection.JavaConverters._
 
 object JavaPojos {
   val LOG: Logger = Logger.apply(this.getClass())
+
+
+
+
 
   def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
     val isString = (field.`type` == "string")
