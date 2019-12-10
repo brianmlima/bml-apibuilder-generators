@@ -1,8 +1,11 @@
 package models.generator.lombok
 
+import java.lang.IllegalArgumentException
+
+import bml.util.AnotationUtil.singular
 import bml.util.java.ClassNames.{builder, _}
-import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil}
-import bml.util.{AnotationUtil, FieldUtil, NameSpaces}
+import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil, JavaPojos}
+import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
 import bml.util.GeneratorFSUtil.makeFile
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
@@ -12,9 +15,11 @@ import javax.lang.model.element.Modifier._
 import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
 import org.checkerframework.checker.units.qual.min
-import play.api.Logger
+import play.api.{Logger, PlayException, UsefulException}
 import lib.Text._
 import org.apache.commons.lang3.StringUtils
+import views.html.defaultpages
+import views.html.defaultpages.error
 
 import scala.collection.JavaConverters._
 
@@ -24,12 +29,11 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
   def getJavaDocFileHeader(): String //abstract
 
-
   override def invoke(form: InvocationForm): Either[Seq[String], Seq[File]] = invoke(form, addHeader = true)
 
-  def invoke(form: InvocationForm, addHeader: Boolean = false): Either[Seq[String], Seq[File]] = Right(generateCode(form, addHeader))
+  def invoke(form: InvocationForm, addHeader: Boolean = false): Either[Seq[String], Seq[File]] = generateCode(form, addHeader)
 
-  private def generateCode(form: InvocationForm, addHeader: Boolean = true): Seq[File] = {
+  private def generateCode(form: InvocationForm, addHeader: Boolean = true): Either[Seq[String], Seq[File]] = {
     val header =
       if (addHeader) Some(new ApidocComments(form.service.version, form.userAgent).forClassFile)
       else None
@@ -38,7 +42,6 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
 
   class Generator(service: Service, header: Option[String]) {
-
 
     private val nameSpaces = new NameSpaces(service)
 
@@ -55,8 +58,13 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
     def createDirectoryPath(namespace: String) = namespace.replace('.', '/')
 
-    def generateSourceFiles() = {
+    def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
 
+      val errors = SpecValidation.validate(service: Service, header: Option[String])
+
+      if (errors.isDefined) {
+        return Left(errors.get)
+      }
       //Build enum classes
       val generatedEnums = service.enums.map {
         generateEnum
@@ -74,9 +82,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       //      val generatedResolvers = generateResources(service.resources)
 
-      generatedEnums ++
+      Right(generatedEnums ++
         generatedUnionTypes ++
-        generatedModels
+        generatedModels)
       //        generatedResolvers
     }
 
@@ -176,10 +184,10 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(PROTECTED)
           .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
-          .addAnnotation(ClassNames.getter)
+          .addAnnotation(getter)
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
-          fieldBuilder.addAnnotation(AnotationUtil.singular)
+          fieldBuilder.addAnnotation(singular)
         }
 
 
@@ -187,33 +195,13 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           fieldBuilder.addAnnotation(AnotationUtil.notNull)
         }
         if (field.minimum.isDefined || field.maximum.isDefined) {
-
-          def handleSizeAttribute(field: Field) = {
-            logger.info("handleSizeAttribute")
-            val isString = (field.`type` == "string")
-            val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
-            val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
-            val spec = AnnotationSpec.builder(ClassNames.size)
-            if (field.minimum.isDefined) {
-              spec.addMember("min", "$L", minStaticParamName)
-              classBuilder.addField(
-                FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
-                  .initializer("$L", field.minimum.get.toInt.toString)
-                  .build()
-              )
+          try {
+            fieldBuilder.addAnnotation(JavaPojos.handleSizeAttribute(classBuilder, field))
+          } catch {
+            case x: IllegalArgumentException => {
+              throw new PlayException("Validation Issue", x.getMessage, x)
             }
-            if (field.maximum.isDefined) {
-              spec.addMember("max", "$L", maxStaticParamName)
-              classBuilder.addField(
-                FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
-                  .initializer("$L", field.maximum.get.toString)
-                  .build()
-              )
-            }
-            spec.build()
           }
-
-          fieldBuilder.addAnnotation(handleSizeAttribute(field))
         }
 
 
@@ -268,30 +256,30 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
   }
 
-  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
-    logger.info("handleSizeAttribute")
-    val isString = (field.`type` == "string")
-    val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
-    val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
-    val spec = AnnotationSpec.builder(ClassNames.size)
-    if (field.minimum.isDefined) {
-      spec.addMember("min", "$L", minStaticParamName)
-      classSpec.addField(
-        FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
-          .initializer("$L", field.minimum.get.toInt.toString)
-          .build()
-      )
-    }
-    if (field.maximum.isDefined) {
-      spec.addMember("max", "$L", maxStaticParamName)
-      classSpec.addField(
-        FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
-          .initializer("$L", field.maximum.get.toString)
-          .build()
-      )
-    }
-    spec.build()
-  }
+  //  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field) = {
+  //    logger.info("handleSizeAttribute")
+  //    val isString = (field.`type` == "string")
+  //    val minStaticParamName = toStaticFieldName(field.name) + "_MIN" + (if (isString) "_LENGTH" else "_SIZE")
+  //    val maxStaticParamName = toStaticFieldName(field.name) + "_MAX" + (if (isString) "_LENGTH" else "_SIZE")
+  //    val spec = AnnotationSpec.builder(ClassNames.size)
+  //    if (field.minimum.isDefined) {
+  //      spec.addMember("min", "$L", minStaticParamName)
+  //      classSpec.addField(
+  //        FieldSpec.builder(TypeName.INT, minStaticParamName, PUBLIC, STATIC, FINAL)
+  //          .initializer("$L", field.minimum.get.toInt.toString)
+  //          .build()
+  //      )
+  //    }
+  //    if (field.maximum.isDefined) {
+  //      spec.addMember("max", "$L", maxStaticParamName)
+  //      classSpec.addField(
+  //        FieldSpec.builder(TypeName.INT, maxStaticParamName, PUBLIC, STATIC, FINAL)
+  //          .initializer("$L", field.maximum.get.toString)
+  //          .build()
+  //      )
+  //    }
+  //    spec.build()
+  //  }
 
 
 }
