@@ -1,13 +1,13 @@
 package bml.util.java
 
 
-import io.apibuilder.spec.v0.models.{Enum, Field}
+import io.apibuilder.spec.v0.models.{Enum, Field, Model}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
 import bml.util.GeneratorFSUtil.makeFile
-import bml.util.java.ClassNames.size
+import bml.util.java.ClassNames.{arrays, collections, linkedList, size, string}
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeSpec}
-import com.squareup.javapoet.TypeName.{INT, BOOLEAN}
+import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
 import io.apibuilder.generator.v0.models.File
 import javax.print.DocFlavor.STRING
 import net.bytebuddy.implementation.bytecode.Throw
@@ -38,6 +38,23 @@ object JavaPojos {
         .addJavadoc(s" Is the field ${JavaPojoUtil.toParamName(field.name, true)} is a required. Useful for reflection test rigging.")
         .build()
     )
+  }
+
+  def makeRequiredFieldsField(model: Model): FieldSpec = {
+    val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name).seq
+    val fieldSpec = FieldSpec.builder(ClassNames.list(string), "REQUIRED_FIELDS", PUBLIC, STATIC, FINAL)
+    if (fieldNames.isEmpty) {
+      fieldSpec.initializer("$T.emptyList", collections)
+    } else {
+      fieldSpec.initializer(
+        "$T.unmodifiableList(new $T($T.asList($L)))",
+        collections,
+        linkedList(string),
+        arrays,
+        fieldNames.map(name => "\"" + name + "\"").mkString(",")
+      )
+    }
+    fieldSpec.build()
   }
 
 

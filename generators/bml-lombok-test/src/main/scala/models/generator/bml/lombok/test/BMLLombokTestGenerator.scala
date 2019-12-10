@@ -34,7 +34,8 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
       generateFixtureBuilders() ++
         Seq[File](
           LoremTooling.generateLoremTool(nameSpaces),
-          TestSuppliers.testSuppliers(nameSpaces)
+          TestSuppliers.testSuppliers(nameSpaces),
+          JavaPojoTestFixtures.makeLanguages(nameSpaces: NameSpaces)
         )
     }
 

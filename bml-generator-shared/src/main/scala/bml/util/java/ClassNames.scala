@@ -1,5 +1,6 @@
 package bml.util.java
 
+import java.util
 import java.util.{Locale, Random, UUID}
 
 import com.squareup.javapoet.{ClassName, ParameterizedTypeName, TypeName}
@@ -21,12 +22,36 @@ object ClassNames {
   val uuid = ClassName.get(classOf[UUID])
 
   def supplier(className: ClassName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(ClassNames.supplier, className)
+    ParameterizedTypeName.get(supplier, className)
   }
 
   def supplier(typeName: TypeName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(ClassNames.supplier, typeName)
+    ParameterizedTypeName.get(supplier, typeName)
   }
+
+  val list = ClassName.get("java.util", "List")
+
+  def list(className: ClassName): ParameterizedTypeName = {
+    ParameterizedTypeName.get(list, className)
+  }
+
+  def list(typeName: TypeName): ParameterizedTypeName = {
+    ParameterizedTypeName.get(list, typeName)
+  }
+
+
+  val linkedList = ClassName.get("java.util", "LinkedList")
+
+  def linkedList(className: ClassName): ParameterizedTypeName = {
+    ParameterizedTypeName.get(linkedList, className)
+  }
+
+  def linkedList(typeName: TypeName): ParameterizedTypeName = {
+    ParameterizedTypeName.get(linkedList, typeName)
+  }
+
+  val arrays = ClassName.get("java.util", "Arrays")
+  val math = ClassName.get(classOf[Math])
 
   val illegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
 
@@ -35,6 +60,7 @@ object ClassNames {
 
   val randomUtils = ClassName.get("org.apache.commons.lang3", "RandomUtils")
 
+  val stringBuilder = ClassName.get("java.lang", "StringBuilder")
 
   //####################################################################################################################
   // BEGIN Spring ######################################################################################################
@@ -126,8 +152,6 @@ object ClassNames {
 
   val autoConfigureMessageVerifier = ClassName.bestGuess("org.springframework.cloud.contract.verifier.messaging.boot.AutoConfigureMessageVerifier")
 
-
-  val list = ClassName.get("java.util", "List")
 
   val objectMapper = ClassName.get("com.fasterxml.jackson.databind", "ObjectMapper")
   val yAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLFactory")

@@ -124,8 +124,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           AnnotationSpec.builder(classOf[JsonIgnoreProperties])
             .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
         )
+        .addField(JavaPojos.makeRequiredFieldsField(model))
       // Add in static booleans for each field to tell if the field is required.
-      model.fields.foreach(JavaPojos.handleRequiredFieldAddition(classBuilder, _))
+      //model.fields.foreach(JavaPojos.handleRequiredFieldAddition(classBuilder, _))
 
       val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
       val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)

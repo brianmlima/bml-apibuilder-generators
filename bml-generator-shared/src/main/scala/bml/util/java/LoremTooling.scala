@@ -1,7 +1,8 @@
 package bml.util.java
 
+import akka.http.scaladsl.model.headers.CacheDirectives.public
 import bml.util.GeneratorFSUtil.makeFile
-import bml.util.NameSpaces
+import bml.util.{NameSpaces, Param}
 import bml.util.java.ClassNames.{illegalArgumentException, locale, loremIpsum, randomUtils, string, utilityClass}
 import com.squareup.javapoet.MethodSpec.methodBuilder
 import com.squareup.javapoet.TypeName.{DOUBLE, INT}
@@ -44,16 +45,16 @@ object LoremTooling {
     makeFile(className.simpleName(), nameSpaces.tool, typeBuilder)
   }
 
-  private class Param(val spec: ParameterSpec, javadocString: String) {
-    val javadoc = s"@param ${spec.name} ${javadocString}"
-    val name = spec.name
-  }
+  //  public class Param(val spec: ParameterSpec, javadocString: String) {
+  //    val javadoc = s"@param ${spec.name} ${javadocString}"
+  //    val name = spec.name
+  //  }
 
-  private val localeParam = new Param(ParameterSpec.builder(locale, "locale", FINAL).build(), "Currently not supported, always defaults to Latin")
-  private val probParam = new Param(ParameterSpec.builder(DOUBLE, "probability", FINAL).build(), "A 0.0 to 100.0 probability the return will be null")
-  private val countParam = new Param(ParameterSpec.builder(INT, "count", FINAL).build(), "sets the count of X")
-  private val minParam = new Param(ParameterSpec.builder(INT, "min", FINAL).build(), "sets the minimum")
-  private val maxParam = new Param(ParameterSpec.builder(INT, "max", FINAL).build(), "sets the maximum")
+  val localeParam = new Param(ParameterSpec.builder(locale, "locale", FINAL).build(), "Currently not supported, always defaults to Latin")
+  val probParam = new Param(ParameterSpec.builder(DOUBLE, "probability", FINAL).build(), "A 0.0 to 100.0 probability the return will be null")
+  val countParam = new Param(ParameterSpec.builder(INT, "count", FINAL).build(), "sets the count of X")
+  val minParam = new Param(ParameterSpec.builder(INT, "min", FINAL).build(), "sets the minimum")
+  val maxParam = new Param(ParameterSpec.builder(INT, "max", FINAL).build(), "sets the maximum")
 
   private val checkProbParamMethodName = "checkProbParamMethod"
   private val shouldNullMethodName = "shouldNull"
