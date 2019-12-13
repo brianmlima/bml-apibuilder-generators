@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.CacheDirectives.public
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.{NameSpaces, Param}
 import bml.util.java.ClassNames.{illegalArgumentException, locale, loremIpsum, randomUtils, string, utilityClass}
+import bml.util.java.ProbabilityTools.probParam
 import com.squareup.javapoet.MethodSpec.methodBuilder
 import com.squareup.javapoet.TypeName.{DOUBLE, INT}
 import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, TypeName, TypeSpec}
@@ -18,6 +19,7 @@ import collection.JavaConverters._
  * Builds the LoremTool. A handy tool for generating text with a little probabilistic sugar for nullable testing.
  */
 object LoremTooling {
+
 
   def loremToolClassName(nameSpaces: NameSpaces) = ClassName.get(nameSpaces.tool.nameSpace, "LoremTool")
 
@@ -38,9 +40,9 @@ object LoremTooling {
           .initializer(CodeBlock.of("new $T()", loremIpsum))
           .build()
       )
-      .addMethod(checkProbParamMethod)
-      .addMethod(shouldNullMethod)
-      .addMethods(loremMethods.asJava)
+      //.addMethod(ProbabilityTools.checkProbParamMethod)
+      //.addMethod(ProbabilityTools.shouldNullMethod)
+      .addMethods(loremMethods(nameSpaces).asJava)
 
     makeFile(className.simpleName(), nameSpaces.tool, typeBuilder)
   }
@@ -51,13 +53,13 @@ object LoremTooling {
   //  }
 
   val localeParam = new Param(ParameterSpec.builder(locale, "locale", FINAL).build(), "Currently not supported, always defaults to Latin")
-  val probParam = new Param(ParameterSpec.builder(DOUBLE, "probability", FINAL).build(), "A 0.0 to 100.0 probability the return will be null")
+  //val probParam = new Param(ParameterSpec.builder(DOUBLE, "probability", FINAL).build(), "A 0.0 to 100.0 probability the return will be null")
   val countParam = new Param(ParameterSpec.builder(INT, "count", FINAL).build(), "sets the count of X")
   val minParam = new Param(ParameterSpec.builder(INT, "min", FINAL).build(), "sets the minimum")
   val maxParam = new Param(ParameterSpec.builder(INT, "max", FINAL).build(), "sets the maximum")
 
-  private val checkProbParamMethodName = "checkProbParamMethod"
-  private val shouldNullMethodName = "shouldNull"
+  //  private val checkProbParamMethodName = "checkProbParamMethod"
+  //  private val shouldNullMethodName = "shouldNull"
 
   private class MethodDef(val name: String, val delagate: Boolean, val delagateCount: Boolean, val delagateMinMax: Boolean)
 
@@ -83,63 +85,19 @@ object LoremTooling {
     new MethodDef(name = "getZipCode", delagate = true, delagateCount = false, delagateMinMax = false),
   )
 
-  private def loremMethods: Seq[MethodSpec] =
+  private def loremMethods(nameSpaces: NameSpaces): Seq[MethodSpec] =
     loremMethodDefs.map(
       (md) => {
         Seq(
           Option.apply(if (md.delagate) delagate(md.name) else null),
-          Option.apply(if (md.delagate) delagateProb(md.name) else null),
+          Option.apply(if (md.delagate) delagateProb(nameSpaces, md.name) else null),
           Option.apply(if (md.delagateCount) delagateCount(md.name) else null),
-          Option.apply(if (md.delagateCount) delagateProbCount(md.name) else null),
+          Option.apply(if (md.delagateCount) delagateProbCount(nameSpaces, md.name) else null),
           Option.apply(if (md.delagateMinMax) delagateMinMax(md.name) else null),
-          Option.apply(if (md.delagateMinMax) delagateProbMinMax(md.name) else null)
+          Option.apply(if (md.delagateMinMax) delagateProbMinMax(nameSpaces, md.name) else null)
         ).filter(_.isDefined).map(_.get)
       }
     ).flatten
-
-
-  // the generated class is getting too big so stuff some helper methods in there to make it shorter
-  private def checkProbParamMethod(): MethodSpec = {
-    methodBuilder(checkProbParamMethodName).addModifiers(PRIVATE, STATIC)
-      .addJavadoc(
-        Seq[String](
-          s"Generated Method, throws ${illegalArgumentException}  if ${probParam.name} argument is not between inclusive 0 - 100",
-          probParam.javadoc,
-          s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
-        ).mkString("\n")
-      )
-      .addParameter(probParam.spec)
-      .addStatement(
-        "if($L>100 || $L< 0) throw new $T($T.format(\"probParam must be between 0 and 100 found %s\",$L))",
-        probParam.name,
-        probParam.name,
-        illegalArgumentException,
-        string,
-        probParam.name
-      )
-      .build()
-  }
-
-
-  private def shouldNullMethod(): MethodSpec = {
-    methodBuilder(shouldNullMethodName).addModifiers(PRIVATE, STATIC)
-      .addParameter(probParam.spec)
-      .addJavadoc(
-        Seq[String](
-          s"Generated Method, also checks ${probParam.name} for range violation.",
-          probParam.javadoc,
-          s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
-        ).mkString("\n")
-      )
-      .addStatement(
-        "if($L>100 || $L< 0) throw new $T(\"probParam must be between 0 and 100 found \" + $L)",
-        probParam.name, probParam.name, illegalArgumentException, probParam.name
-      )
-      .addStatement("return $T.nextDouble(0,100)<=$L", randomUtils, probParam.name)
-      .returns(classOf[Boolean])
-      .build()
-  }
-
 
   private def delagate(name: String): MethodSpec = {
     methodBuilder(name).addModifiers(PUBLIC, STATIC)
@@ -149,13 +107,13 @@ object LoremTooling {
           localeParam.javadoc,
         ).mkString("\n")
       )
-      .addParameter(localeParam.spec)
+      .addParameter(localeParam.parameterSpec)
       .returns(string)
       .addStatement("return LOREM.$L()", name).build()
   }
 
   //Builds a delagate method that takes a probability to return null
-  private def delagateProb(name: String): MethodSpec = {
+  private def delagateProb(nameSpaces: NameSpaces, name: String): MethodSpec = {
     methodBuilder(s"probNull${initCap(name)}").addModifiers(PUBLIC, STATIC)
       .addJavadoc(
         Seq[String](
@@ -165,18 +123,18 @@ object LoremTooling {
           s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
-      .addParameters(Seq(localeParam, probParam).map(_.spec).asJava)
+      .addParameters(Seq(localeParam, probParam).map(_.parameterSpec).asJava)
       .returns(string)
       .addCode(
         CodeBlock.builder()
-          .addStatement("if ( $L( $L ) ) return null", shouldNullMethodName, probParam.name)
+          .addStatement("if ( $T.$L( $L ) ) return null", ProbabilityTools.probabilityToolClassName(nameSpaces), ProbabilityTools.shouldNullMethodName, probParam.name)
           .addStatement("return $L($L)", name, localeParam.name)
           .build()
       )
       .build()
   }
 
-  private def delagateProbCount(name: String): MethodSpec = {
+  private def delagateProbCount(nameSpaces: NameSpaces, name: String): MethodSpec = {
     methodBuilder(s"probNull${initCap(name)}").addModifiers(PUBLIC, STATIC)
       .addJavadoc(
         Seq[String](
@@ -186,12 +144,12 @@ object LoremTooling {
           s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
-      .addParameters(Seq(localeParam, countParam, probParam).map(_.spec).asJava)
+      .addParameters(Seq(localeParam, countParam, probParam).map(_.parameterSpec).asJava)
       .returns(string)
       .addCode(
         CodeBlock.builder()
           //.addStatement(s"${checkProbParamMethodName}(${probParam.name})")
-          .addStatement("if ( $L( $L ) ) return null", shouldNullMethodName, probParam.name)
+          .addStatement("if ( $T.$L( $L ) ) return null", ProbabilityTools.probabilityToolClassName(nameSpaces), ProbabilityTools.shouldNullMethodName, probParam.name)
           .addStatement("return $L($L,$L)", name, localeParam.name, countParam.name)
           .build()
       )
@@ -207,7 +165,7 @@ object LoremTooling {
           localeParam.javadoc
         ).mkString("\n")
       )
-      .addParameter(localeParam.spec)
+      .addParameter(localeParam.parameterSpec)
       .addParameter(INT, "count", FINAL)
       .returns(classOf[String])
       .addStatement("return LOREM.$L($L)", name, countParam.name).build()
@@ -221,12 +179,12 @@ object LoremTooling {
           localeParam.javadoc, minParam.javadoc, maxParam.javadoc
         ).mkString("\n")
       )
-      .addParameters(Seq(localeParam, minParam, maxParam).map(_.spec).asJava)
+      .addParameters(Seq(localeParam, minParam, maxParam).map(_.parameterSpec).asJava)
       .returns(string)
       .addStatement("return LOREM.$L($L,$L)", name, minParam.name, maxParam.name).build()
   }
 
-  private def delagateProbMinMax(name: String): MethodSpec = {
+  private def delagateProbMinMax(nameSpaces: NameSpaces, name: String): MethodSpec = {
     methodBuilder(s"probNull${initCap(name)}").addModifiers(PUBLIC, STATIC)
       .addJavadoc(
         Seq[String](
@@ -236,11 +194,11 @@ object LoremTooling {
           s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
-      .addParameters(Seq(localeParam, minParam, maxParam, probParam).map(_.spec).asJava)
+      .addParameters(Seq(localeParam, minParam, maxParam, probParam).map(_.parameterSpec).asJava)
       .returns(string)
       .addCode(
         CodeBlock.builder()
-          .addStatement("if ( $L( $L ) ) return null", shouldNullMethodName, probParam.name)
+          .addStatement("if ( $T.$L( $L ) ) return null", ProbabilityTools.probabilityToolClassName(nameSpaces), ProbabilityTools.shouldNullMethodName, probParam.name)
           .addStatement("return $L($L,$L,$L)", name, localeParam.name, minParam.name, maxParam.name)
           .build()
       )

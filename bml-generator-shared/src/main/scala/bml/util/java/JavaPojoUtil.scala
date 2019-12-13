@@ -147,6 +147,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     toParamName(field.name, true)
   }
 
+  def toFieldName(fieldName: String): String = {
+    toParamName(fieldName, true)
+  }
+
   def toParamName(modelName: String, startingWithLowercase: Boolean): String = {
     val paramStartingWithUppercase = if (isParameterArray(modelName)) {
       toClassName(modelName.tail.reverse.tail.reverse)

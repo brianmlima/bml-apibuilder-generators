@@ -1,8 +1,12 @@
 package bml.util.java
 
+import java.time.LocalDate
 import java.util
+import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
+import bml.util.JavaNameSpace
+import bml.util.java.poet.{StaticImport, StaticImportMethod}
 import com.squareup.javapoet.{ClassName, ParameterizedTypeName, TypeName}
 import lombok.Getter
 import lombok.experimental.{FieldNameConstants, UtilityClass}
@@ -10,12 +14,20 @@ import lombok.extern.slf4j.Slf4j
 
 object ClassNames {
 
+  def toClassName(namespace: JavaNameSpace, className: String): ClassName = {
+    ClassName.get(namespace.nameSpace, className);
+  }
 
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
   val `override` = classOf[Override]
   val string = ClassName.get(classOf[String])
+  val integer = ClassName.get(classOf[Integer])
+  val localDate = ClassName.get(classOf[LocalDate])
+
   val random = ClassName.get(classOf[Random])
+  val threadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
+
   val collections = ClassName.bestGuess("java.util.Collections")
   val locale = ClassName.get(classOf[Locale])
   val supplier = ClassName.get("java.util.function", "Supplier")
@@ -55,6 +67,14 @@ object ClassNames {
 
   val illegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
 
+  val `boolean` = ClassName.get("java.lang", "Boolean")
+
+  val `class` = ClassName.get("", "Class")
+
+  val invocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
+  val method = ClassName.get("java.lang.reflect", "Method")
+
+
   // END JAVA CORE #####################################################################################################
   //####################################################################################################################
 
@@ -64,8 +84,6 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Spring ######################################################################################################
-
-
   val responseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
 
   def responseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(responseEntity, className)
@@ -113,7 +131,30 @@ object ClassNames {
   val noArgsConstructor = ClassName.get(classOf[lombok.NoArgsConstructor])
   val utilityClass = ClassName.get(classOf[UtilityClass])
   val getter = ClassName.get(classOf[Getter])
+  val builderDefault = ClassName.get(classOf[lombok.Builder.Default])
+
+
   // END Lombok ########################################################################################################
+  //####################################################################################################################
+
+  //####################################################################################################################
+  // BEGIN Junit5 ######################################################################################################
+  val test = ClassName.get("org.junit.jupiter.api", "Test")
+
+  // END Junit5 ########################################################################################################
+  //####################################################################################################################
+
+  //####################################################################################################################
+  // BEGIN Hamcrest ####################################################################################################
+
+
+  val matcherAssert = ClassName.get("org.hamcrest", "MatcherAssert")
+
+  val assertThat = StaticImportMethod(matcherAssert, "assertThat")
+  val matchers = ClassName.get("org.hamcrest", "Matchers")
+  val notNullValue = StaticImportMethod(matchers, "notNullValue")
+
+  // END Hamcrest ######################################################################################################
   //####################################################################################################################
 
 

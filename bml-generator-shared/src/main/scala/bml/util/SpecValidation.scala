@@ -1,5 +1,7 @@
 package bml.util
 
+import akka.http.scaladsl
+import akka.http.scaladsl.model
 import io.apibuilder.spec.v0.models.{Operation, ResponseCodeInt, Service}
 import lombok.extern.slf4j.Slf4j
 
@@ -9,7 +11,11 @@ object SpecValidation {
     val errors =
       checkAllPathVarOperationsHave404(service) ++
         checkAllFieldsWithMinRequirementHaveAMax(service) ++
-        checkAllModelsHaveADescription(service)
+        checkAllModelsHaveADescription(service) ++
+        checkAllStringFieldsHaveMinMax(service) ++
+        checkAllModelsDontHaveUnderscores(service) ++
+        checkAllModelFieldsDontHaveUnderscores(service) ++
+        checkAllEnumsDontHaveUnderscores(service)
     if (errors.isEmpty) {
       None
     } else {
@@ -27,6 +33,65 @@ object SpecValidation {
     )
     out
   }
+
+  def checkAllModelsDontHaveUnderscores(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        if (model.name.contains("_") || model.name.contains("-")) {
+          out = out ++ Seq(s"ERROR: All Model names should be camel case and must not have underscores or hyphens. Service='${service.name}'=Model='${model.name}'")
+        }
+    )
+    out
+  }
+
+  def checkAllEnumsDontHaveUnderscores(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.enums.foreach(
+      `enum` =>
+        if (`enum`.name.contains("_") || `enum`.name.contains("-")) {
+          out = out ++ Seq(s"ERROR: All Enum names should be camel case and must not have underscores or hyphens. Service='${service.name}'=Model='${`enum`.name}'")
+        }
+    )
+    out
+  }
+
+
+  def checkAllModelFieldsDontHaveUnderscores(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        model.fields.foreach(
+          field =>
+            if (field.name.contains("_") || field.name.contains("-")) {
+              out = out ++ Seq(s"ERROR: All Model Field names should be camel case and must not have underscores or hyphens. Service='${service.name}' Model='${model.name}' Field='${field.name}'")
+            }
+        )
+    )
+    out
+  }
+
+
+  def checkAllStringFieldsHaveMinMax(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        model.fields.foreach(
+          field => {
+            if (field.`type` == "string") {
+              if (field.minimum.isEmpty) {
+                out = out ++ Seq(s"ERROR: All Model Fields must have a 'minimum' field defined. Service='${service.name}' Model='${model.name}' Field='${field.name}'")
+              }
+              if (field.maximum.isEmpty) {
+                out = out ++ Seq(s"ERROR: All Model Fields must have a 'maximum' field defined. Service='${service.name}' Model='${model.name}' Field='${field.name}'")
+              }
+            }
+          }
+        )
+    )
+    out
+  }
+
 
   def checkAllFieldsWithMinRequirementHaveAMax(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()

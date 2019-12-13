@@ -107,7 +107,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
     def generateModel(model: Model, relatedUnions: Seq[Union]): File = {
       val className = toClassName(model.name)
-      logger.info(s"Generating Model Class ${className}")
+      //logger.info(s"Generating Model Class ${className}")
 
       val classBuilder = TypeSpec.classBuilder(className)
         .addModifiers(PUBLIC)
@@ -170,7 +170,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         ///////////////////////////////////////
 
         field.attributes.foreach(attribute => {
-          logger.info(s"Working on Attribute ${attribute.name}")
+          //logger.info(s"Working on Attribute ${attribute.name}")
           attribute.name match {
             case "pattern" => {
               fieldBuilder.addAnnotation(AnotationUtil.pattern(attribute))

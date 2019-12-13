@@ -1,7 +1,8 @@
 package models.generator.bml.lombok.test
 
 import bml.util.NameSpaces
-import bml.util.java.{JavaPojoTestFixtures, JavaPojoUtil, LoremTooling, TestSuppliers}
+import bml.util.java.testing.ExercisePojos
+import bml.util.java.{JavaPojoTestFixtures, JavaPojoUtil, LoremTooling, ProbabilityTools, TestSuppliers}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.Service
 import lib.generator.{CodeGenerator, GeneratorUtil}
@@ -22,6 +23,10 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
     new Generator(form.service, header).generateSourceFiles()
   }
 
+
+
+
+
   class Generator(service: Service, header: Option[String]) {
     val log = LoggerFactory.getLogger(classOf[Generator])
     private val nameSpaces = new NameSpaces(service)
@@ -30,19 +35,21 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Run Generation
     def generateSourceFiles(): Seq[File] = {
-      log.error("generateSourceFiles")
       generateFixtureBuilders() ++
         Seq[File](
           LoremTooling.generateLoremTool(nameSpaces),
           TestSuppliers.testSuppliers(nameSpaces),
-          JavaPojoTestFixtures.makeLanguages(nameSpaces: NameSpaces)
+          JavaPojoTestFixtures.makeLanguages(nameSpaces: NameSpaces),
+          ProbabilityTools.probabilityTool(nameSpaces),
+          ExercisePojos.excersisePojoTestClass(service, nameSpaces)
         )
     }
+
 
     //Generates Services from Resources
     def generateFixtureBuilders(): Seq[File] = {
       //      Seq[File]()
-      service.models.map(JavaPojoTestFixtures.generateMockFactory(nameSpaces, _))
+      service.models.map(JavaPojoTestFixtures.generateMockFactory(service, nameSpaces, _))
     }
 
 

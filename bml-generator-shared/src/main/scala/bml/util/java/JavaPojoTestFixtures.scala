@@ -5,13 +5,16 @@ import java.util.Locale
 import akka.http.scaladsl
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.CacheDirectives.public
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.{illegalArgumentException, math, randomUtils, string, stringBuilder, supplier}
 import bml.util.{AnotationUtil, NameSpaces, java}
+import com.squareup.javapoet
 import com.squareup.javapoet.TypeName.INT
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.{Field, Model}
+import io.apibuilder.spec.v0.models.{Field, Model, Service}
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.Modifier._
 import org.checkerframework.checker.units.qual.min
 
@@ -19,15 +22,23 @@ import collection.JavaConverters._
 
 object JavaPojoTestFixtures extends JavaPojoUtil {
 
-  def mockFactoryClassName(nameSpaces: NameSpaces, model: Model): ClassName = {
-    ClassName.get(nameSpaces.model.nameSpace, toClassName(model.name) + "MockFactory")
+
+  def mockFactoryClassName(nameSpace: String, name: String): ClassName = {
+    ClassName.get(nameSpace, toClassName(name) + "MockFactory")
   }
 
+  def mockFactoryClassName(nameSpaces: NameSpaces, name: String): ClassName = {
+    mockFactoryClassName(nameSpaces.modelFactory.nameSpace, name)
+  }
 
-  def generateFunction(model: Model, nameSpaces: NameSpaces): MethodSpec = {
+  def mockFactoryClassName(nameSpaces: NameSpaces, model: Model): ClassName = {
+    mockFactoryClassName(nameSpaces, model.name)
+  }
+
+  def getFunction(model: Model, nameSpaces: NameSpaces): MethodSpec = {
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
-    MethodSpec.methodBuilder("generate")
+    MethodSpec.methodBuilder(generateMethodName)
       .addModifiers(PUBLIC)
       .returns(targetClassName)
       .addStatement("$T builder =  $T.builder()", targetClassBuilderName, targetClassName)
@@ -50,13 +61,16 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       .build()
   }
 
-  def generateMockFactory(nameSpaces: NameSpaces, model: Model): File = {
+  val generateMethodName = "get"
+
+  def generateMockFactory(service: Service, nameSpaces: NameSpaces, model: Model): File = {
     val className = mockFactoryClassName(nameSpaces, model)
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
-    val typeBuilder = TypeSpec.classBuilder(className)
+    val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
       .addAnnotation(ClassNames.builder)
       .addAnnotation(AnotationUtil.fluentAccessor)
+      .addSuperinterface(ClassNames.supplier(targetClassName))
       .addFields(
         model.fields
           .map(
@@ -64,41 +78,189 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
               val fieldName = toFieldName(field)
               val fieldType = dataTypeFromField(field, nameSpaces.model)
               val supplierType = ClassNames.supplier(fieldType)
-              FieldSpec.builder(supplierType, fieldName, PRIVATE).addAnnotation(ClassNames.getter).build()
+              val fiedlSpec = FieldSpec.builder(supplierType, fieldName, PRIVATE).addAnnotation(ClassNames.getter)
+              if (field.`type` == "boolean") {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+
+              if (field.`type` == "uuid") {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+              if (field.`type` == "date-iso8601") {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+              if (field.`type` == "string") {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+              if (JavaPojoUtil.isEnumType(service, field)) {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+              if (JavaPojoUtil.isModelType(service, field)) {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer(
+                    "$T.$L()",
+                    mockFactoryClassName(nameSpaces.modelFactory.nameSpace, field.`type`),
+                    defaultObjectSupplierMethodName
+                  )
+              }
+              fiedlSpec.build()
             }
           ).asJava
       )
-      .addMethod(generateFunction(model, nameSpaces))
+      .addField(
+        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, Modifier.PUBLIC, Modifier.STATIC)
+          .initializer("builder().build()")
+          .build()
+      )
+      .addMethod(
+        MethodSpec.methodBuilder(defaultObjectSupplierMethodName)
+          .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+          .returns(ClassNames.supplier(targetClassName))
+          .addStatement("return ()-> $L.$L()", defaultFactoryStaticParamName, generateMethodName)
+          .build()
+      )
+      .addMethods(
+        model.fields.map(generateDefaultSupplier(service, nameSpaces, model, _)).filter(_.isDefined).map(_.get).asJava
+      )
+      .addMethod(getFunction(model, nameSpaces))
     makeFile(className.simpleName(), nameSpaces.modelFactory, typeBuilder)
   }
 
-  def typeNameToClassName(typeName: TypeName): Unit = {
+  val defaultFactoryStaticParamName = "DEFAULT_FACTORY"
+  val defaultObjectSupplierMethodName = "defaultObjectSupplier"
 
-    //    typeName
-    //    .
+  def defaultSupplierMethodName(field: Field) = toFieldName(field) + "DefaultSupplier"
 
-  }
-
-
-  def generateDefaultSupplier(field: Field, nameSpaces: NameSpaces): Option[FieldSpec] = {
-    val fieldName = toFieldName(field) + "DefaultSupplier"
+  def generateDefaultSupplier(service: Service, nameSpaces: NameSpaces, model: Model, field: Field): Option[MethodSpec] = {
+    val fieldName = defaultSupplierMethodName(field)
     val fieldType = dataTypeFromField(field, nameSpaces.model)
     val supplierType = ClassNames.supplier(fieldType)
 
+    if (field.`type` == "boolean") {
+      val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC)
+        .addStatement("return $T.$L()", TestSuppliers.testSuppliersClassName(nameSpaces), TestSuppliers.booleanSupplierMethodName)
+        .returns(supplierType)
+      return Some(spec.build())
+    }
+    if (field.`type` == "uuid") {
+      val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC);
+      if (field.required) {
+        spec
+          .returns(supplierType)
+          .addStatement("return $T.$L()", TestSuppliers.testSuppliersClassName(nameSpaces), TestSuppliers.uuidSupplierMethodName)
+      } else {
+        val testSuppliers = TestSuppliers.testSuppliersClassName(nameSpaces)
+        spec
+          .returns(supplierType)
+          .addStatement(
+            "return $T.$L($T.$L(),$L)", testSuppliers, TestSuppliers.wrapProbNullMethodName, testSuppliers, TestSuppliers.uuidSupplierMethodName, "50")
+      }
+      return Some(spec.build())
+    }
+    if (field.`type` == "date-iso8601") {
+      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
+      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
+      spec.addStatement("return $T.$L()",
+        testSuppliersClassName,
+        TestSuppliers.localDateSupplierMethodName,
+      )
+      return Some(spec.build())
+    }
 
-    val stringTypeName = dataTypeFromField("string", nameSpaces.model)
+
+    if (field.`type` == "string") {
+      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
+      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
 
 
-    if (fieldType.equals(stringTypeName)) {
+      if (field.required) {
+        spec.addStatement(
+          "return $T.$L($T.ENGLISH,$T.$L,$T.$L)",
+          testSuppliersClassName,
+          TestSuppliers.stringRangeSupplierMethodName,
+          ClassNames.locale,
+          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+          JavaPojos.toMinFieldStaticFieldName(field),
+          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+          JavaPojos.toMaxFieldStaticFieldName(field)
+        )
+      } else {
+        spec.addStatement(
+          "return $T.$L($T.$L($T.ENGLISH,$T.$L,$T.$L),$L)",
+          testSuppliersClassName,
+          TestSuppliers.wrapProbNullMethodName,
+          testSuppliersClassName,
+          TestSuppliers.stringRangeSupplierMethodName,
+          ClassNames.locale,
+          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+          JavaPojos.toMinFieldStaticFieldName(field),
+          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+          JavaPojos.toMaxFieldStaticFieldName(field),
+          "50"
+        )
+      }
+      return Some(spec.build())
 
+    }
+    if (JavaPojoUtil.isModelType(service, field)) {
+      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
+      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
+      spec.addStatement(
+        "return $T.$L",
+        ClassName.get("", mockFactoryClassName(nameSpaces, field.`type`).simpleName()),
+        defaultFactoryStaticParamName
+      )
+      return Some(spec.build())
+    }
+    if (JavaPojoUtil.isEnumType(service, field)) {
+      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
+      spec.addCode(
+        CodeBlock
+          .builder()
+          .add("return $L;",
+            TypeSpec.anonymousClassBuilder("")
+              .addSuperinterface(ParameterizedTypeName.get(ClassNames.supplier, fieldType))
+              .addField(
+                FieldSpec.builder(ArrayTypeName.of(fieldType), "values")
+                  .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                  .initializer("$T.values()", fieldType).build())
+              .addField(
+                FieldSpec.builder(ClassNames.random, "random")
+                  .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                  .initializer("new $T()", ClassNames.random).build())
 
-      FieldSpec.builder(supplierType, fieldName, PUBLIC, STATIC)
-      //.initializer()
-
-
+              .addMethod(
+                MethodSpec.methodBuilder("get").returns(fieldType).addModifiers(Modifier.PUBLIC)
+                  .addStatement("return values[random.nextInt(values.length)]")
+                  .build())
+              .build()
+          ).build()
+      )
+      return Some(spec.build())
     }
     None
   }
+
+  //  private Supplier<IsiType> isiType = new Supplier<IsiType>() {
+  //    private IsiType[] values = IsiType.values();
+  //    Random random = new Random();
+  //
+  //    @Override
+  //    public IsiType get() {
+  //      return values[random.nextInt(values.length)]
+  //    }
+  //  }
 
 
   def languagesClassName(nameSpaces: NameSpaces): ClassName = {
@@ -115,42 +277,5 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       )
     makeFile(className.simpleName(), nameSpaces.tool, typeBuilder)
   }
-
-
-  //  public static Supplier<String> stringRangeSupplier(Locale locale, int min, int max) {
-  //    if (max < min) {
-  //      throw new IllegalArgumentException(String.format("max param can not be less than min param. min={} max={}", min, max));
-  //    }
-  //    if (min == 0 && max == 0) {
-  //      throw new IllegalArgumentException("max param and min param can not both be 0");
-  //    }
-  //    if (min < 0) {
-  //      throw new IllegalArgumentException(String.format("min param can not be less than 0. min={} max={}", min, max));
-  //    }
-  //    if (max < 0) {
-  //      throw new IllegalArgumentException(String.format("max param can not be less than 0. min={} max={}", min, max));
-  //    }
-  //
-  //    return () -> {
-  //      int requestWordCount = (int) Math.ceil(max / Languages.ENGLISH_AVG_WORD_LENGTH);
-  //      final String[] words = LoremTool.getWords(locale, requestWordCount).split("[ ]");
-  //      //log.trace("Words={}", words);
-  //      final int randStringLength = RandomUtils.nextInt(min, max);
-  //      final StringBuilder buff = new StringBuilder();
-  //
-  //      for (String word : words) {
-  //        //log.trace("Buffer Length={} randStringLength={} wordCount={} requestWordCount={}", buff.length(), randStringLength, words.length, requestWordCount);
-  //        if (buff.length() <= randStringLength) {
-  //          buff.append(word);
-  //        } else {
-  //          break;
-  //        }
-  //      }
-  //      String returnValue = (buff.length() > randStringLength) ? buff.toString().substring(0, randStringLength).trim() : buff.toString();
-  //      log.debug("Returning Lorem String length={}", returnValue.length());
-  //      return returnValue;
-  //    };
-  //  }
-
 
 }

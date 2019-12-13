@@ -1,18 +1,13 @@
 package bml.util.java
 
 
-import io.apibuilder.spec.v0.models.{Enum, Field, Model}
+import io.apibuilder.spec.v0.models.{Field, Model}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
-import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.{arrays, collections, linkedList, size, string}
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeSpec}
 import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
-import io.apibuilder.generator.v0.models.File
-import javax.print.DocFlavor.STRING
-import net.bytebuddy.implementation.bytecode.Throw
 import play.api.Logger
-import play.api.libs.json.JsResult.Exception
 
 import scala.collection.JavaConverters._
 
@@ -40,9 +35,11 @@ object JavaPojos {
     )
   }
 
+  val requiredFieldsFieldName = "REQUIRED_FIELDS"
+
   def makeRequiredFieldsField(model: Model): FieldSpec = {
     val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name).seq
-    val fieldSpec = FieldSpec.builder(ClassNames.list(string), "REQUIRED_FIELDS", PUBLIC, STATIC, FINAL)
+    val fieldSpec = FieldSpec.builder(ClassNames.list(string), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
     if (fieldNames.isEmpty) {
       fieldSpec.initializer("$T.emptyList", collections)
     } else {
@@ -51,7 +48,7 @@ object JavaPojos {
         collections,
         linkedList(string),
         arrays,
-        fieldNames.map(name => "\"" + name + "\"").mkString(",")
+        fieldNames.map(name => s"Fields.${JavaPojoUtil.toFieldName(name)} ").mkString(",")
       )
     }
     fieldSpec.build()
@@ -69,7 +66,7 @@ object JavaPojos {
     val hasMax = field.maximum.isDefined
 
     if (hasMin || hasMax) {
-      LOG.info("field.minimum.isDefined")
+      //sLOG.trace("field.minimum.isDefined")
       spec.addMember("min", "$L", minStaticParamName)
       classSpec.addField(
         FieldSpec.builder(INT, minStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.minimum.getOrElse(1).toString)
@@ -79,7 +76,7 @@ object JavaPojos {
     }
 
     if (hasMax) {
-      LOG.info("{} field.maximum.isDefined=true")
+      //LOG.trace("{} field.maximum.isDefined=true",field.name)
       spec.addMember("max", "$L", maxStaticParamName)
       classSpec.addField(
         FieldSpec.builder(INT, maxStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.maximum.get.toString)
