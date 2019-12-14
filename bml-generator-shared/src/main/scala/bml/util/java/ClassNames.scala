@@ -8,7 +8,8 @@ import java.util.{Locale, Random, UUID}
 import bml.util.JavaNameSpace
 import bml.util.java.poet.{StaticImport, StaticImportMethod}
 import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName}
-import lombok.Getter
+import lombok.Builder.Default
+import lombok.{AllArgsConstructor, Builder, Getter, NoArgsConstructor}
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
 import org.junit.jupiter.api.DisplayName
@@ -119,6 +120,20 @@ object ClassNames {
   val validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
   val restController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
 
+  object SpringTypes {
+
+    val Configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
+    val Bean = ClassName.get("org.springframework.context.annotation", "Bean")
+
+    object SpringTestTypes {
+      val SpringExtension = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringExtension")
+      val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
+      val SpringJUnitConfig = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringJUnitConfig")
+    }
+
+  }
+
+
   // END Spring ########################################################################################################
   //####################################################################################################################
 
@@ -129,12 +144,24 @@ object ClassNames {
   // BEGIN Lombok ######################################################################################################
   val fieldNameConstants = ClassName.get(classOf[FieldNameConstants])
   val slf4j = ClassName.get(classOf[Slf4j])
-  val builder = ClassName.get(classOf[lombok.Builder])
-  val allArgsConstructor = ClassName.get(classOf[lombok.AllArgsConstructor])
-  val noArgsConstructor = ClassName.get(classOf[lombok.NoArgsConstructor])
+  val builder = ClassName.get(classOf[Builder])
+  val allArgsConstructor = ClassName.get(classOf[AllArgsConstructor])
+  val noArgsConstructor = ClassName.get(classOf[NoArgsConstructor])
   val utilityClass = ClassName.get(classOf[UtilityClass])
   val getter = ClassName.get(classOf[Getter])
-  val builderDefault = ClassName.get(classOf[lombok.Builder.Default])
+  val builderDefault = ClassName.get(classOf[Default])
+
+  object LombokTypes {
+    val FieldNameConstants = ClassName.get(classOf[FieldNameConstants])
+    val Slf4j = ClassName.get(classOf[Slf4j])
+    val Builder = ClassName.get(classOf[Builder])
+    val AllArgsConstructor = ClassName.get(classOf[AllArgsConstructor])
+    val NoArgsConstructor = ClassName.get(classOf[NoArgsConstructor])
+    val UtilityClass = ClassName.get(classOf[UtilityClass])
+    val Getter = ClassName.get(classOf[Getter])
+    val BuilderDefault = ClassName.get(classOf[Default])
+
+  }
 
 
   // END Lombok ########################################################################################################
@@ -147,11 +174,25 @@ object ClassNames {
 
   def displayName(testNAme: String): AnnotationSpec = AnnotationSpec.builder(displayName).addMember("value", "$S", testNAme).build()
 
+  object JunitTypes {
+    val Test = ClassName.get("org.junit.jupiter.api", "Test")
+    val ExtendWith = ClassName.get("org.junit.jupiter.api.extension", "ExtendWith")
+    val DisplayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
+  }
+
+
   // END Junit5 ########################################################################################################
   //####################################################################################################################
 
   //####################################################################################################################
   // BEGIN Hamcrest ####################################################################################################
+
+  object HamcrestTypes {
+    val Matchers = ClassName.get("org.hamcrest", "Matchers")
+    val MatcherAssert = ClassName.get("org.hamcrest", "MatcherAssert")
+    val assertThat = StaticImportMethod(MatcherAssert, "assertThat")
+    val notNullValue = StaticImportMethod(Matchers, "notNullValue")
+  }
 
 
   val matcherAssert = ClassName.get("org.hamcrest", "MatcherAssert")
@@ -172,6 +213,22 @@ object ClassNames {
   val size = ClassName.bestGuess("javax.validation.constraints.Size")
   val email = ClassName.bestGuess("javax.validation.constraints.Email")
   val valid = ClassName.bestGuess("javax.validation.Valid")
+
+  object JavaxTypes {
+
+    object JavaxValidationTypes {
+      val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
+      val NotBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
+      val Pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
+      val Size = ClassName.bestGuess("javax.validation.constraints.Size")
+      val Email = ClassName.bestGuess("javax.validation.constraints.Email")
+      val Valid = ClassName.bestGuess("javax.validation.Valid")
+      val Validation = ClassName.bestGuess("javax.validation.Validation")
+      val Validator = ClassName.bestGuess("javax.validation.Validator")
+    }
+
+  }
+
   // END Javax.Validation ##############################################################################################
   //####################################################################################################################
 

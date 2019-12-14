@@ -7,23 +7,23 @@ import bml.util.java.JavaArrays.arrayOf
 import com.squareup.javapoet.CodeBlock.of
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
-import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
+import javax.lang.model.element.Modifier._
 
 
 object MethodArgumentNotValidExceptionHandler {
 
   /**
-    * The generated class simple name
-    */
+   * The generated class simple name
+   */
   val name = "MethodArgumentNotValidExceptionHandler"
 
   /**
-    * Generats a spring @ControllerAdvice that handles validation errors and responses for all endpoints.
-    * This was much easier than writing a handler for each @Controller
-    *
-    * @param nameSpaces the NameSpaces object we are generating in
-    * @return a @ControllerAdvice impl class
-    */
+   * Generats a spring @ControllerAdvice that handles validation errors and responses for all endpoints.
+   * This was much easier than writing a handler for each @Controller
+   *
+   * @param nameSpaces the NameSpaces object we are generating in
+   * @return a @ControllerAdvice impl class
+   */
   def get(nameSpaces: NameSpaces): Seq[File] = {
 
     val builder = TypeSpec.classBuilder(name)

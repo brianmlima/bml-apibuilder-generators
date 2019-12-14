@@ -2,14 +2,49 @@ package bml.util
 
 import bml.util.java.ClassNames
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.squareup.javapoet.{AnnotationSpec, CodeBlock, TypeSpec}
+import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, TypeSpec}
 import io.apibuilder.spec.v0.models.Attribute
 import javax.persistence.Table
 import lombok.experimental.Accessors
-import lombok.{EqualsAndHashCode, Singular}
+import lombok.extern.slf4j.Slf4j
+import lombok.{AllArgsConstructor, Builder, EqualsAndHashCode, NoArgsConstructor, Singular}
 import org.springframework.validation.annotation.Validated
 
 object AnotationUtil {
+
+
+  object SpringAnno {
+
+    val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
+
+    object SpringTestAnno {
+      val runnWithSpringRunner = JunitAnno.ExtendWith(ClassNames.SpringTypes.SpringTestTypes.SpringExtension)
+      val SpringBootTest = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringBootTest).build()
+
+      def SpringJUnitConfig(className: ClassName) = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringJUnitConfig)
+        .addMember("value", "$T.class", className).build()
+
+    }
+
+
+  }
+
+  object JunitAnno {
+    def ExtendWith(className: ClassName) = AnnotationSpec.builder(ClassNames.JunitTypes.ExtendWith)
+      .addMember("value", "$T.class", className).build()
+
+    val Test = AnnotationSpec.builder(ClassNames.JunitTypes.Test).build()
+
+    def DisplayName(displayName: String) = AnnotationSpec.builder(ClassNames.JunitTypes.DisplayName)
+      .addMember("value", "$S", displayName)
+      .build()
+
+  }
+
+  object LombokAnno {
+    val Slf4j = AnnotationSpec.builder(ClassNames.LombokTypes.Slf4j).build()
+  }
+
 
   def fluentAccessor = AnnotationSpec
     .builder(classOf[Accessors])
@@ -81,9 +116,9 @@ object AnotationUtil {
   def addDataClassAnnotations(builder: TypeSpec.Builder) {
     builder.addAnnotation(AnnotationSpec.builder(classOf[Accessors])
       .addMember("fluent", CodeBlock.builder().add("true").build).build())
-      .addAnnotation(classOf[lombok.Builder])
-      .addAnnotation(classOf[lombok.AllArgsConstructor])
-      .addAnnotation(classOf[lombok.NoArgsConstructor])
+      .addAnnotation(classOf[Builder])
+      .addAnnotation(classOf[AllArgsConstructor])
+      .addAnnotation(classOf[NoArgsConstructor])
       .addAnnotation(
         AnnotationSpec.builder(classOf[JsonIgnoreProperties])
           .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
