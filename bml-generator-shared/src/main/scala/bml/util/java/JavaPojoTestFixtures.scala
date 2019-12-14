@@ -17,10 +17,13 @@ import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.Modifier._
 import org.checkerframework.checker.units.qual.min
+import org.slf4j.{Logger, LoggerFactory}
 
 import collection.JavaConverters._
 
 object JavaPojoTestFixtures extends JavaPojoUtil {
+
+  private val LOG: Logger = LoggerFactory.getLogger(this.getClass)
 
 
   def mockFactoryClassName(nameSpace: String, name: String): ClassName = {
@@ -75,6 +78,8 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         model.fields
           .map(
             (field) => {
+              LOG.info("Service={} Model={} Field.name={} Field.type={}", service.name, model.name, field.name, field.`type`)
+
               val fieldName = toFieldName(field)
               val fieldType = dataTypeFromField(field, nameSpaces.model)
               val supplierType = ClassNames.supplier(fieldType)
@@ -100,6 +105,11 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               }
+              if (field.`type` == "integer") {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
               if (JavaPojoUtil.isEnumType(service, field)) {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
@@ -114,6 +124,18 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                     defaultObjectSupplierMethodName
                   )
               }
+              if (JavaPojoUtil.isModelNameWithPackage(field.`type`)) {
+                val externalNameSpace = JavaPojoUtil.externalNameSpaceFromType(field.`type`)
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer(
+                    "$T.$L()",
+                    mockFactoryClassName(externalNameSpace.modelFactory.nameSpace, field.`type`),
+                    defaultObjectSupplierMethodName
+                  )
+
+              }
+
               fiedlSpec.build()
             }
           ).asJava
@@ -149,31 +171,39 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
     if (field.`type` == "boolean") {
       val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC)
-        .addStatement("return $T.$L()", TestSuppliers.testSuppliersClassName(nameSpaces), TestSuppliers.booleanSupplierMethodName)
+        .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.booleanSupplier)
         .returns(supplierType)
       return Some(spec.build())
     }
+
+    if (field.`type` == "integer") {
+      val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC)
+        .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.integerSupplier)
+        .returns(supplierType)
+      return Some(spec.build())
+    }
+
     if (field.`type` == "uuid") {
       val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC);
       if (field.required) {
         spec
           .returns(supplierType)
-          .addStatement("return $T.$L()", TestSuppliers.testSuppliersClassName(nameSpaces), TestSuppliers.uuidSupplierMethodName)
+          .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.uuidSupplier)
       } else {
-        val testSuppliers = TestSuppliers.testSuppliersClassName(nameSpaces)
+        val testSuppliers = TestSuppliers.className(nameSpaces)
         spec
           .returns(supplierType)
           .addStatement(
-            "return $T.$L($T.$L(),$L)", testSuppliers, TestSuppliers.wrapProbNullMethodName, testSuppliers, TestSuppliers.uuidSupplierMethodName, "50")
+            "return $T.$L($T.$L(),$L)", testSuppliers, TestSuppliers.methods.wrapProbNull, testSuppliers, TestSuppliers.methods.uuidSupplier, "50")
       }
       return Some(spec.build())
     }
     if (field.`type` == "date-iso8601") {
       val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
+      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
       spec.addStatement("return $T.$L()",
         testSuppliersClassName,
-        TestSuppliers.localDateSupplierMethodName,
+        TestSuppliers.methods.localDateSupplier,
       )
       return Some(spec.build())
     }
@@ -181,14 +211,14 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
     if (field.`type` == "string") {
       val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
+      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
 
 
       if (field.required) {
         spec.addStatement(
           "return $T.$L($T.ENGLISH,$T.$L,$T.$L)",
           testSuppliersClassName,
-          TestSuppliers.stringRangeSupplierMethodName,
+          TestSuppliers.methods.stringRangeSupplier,
           ClassNames.locale,
           ClassNames.toClassName(nameSpaces.model, toClassName(model)),
           JavaPojos.toMinFieldStaticFieldName(field),
@@ -199,9 +229,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         spec.addStatement(
           "return $T.$L($T.$L($T.ENGLISH,$T.$L,$T.$L),$L)",
           testSuppliersClassName,
-          TestSuppliers.wrapProbNullMethodName,
+          TestSuppliers.methods.wrapProbNull,
           testSuppliersClassName,
-          TestSuppliers.stringRangeSupplierMethodName,
+          TestSuppliers.methods.stringRangeSupplier,
           ClassNames.locale,
           ClassNames.toClassName(nameSpaces.model, toClassName(model)),
           JavaPojos.toMinFieldStaticFieldName(field),
@@ -215,7 +245,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     }
     if (JavaPojoUtil.isModelType(service, field)) {
       val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.testSuppliersClassName(nameSpaces)
+      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
       spec.addStatement(
         "return $T.$L",
         ClassName.get("", mockFactoryClassName(nameSpaces, field.`type`).simpleName()),

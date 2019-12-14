@@ -1,6 +1,7 @@
 package bml.util.java
 
-import bml.util.{GeneratorFSUtil, JavaNameSpace}
+import akka.http.scaladsl.model.headers.LinkParams.`type`
+import bml.util.{GeneratorFSUtil, JavaNameSpace, NameSpaces}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import lib.Text
@@ -126,6 +127,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     dataTypeFromField(`type`, nameSpace.nameSpace)
   }
 
+
   def dataTypeFromField(`type`: String, modelsNameSpace: String): TypeName = {
     dataTypes.get(`type`).getOrElse {
       //Helps with external mapped classes IE imports
@@ -142,6 +144,11 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
     }
   }
+
+  def externalNameSpaceFromType(`type`: String): NameSpaces = {
+    new NameSpaces(`type`.split("\\.").dropRight(1).dropRight(1).mkString("."))
+  }
+
 
   def toFieldName(field: Field): String = {
     toParamName(field.name, true)

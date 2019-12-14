@@ -7,10 +7,11 @@ import java.util.{Locale, Random, UUID}
 
 import bml.util.JavaNameSpace
 import bml.util.java.poet.{StaticImport, StaticImportMethod}
-import com.squareup.javapoet.{ClassName, ParameterizedTypeName, TypeName}
+import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName}
 import lombok.Getter
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
+import org.junit.jupiter.api.DisplayName
 
 object ClassNames {
 
@@ -18,9 +19,11 @@ object ClassNames {
     ClassName.get(namespace.nameSpace, className);
   }
 
+  val java = new Object {
+    val `override` = classOf[Override]
+  }
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
-  val `override` = classOf[Override]
   val string = ClassName.get(classOf[String])
   val integer = ClassName.get(classOf[Integer])
   val localDate = ClassName.get(classOf[LocalDate])
@@ -140,6 +143,9 @@ object ClassNames {
   //####################################################################################################################
   // BEGIN Junit5 ######################################################################################################
   val test = ClassName.get("org.junit.jupiter.api", "Test")
+  val displayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
+
+  def displayName(testNAme: String): AnnotationSpec = AnnotationSpec.builder(displayName).addMember("value", "$S", testNAme).build()
 
   // END Junit5 ########################################################################################################
   //####################################################################################################################

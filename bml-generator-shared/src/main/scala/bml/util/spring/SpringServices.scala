@@ -1,11 +1,13 @@
 package bml.util.spring
 
 import bml.util.java.ClassNames._
+import bml.util.java.ClassNames.java.`override`
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource, Service}
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.Modifier._
 
 object SpringServices {
@@ -151,17 +153,13 @@ object SpringServices {
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .returns(ClassNames.responseEntity)
     if (isconcrete) {
-      methodSpec.addModifiers(PUBLIC)
+      methodSpec.addModifiers(Modifier.PUBLIC)
     } else {
-      methodSpec.addModifiers(PUBLIC, ABSTRACT)
+      methodSpec.addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
     }
     methodSpec.addJavadoc(operation.description.getOrElse(""))
-    methodSpec.addJavadoc("\n")
-
-    methodSpec.addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
-    methodSpec.addJavadoc("\n")
-    methodSpec.addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
-
+    .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
+    .addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)

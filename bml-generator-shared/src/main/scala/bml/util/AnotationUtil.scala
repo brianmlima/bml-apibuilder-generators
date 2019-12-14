@@ -19,7 +19,7 @@ object AnotationUtil {
 
   def notBlank = ClassNames.notBlank
 
-  def `override` = ClassNames.`override`
+  def `override` = ClassNames.java.`override`
 
   def autowired = ClassNames.autowired
 

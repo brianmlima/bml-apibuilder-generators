@@ -5,9 +5,9 @@ import io.apibuilder.spec.v0.models.Service
 
 import lib.Text._
 
-class NameSpaces(apiBuilderService: Service) extends JavaNamespaceUtil {
+class NameSpaces(nameSpaceString: String) extends JavaNamespaceUtil {
 
-  val nameSpace = makeNameSpace(apiBuilderService.namespace)
+  val nameSpace = makeNameSpace(nameSpaceString)
   val base = new JavaNameSpace(nameSpace)
   val application = new JavaNameSpace(nameSpace, "application")
   val model = new JavaNameSpace(nameSpace, "models")
@@ -17,4 +17,7 @@ class NameSpaces(apiBuilderService: Service) extends JavaNamespaceUtil {
   val config = new JavaNameSpace(nameSpace, "config")
   val tool = new JavaNameSpace(nameSpace, "tool")
 
+  def this(apiBuilderService: Service) {
+    this(apiBuilderService.namespace);
+  }
 }
