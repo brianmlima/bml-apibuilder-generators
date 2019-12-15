@@ -1,14 +1,14 @@
 package bml.util.java.testing
 
 import bml.util.AnotationUtil.{JunitAnno, LombokAnno}
-import bml.util.java.ClassNames.HamcrestTypes
+import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes}
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.{AnotationUtil, NameSpaces}
-import bml.util.java.{ClassNames, TestSuppliers}
+import bml.util.java.{ClassNames, JavaPojoTestFixtures, JavaPojoUtil, TestSuppliers}
 import bml.util.java.poet.StaticImport
 import com.squareup.javapoet.{ClassName, FieldSpec, MethodSpec, TypeSpec}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Service
+import io.apibuilder.spec.v0.models.{Model, Service}
 
 object ExcersicePojoSpringValidation {
 
@@ -56,6 +56,27 @@ object ExcersicePojoSpringValidation {
         .build()
     }
 
+    def pojoValidationTestMethodName(model: Model): String = {
+      "test" + JavaPojoUtil.toClassName(model) + "Validation"
+    }
+
+    def pojoValidationTestDisplayName(model: Model): String = {
+      "Testing Validation on " + JavaPojoUtil.toClassName(model) + " provided by " + JavaPojoTestFixtures.mockFactoryClassName(nameSpaces, model)
+    }
+
+    def buildValidationTest(model: Model): MethodSpec = {
+
+      val mockFactoryClassName = JavaPojoTestFixtures.mockFactoryClassName(nameSpaces, model)
+      val modelClassName = ClassName.get(nameSpaces.model.nameSpace, JavaPojoUtil.toClassName(model))
+
+      methodBuilder(pojoValidationTestMethodName(model)).addModifiers(PUBLIC)
+        .addAnnotation(JunitAnno.Test)
+        .addAnnotation(JunitAnno.DisplayName(pojoValidationTestDisplayName(model)))
+        .addStatement("$T object = $T.$L.get()", modelClassName, mockFactoryClassName, JavaPojoTestFixtures.defaultFactoryStaticParamName)
+        .addStatement("validator.validate(object)")
+        .build()
+    }
+
 
     val typeSpec = classBuilder(theClassName).addModifiers(PUBLIC)
       .addAnnotation(LombokAnno.Slf4j)
@@ -64,6 +85,7 @@ object ExcersicePojoSpringValidation {
           .initializer("$T.buildDefaultValidatorFactory().getValidator()", JavaxValidationTypes.Validation)
           .build()
       )
+      .addMethods(service.models.map(buildValidationTest).asJava)
       .addMethod(validationTestMethod())
 
     makeFile(theClassName.simpleName(), nameSpaces.model, typeSpec, staticImports: _*)

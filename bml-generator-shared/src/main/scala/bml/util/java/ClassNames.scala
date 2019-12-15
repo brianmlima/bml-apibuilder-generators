@@ -6,6 +6,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
 import bml.util.JavaNameSpace
+import bml.util.java.ClassNames.HamcrestTypes.MatcherAssert
 import bml.util.java.poet.{StaticImport, StaticImportMethod}
 import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName}
 import lombok.Builder.Default
@@ -77,6 +78,24 @@ object ClassNames {
 
   val invocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
   val method = ClassName.get("java.lang.reflect", "Method")
+
+
+  object JavaTypes {
+    val Supplier = ClassName.get("java.util.function", "Supplier")
+
+    def supplier(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Supplier, className)
+    }
+
+    def supplier(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Supplier, typeName)
+    }
+
+    def Collectors = ClassName.get("java.util.stream", "Collectors")
+
+    def toList = StaticImportMethod(Collectors, "toList")
+
+  }
 
 
   // END JAVA CORE #####################################################################################################
@@ -219,6 +238,7 @@ object ClassNames {
     object JavaxValidationTypes {
       val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
       val NotBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
+      val NotEmpty = ClassName.bestGuess("javax.validation.constraints.NotEmpty")
       val Pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
       val Size = ClassName.bestGuess("javax.validation.constraints.Size")
       val Email = ClassName.bestGuess("javax.validation.constraints.Email")

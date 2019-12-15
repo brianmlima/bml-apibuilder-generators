@@ -1,6 +1,7 @@
 package bml.util
 
 import bml.util.java.ClassNames
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, TypeSpec}
 import io.apibuilder.spec.v0.models.Attribute
@@ -14,7 +15,6 @@ object AnotationUtil {
 
 
   object SpringAnno {
-
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
 
     object SpringTestAnno {
@@ -23,9 +23,7 @@ object AnotationUtil {
 
       def SpringJUnitConfig(className: ClassName) = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringJUnitConfig)
         .addMember("value", "$T.class", className).build()
-
     }
-
 
   }
 
@@ -38,11 +36,22 @@ object AnotationUtil {
     def DisplayName(displayName: String) = AnnotationSpec.builder(ClassNames.JunitTypes.DisplayName)
       .addMember("value", "$S", displayName)
       .build()
-
   }
 
   object LombokAnno {
     val Slf4j = AnnotationSpec.builder(ClassNames.LombokTypes.Slf4j).build()
+  }
+
+  object JavaxAnnotations {
+
+    object JavaxValidationAnnotations {
+      def NotNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
+
+      def NotBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
+
+      def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
+    }
+
   }
 
 
@@ -50,15 +59,9 @@ object AnotationUtil {
     .builder(classOf[Accessors])
     .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
-  def notNull = ClassNames.notNull
-
-  def notBlank = ClassNames.notBlank
-
   def `override` = ClassNames.java.`override`
 
   def autowired = ClassNames.autowired
-
-  def springBootTest = ClassNames.springBootTest
 
   def jsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
     .addMember("value", "$S", name)

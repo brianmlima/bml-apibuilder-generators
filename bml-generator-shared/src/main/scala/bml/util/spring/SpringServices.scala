@@ -1,5 +1,6 @@
 package bml.util.spring
 
+import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.java.ClassNames._
 import bml.util.java.ClassNames.java.`override`
 import bml.util.java.{ClassNames, JavaPojoUtil}
@@ -175,7 +176,7 @@ object SpringServices {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
     val javaDataType = modelDataType(nameSpaces, parameter)
     val builder = ParameterSpec.builder(javaDataType, paramName)
-    if (parameter.required || parameter.default.isDefined) builder.addAnnotation(AnotationUtil.notNull)
+    if (parameter.required || parameter.default.isDefined) builder.addAnnotation(JavaxValidationAnnotations.NotNull)
     builder.build()
   }
 

@@ -2,6 +2,7 @@ package models.generator.lombok
 
 import java.lang.IllegalArgumentException
 
+import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.AnotationUtil.singular
 import bml.util.java.ClassNames.{builder, _}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil, JavaPojos}
@@ -141,25 +142,22 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           .addModifiers(PROTECTED)
           .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
           .addAnnotation(getter)
-
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
-          fieldBuilder.addAnnotation(singular)
+          //fieldBuilder.addAnnotation(singular)
         }
-
-
         if (field.required) {
-          fieldBuilder.addAnnotation(AnotationUtil.notNull)
+          fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
         }
         if (field.minimum.isDefined || field.maximum.isDefined) {
-          try {
+          if (field.`type` != "integer") {
             fieldBuilder.addAnnotation(JavaPojos.handleSizeAttribute(classBuilder, field))
-          } catch {
-            case x: IllegalArgumentException => {
-              throw new PlayException("Validation Issue", x.getMessage, x)
-            }
           }
         }
-
+        if (JavaPojoUtil.isParameterArray(field.`type`)) {
+          if (field.required) {
+            fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotEmpty)
+          }
+        }
 
         ///////////////////////////////////////
         //Deal with javadocs

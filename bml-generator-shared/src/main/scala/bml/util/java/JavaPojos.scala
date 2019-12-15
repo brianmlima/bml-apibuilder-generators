@@ -38,7 +38,7 @@ object JavaPojos {
   val requiredFieldsFieldName = "REQUIRED_FIELDS"
 
   def makeRequiredFieldsField(model: Model): FieldSpec = {
-    val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name).seq
+    val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name)
     val fieldSpec = FieldSpec.builder(ClassNames.list(string), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
     if (fieldNames.isEmpty) {
       fieldSpec.initializer("$T.emptyList", collections)

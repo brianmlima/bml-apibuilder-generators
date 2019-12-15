@@ -26,6 +26,8 @@ object MethodArgumentNotValidExceptionHandler {
    */
   def get(nameSpaces: NameSpaces): Seq[File] = {
 
+    val staticImports = Seq(JavaTypes.toList.staticImport)
+
     val builder = TypeSpec.classBuilder(name)
       .addAnnotation(AnnotationSpec.builder(order).addMember("value", "$T.HIGHEST_PRECEDENCE", ordered).build())
       .addAnnotation(controllerAdvice)
@@ -50,25 +52,18 @@ object MethodArgumentNotValidExceptionHandler {
           .addCode("final $T responseBuilder = $T.builder()", fieldValidationResponseBuilder, fieldValidationResponse)
           .addCode(".status($T.BAD_REQUEST.value())", httpStatus)
           .addCode(".message($S);", "validation error")
-          .addCode(
-            CodeBlock.builder()
-              .beginControlFlow("for($T fieldError: fieldErrors)", fieldError)
-              .add(
-                CodeBlock.builder()
-                  .add("responseBuilder.error(")
-                  .add("$T.builder().path(fieldError.getField()).message(fieldError.getDefaultMessage()).build()", fieldValidationError)
-                  .add(");")
-                  .build()
-              )
-              .endControlFlow()
-              .build()
+          .addStatement("responseBuilder.errors(" +
+            "fieldErrors.stream().map(" +
+            "(fieldError)->$T.builder().path(fieldError.getField()).message(fieldError.getDefaultMessage()).build()" +
+            ").collect($T.toList()))",
+            fieldValidationError,
+            JavaTypes.Collectors
           )
           .addStatement("return responseBuilder.build()")
           .build()
       )
 
-
-    Seq(makeFile(name, nameSpaces.controller, builder))
+    Seq(makeFile(name, nameSpaces.controller, builder, staticImports: _*))
   }
 
 
