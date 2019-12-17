@@ -2,18 +2,24 @@ package bml.util.java.testing
 
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
+import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes, LombokTypes}
 import bml.util.java.{ClassNames, JavaPojoTestFixtures, JavaPojoUtil, JavaPojos}
 import bml.util.java.poet.StaticImport
 import com.squareup.javapoet.{ClassName, CodeBlock, MethodSpec, ParameterSpec, TypeSpec}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Service
 import javax.lang.model.element.Modifier
+
 import scala.collection.JavaConverters._
 
 object ExercisePojos {
 
 
   def excersisePojoTestClass(service: Service, nameSpaces: NameSpaces): File = {
+
+    import bml.util.java.JavaPojoTestFixtures.generateMethodName
+
+
     val className = ClassName.get(nameSpaces.base.nameSpace, "ExercisePojosTests")
 
     val staticImports = Seq[StaticImport](
@@ -37,7 +43,9 @@ object ExercisePojos {
         ).asJava, "\n"
     )
 
+
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+      .addAnnotation(LombokTypes.Slf4j)
       .addMethods(
 
         service
@@ -59,13 +67,6 @@ object ExercisePojos {
                 .build()
           ).asJava
       )
-      //      .addMethod(
-      //        MethodSpec.methodBuilder("exercisePojos").addAnnotation(ClassNames.test)
-      //          .addException(ClassName.get("", "Exception"))
-      //          .addCode(foo)
-      //          .build()
-      //
-      //      )
       .addMethod(
         MethodSpec.methodBuilder("excersizePojo").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
           .addException(ClassName.get("", "Exception"))
@@ -73,7 +74,30 @@ object ExercisePojos {
           .addParameter(ParameterSpec.builder(ClassNames.`class`, "factoryClass", Modifier.FINAL).build())
           .addStatement("final Object factoryBuilder = factoryClass.getDeclaredMethod(\"builder\", null).invoke(null, null)")
           .addStatement("final Object factory = factoryBuilder.getClass().getDeclaredMethod(\"build\", null).invoke(factoryBuilder, null)")
-          .addStatement("Object anObject = factory.getClass().getDeclaredMethod(\"$L\", null).invoke(factory, null)", JavaPojoTestFixtures.generateMethodName)
+
+          .addCode(
+            CodeBlock.builder()
+              .addStatement("$T $L = null", JavaTypes.Method, generateMethodName)
+              .beginControlFlow("try")
+              .addStatement("$L = factory.getClass().getDeclaredMethod(\"$L\", null)", generateMethodName, generateMethodName)
+              .endControlFlow()
+              .beginControlFlow("catch ($T e)", JavaTypes.Exception)
+              .addStatement("log.error(\"{} caught msg={}\",e.getClass().getSimpleName(),e.getMessage(),e)")
+              .addStatement("throw e")
+              .endControlFlow()
+              .build()
+
+          )
+
+          .addStatement(
+            "assertThat($T.format(\"{}\",$L.getClass().getSimpleName()),$L,$L())",
+            JavaTypes.String,
+            generateMethodName,
+            generateMethodName,
+            HamcrestTypes.notNullValue.methodName
+          )
+          .addStatement("log.debug(\"Using {}.{}()\",factory.getClass().getSimpleName(),$S)", generateMethodName)
+          .addStatement("Object anObject = $L.invoke(factory, null)", generateMethodName)
           .addStatement("" +
             "$L($T.format(\"%s should not be null\", anObject.getClass()), anObject, $L())",
             ClassNames.assertThat.methodName,

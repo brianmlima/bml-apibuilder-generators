@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.headers.CacheDirectives.public
 import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.{illegalArgumentException, math, randomUtils, string, stringBuilder, supplier}
+import bml.util.java.JavaPojoTestFixtures.defaultSupplierMethodName
 import bml.util.{AnotationUtil, NameSpaces, java}
 import com.squareup.javapoet
 import com.squareup.javapoet.TypeName.INT
@@ -117,6 +118,12 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               }
+              if (JavaPojoUtil.isParameterArray(field)) {
+                fiedlSpec
+                  .addAnnotation(ClassNames.builderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+
               if (JavaPojoUtil.isModelType(service, field)) {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)

@@ -127,6 +127,11 @@ object ClassNames {
       ParameterizedTypeName.get(ArrayList, typeName)
     }
 
+    def Method = ClassName.get("java.lang.reflect", "Method")
+
+    def Exception = ClassName.get("", "Exception")
+
+
   }
 
 
