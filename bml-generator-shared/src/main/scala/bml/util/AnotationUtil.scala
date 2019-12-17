@@ -1,7 +1,7 @@
 package bml.util
 
 import bml.util.java.ClassNames
-import bml.util.java.ClassNames.JavaTypes
+import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, TypeSpec}
@@ -62,7 +62,7 @@ object AnotationUtil {
 
   def `override` = JavaTypes.`Override`
 
-  def autowired = ClassNames.autowired
+  def autowired = SpringTypes.Autowired
 
   def jsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
     .addMember("value", "$S", name)
@@ -70,7 +70,7 @@ object AnotationUtil {
     .build()
 
   def getMappingJson(path: String): AnnotationSpec = {
-    AnnotationSpec.builder(ClassNames.getMapping)
+    AnnotationSpec.builder(SpringTypes.GetMapping)
       .addMember("path", "$S", path)
       .addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
       .build()

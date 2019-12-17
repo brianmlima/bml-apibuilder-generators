@@ -1,5 +1,7 @@
 package bml.util.java
 
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.ClassNames.{LombokTypes, SpringTypes}
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.squareup.javapoet._
 import javax.lang.model.element.Modifier._
@@ -64,16 +66,16 @@ object JavaCommonClasses {
   def baseEntity(packageName: String): TypeSpec.Builder = TypeSpec.classBuilder("BaseEntity")
     .addModifiers(PUBLIC, ABSTRACT)
     .addTypeVariable(TypeVariableName.get("T", ClassName.get("", "BaseEntity")))
-    .addSuperinterface(ClassNames.objectIdentity)
+    .addSuperinterface(SpringTypes.ObjectIdentity)
     .addAnnotation(ClassNames.mappedSuperclass)
-    .addAnnotation(ClassNames.validated)
-    .addAnnotation(ClassNames.slf4j)
+    .addAnnotation(SpringTypes.Validated)
+    .addAnnotation(LombokTypes.Slf4j)
     .addField(serialVersionUID())
     .addMethod(abstractGetThis())
 
   def baseRepository(packageName: String): TypeSpec.Builder = {
 
-    val notNull = AnnotationSpec.builder(ClassNames.notNull).build()
+    val notNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
     val javersAuditable = AnnotationSpec.builder(classOf[JaversAuditable]).build()
 
     case class TypeHelper(packagePath: String, className: String) {

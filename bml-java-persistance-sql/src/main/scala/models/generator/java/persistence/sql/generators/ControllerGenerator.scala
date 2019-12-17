@@ -1,5 +1,6 @@
 package models.generator.java.persistence.sql.generators
 
+import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Method, Operation, Parameter}
@@ -20,7 +21,7 @@ object ControllerGenerator extends JavaPojoUtil {
         //Is a public class
         .addModifiers(PUBLIC)
         .addAnnotation(ClassNames.slf4j)
-        .addAnnotation(ClassNames.restController)
+        .addAnnotation(SpringTypes.RestController)
     )
 
     val classBuilder: TypeSpec.Builder = resourceData.controllerBuilder.get
@@ -50,7 +51,7 @@ object ControllerGenerator extends JavaPojoUtil {
     val methodBuilder = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
       .addAnnotation(makeRequestMapping(operation))
-      .returns(ClassNames.responseEntity)
+      .returns(SpringTypes.ResponseEntity)
     operation.parameters.foreach(
       param => {
         val paramSpec: ParameterSpec = ControllerGenerator.toParameterSpec(param, operation, resourceData)
@@ -81,11 +82,11 @@ object ControllerGenerator extends JavaPojoUtil {
     var paramAnnotation: AnnotationSpec.Builder = null;
 
     if (isPathVariable(param, operation)) {
-      paramAnnotation = AnnotationSpec.builder(ClassNames.pathVariable)
+      paramAnnotation = AnnotationSpec.builder(SpringTypes.PathVariable)
         .addMember("name", "$S", paramName)
 
     } else {
-      paramAnnotation = AnnotationSpec.builder(ClassNames.requestParam)
+      paramAnnotation = AnnotationSpec.builder(SpringTypes.RequestParam)
         .addMember("name", "$S", paramName)
     }
 
@@ -108,12 +109,12 @@ object ControllerGenerator extends JavaPojoUtil {
   def makeRequestMapping(operation: Operation): AnnotationSpec = {
     val annotationSpec = operation.method match {
       case Method.Get =>
-        AnnotationSpec.builder(ClassNames.getMapping)
+        AnnotationSpec.builder(SpringTypes.GetMapping)
       case Method.Post =>
-        AnnotationSpec.builder(ClassNames.postMapping)
+        AnnotationSpec.builder(SpringTypes.PostMapping)
       case Method.Put =>
-        AnnotationSpec.builder(ClassNames.putMapping)
-      case _ => AnnotationSpec.builder(ClassNames.requestMapping)
+        AnnotationSpec.builder(SpringTypes.PutMapping)
+      case _ => AnnotationSpec.builder(SpringTypes.RequestMapping)
     }
     annotationSpec
       .addMember("path", "$S", toSpringRequestMappingPath(operation))

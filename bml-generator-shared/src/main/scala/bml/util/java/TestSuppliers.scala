@@ -286,7 +286,7 @@ object TestSuppliers {
           .addStatement("int requestWordCount = (int) $T.ceil(max / $T.ENGLISH_AVG_WORD_LENGTH)", JavaTypes.Math, JavaPojoTestFixtures.languagesClassName(nameSpaces))
           .addStatement("final $T[] words = $T.getWords(locale, requestWordCount).split(\"[ ]\")", JavaTypes.String, LoremTooling.loremToolClassName(nameSpaces))
           .addStatement("final int randStringLength = $T.nextInt(min, max)", ClassNames.randomUtils)
-          .addStatement("final $T buff = new $T()", ClassNames.stringBuilder, ClassNames.stringBuilder)
+          .addStatement("final $T buff = new $T()", JavaTypes.StringBuilder, JavaTypes.StringBuilder)
           .beginControlFlow("for ($T word : words)", JavaTypes.String)
           .add("if (buff.length() <= randStringLength) { buff.append(word); } else { break; }")
           .endControlFlow()

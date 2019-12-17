@@ -1,16 +1,16 @@
 package bml.util.spring
 
-import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
-import bml.util.java.ClassNames._
-import bml.util.java.JavaArrays.arrayOf
-import com.squareup.javapoet.CodeBlock.of
-import com.squareup.javapoet._
+import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import io.apibuilder.generator.v0.models.File
-import javax.lang.model.element.Modifier._
-
 
 object MethodArgumentNotValidExceptionHandler {
+
+  import com.squareup.javapoet._
+  import javax.lang.model.element.Modifier._
+  import com.squareup.javapoet.CodeBlock.of
+  import bml.util.java.JavaArrays.arrayOf
+  import bml.util.GeneratorFSUtil.makeFile
 
   /**
    * The generated class simple name
@@ -29,28 +29,28 @@ object MethodArgumentNotValidExceptionHandler {
     val staticImports = Seq(JavaTypes.toList.staticImport)
 
     val builder = TypeSpec.classBuilder(name)
-      .addAnnotation(AnnotationSpec.builder(order).addMember("value", "$T.HIGHEST_PRECEDENCE", ordered).build())
-      .addAnnotation(controllerAdvice)
+      .addAnnotation(AnnotationSpec.builder(SpringTypes.Order).addMember("value", "$T.HIGHEST_PRECEDENCE", SpringTypes.Ordered).build())
+      .addAnnotation(SpringTypes.ControllerAdvice)
       .addMethod(
         MethodSpec.methodBuilder("methodArgumentNotValidException")
           .returns(fieldValidationResponse)
-          .addParameter(methodArgumentNotValidException, "ex")
+          .addParameter(SpringTypes.MethodArgumentNotValidException, "ex")
           .addModifiers(PUBLIC)
           .addAnnotation(responseStatusBadRequest)
-          .addAnnotation(responseBody)
+          .addAnnotation(SpringTypes.ResponseBody)
           .addAnnotation(badArgExceptionHandler)
-          .addStatement(of("$T result = ex.getBindingResult()", bindingResult))
-          .addStatement(of("$T fieldErrors = result.getFieldErrors()", arrayOf(fieldError)))
+          .addStatement(of("$T result = ex.getBindingResult()", SpringTypes.BindingResult))
+          .addStatement(of("$T fieldErrors = result.getFieldErrors()", arrayOf(SpringTypes.FieldError)))
           .addStatement(of("return processFieldErrors(fieldErrors)"))
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("processFieldErrors")
           .returns(fieldValidationResponse)
-          .addParameter(arrayOf(fieldError), "fieldErrors", FINAL)
+          .addParameter(arrayOf(SpringTypes.FieldError), "fieldErrors", FINAL)
           .addModifiers(PRIVATE)
           .addCode("final $T responseBuilder = $T.builder()", fieldValidationResponseBuilder, fieldValidationResponse)
-          .addCode(".status($T.BAD_REQUEST.value())", httpStatus)
+          .addCode(".status($T.BAD_REQUEST.value())", SpringTypes.HttpStatus)
           .addCode(".message($S);", "validation error")
           .addStatement("responseBuilder.errors(" +
             "fieldErrors.stream().map(" +
@@ -73,9 +73,9 @@ object MethodArgumentNotValidExceptionHandler {
 
   private def fieldValidationResponseBuilder = ClassName.get("org.bml.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
 
-  private def responseStatusBadRequest = AnnotationSpec.builder(responseStatus).addMember("value", "$T.BAD_REQUEST", httpStatus).build()
+  private def responseStatusBadRequest = AnnotationSpec.builder(SpringTypes.ResponseStatus).addMember("value", "$T.BAD_REQUEST", SpringTypes.HttpStatus).build()
 
-  private def badArgExceptionHandler = AnnotationSpec.builder(exceptionHandler).addMember("value", "$T.class", methodArgumentNotValidException).build()
+  private def badArgExceptionHandler = AnnotationSpec.builder(SpringTypes.ExceptionHandler).addMember("value", "$T.class", SpringTypes.MethodArgumentNotValidException).build()
 
 
 }

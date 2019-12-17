@@ -1,5 +1,6 @@
 package bml.util.spring
 
+import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import com.squareup.javapoet.{AnnotationSpec, _}
@@ -33,7 +34,7 @@ object SpringControllers {
     val name = SpringControllers.toControllerName(resource)
     val builder = TypeSpec.classBuilder(name)
       .addModifiers(PUBLIC)
-      .addAnnotation(ClassNames.controller)
+      .addAnnotation(SpringTypes.Controller)
       .addAnnotation(ClassNames.slf4j)
       .addField(
         FieldSpec.builder(
@@ -54,7 +55,7 @@ object SpringControllers {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
-      .returns(ClassNames.responseEntityOfObject)
+      .returns(SpringTypes.ResponseEntityOfObject)
 
 
     val version = nameSpaces.base.nameSpace.split("\\.").last
@@ -83,10 +84,10 @@ object SpringControllers {
 
   private def getParamAnnotation(location: ParameterLocation) = {
     location match {
-      case Query => Some(ClassNames.requestParam)
-      case Header => Some(ClassNames.requestHeader)
-      case Form => Some(ClassNames.requestParam)
-      case Path => Some(ClassNames.pathVariable)
+      case Query => Some(SpringTypes.RequestParam)
+      case Header => Some(SpringTypes.RequestHeader)
+      case Form => Some(SpringTypes.RequestParam)
+      case Path => Some(SpringTypes.PathVariable)
       case UNDEFINED(_) => {
         None
       }

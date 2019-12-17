@@ -3,7 +3,8 @@ package bml.util.java
 import java.time.LocalDate
 import java.util
 import java.util.concurrent.ThreadLocalRandom
-import java.util.{Locale, Random, UUID}
+import java.util.stream.Collectors
+import java.util.{Locale, Random, UUID, stream}
 
 import bml.util.JavaNameSpace
 import bml.util.java.ClassNames.HamcrestTypes.MatcherAssert
@@ -29,7 +30,7 @@ object ClassNames {
     val String = ClassName.get(classOf[String])
     val Collections = ClassName.bestGuess("java.util.Collections")
     val Arrays = ClassName.get("java.util", "Arrays")
-      val Supplier = ClassName.get("java.util.function", "Supplier")
+    val Supplier = ClassName.get("java.util.function", "Supplier")
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
     val Random = ClassName.get(classOf[Random])
@@ -41,6 +42,9 @@ object ClassNames {
     val `Boolean` = ClassName.get("java.lang", "Boolean")
     val `Class` = ClassName.get("", "Class")
     val InvocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
+    val StringBuilder = ClassName.get("java.lang", "StringBuilder")
+
+    def Collectors = ClassName.get("java.util.stream", "Collectors")
 
 
     def supplier(className: ClassName): ParameterizedTypeName = {
@@ -51,7 +55,6 @@ object ClassNames {
       ParameterizedTypeName.get(Supplier, typeName)
     }
 
-    def Collectors = ClassName.get("java.util.stream", "Collectors")
 
     def toList = StaticImportMethod(Collectors, "toList")
 
@@ -98,46 +101,75 @@ object ClassNames {
 
   val randomUtils = ClassName.get("org.apache.commons.lang3", "RandomUtils")
 
-  val stringBuilder = ClassName.get("java.lang", "StringBuilder")
 
   //####################################################################################################################
   // BEGIN Spring ######################################################################################################
-  val responseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
-
-  def responseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(responseEntity, className)
-
-  val responseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
-  val responseStatus = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseStatus")
-  val responseEntityOfObject: ParameterizedTypeName = responseEntity(ClassName.OBJECT)
-  val springApplication = ClassName.get("org.springframework.boot", "SpringApplication")
-  val springBootApplication = ClassName.get("org.springframework.boot.autoconfigure", "SpringBootApplication")
-  val controller = ClassName.get("org.springframework.stereotype", "Controller")
-  val springBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
-  val autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
-  val getMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
-  val postMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
-  val putMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
-  val requestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
-  val httpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
-  val methodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
-  val exceptionHandler = ClassName.bestGuess("org.springframework.web.bind.annotation.ExceptionHandler")
-  val controllerAdvice = ClassName.bestGuess("org.springframework.web.bind.annotation.ControllerAdvice")
-  val fieldError = ClassName.bestGuess("org.springframework.validation.FieldError")
-  val bindingResult = ClassName.bestGuess("org.springframework.validation.BindingResult")
-  val ordered = ClassName.bestGuess("org.springframework.core.Ordered")
-  val order = ClassName.bestGuess("org.springframework.core.annotation.Order")
-  val pathVariable = ClassName.bestGuess("org.springframework.web.bind.annotation.PathVariable")
-  val requestHeader = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestHeader")
-  val requestParam = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestParam")
-  val objectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
-  val noRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
-  val validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
-  val restController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
+  //  val ResponseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
+  //  def ResponseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(ResponseEntity, className)
+  //  val ResponseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
+  //  val ResponseStatus = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseStatus")
+  //  val ResponseEntityOfObject: ParameterizedTypeName = ResponseEntity(ClassName.OBJECT)
+  //  val SpringApplication = ClassName.get("org.springframework.boot", "SpringApplication")
+  //  val SpringBootApplication = ClassName.get("org.springframework.boot.autoconfigure", "SpringBootApplication")
+  //  val Controller = ClassName.get("org.springframework.stereotype", "Controller")
+  //  val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
+  //  val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
+  //  val GetMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
+  //  val PostMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
+  //  val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
+  //  val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
+  //  val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+  //  val MethodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
+  //  val ExceptionHandler = ClassName.bestGuess("org.springframework.web.bind.annotation.ExceptionHandler")
+  //  val ControllerAdvice = ClassName.bestGuess("org.springframework.web.bind.annotation.ControllerAdvice")
+  //  val FieldError = ClassName.bestGuess("org.springframework.validation.FieldError")
+  //  val BindingResult = ClassName.bestGuess("org.springframework.validation.BindingResult")
+  //  val Ordered = ClassName.bestGuess("org.springframework.core.Ordered")
+  //  val Order = ClassName.bestGuess("org.springframework.core.annotation.Order")
+  //  val PathVariable = ClassName.bestGuess("org.springframework.web.bind.annotation.PathVariable")
+  //  val RequestHeader = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestHeader")
+  //  val RequestParam = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestParam")
+  //  val ObjectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
+  //  val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
+  //  val Validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
+  //  val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
 
   object SpringTypes {
 
     val Configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
     val Bean = ClassName.get("org.springframework.context.annotation", "Bean")
+    val ResponseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
+
+    def ResponseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(ResponseEntity, className)
+
+    val ResponseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
+    val ResponseStatus = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseStatus")
+    val ResponseEntityOfObject: ParameterizedTypeName = ResponseEntity(ClassName.OBJECT)
+    val SpringApplication = ClassName.get("org.springframework.boot", "SpringApplication")
+    val SpringBootApplication = ClassName.get("org.springframework.boot.autoconfigure", "SpringBootApplication")
+    val Controller = ClassName.get("org.springframework.stereotype", "Controller")
+    val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
+    val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
+    val GetMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
+    val PostMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
+    val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
+    val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
+    val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+    val MethodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
+    val ExceptionHandler = ClassName.bestGuess("org.springframework.web.bind.annotation.ExceptionHandler")
+    val ControllerAdvice = ClassName.bestGuess("org.springframework.web.bind.annotation.ControllerAdvice")
+    val FieldError = ClassName.bestGuess("org.springframework.validation.FieldError")
+    val BindingResult = ClassName.bestGuess("org.springframework.validation.BindingResult")
+    val Ordered = ClassName.bestGuess("org.springframework.core.Ordered")
+    val Order = ClassName.bestGuess("org.springframework.core.annotation.Order")
+    val PathVariable = ClassName.bestGuess("org.springframework.web.bind.annotation.PathVariable")
+    val RequestHeader = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestHeader")
+    val RequestParam = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestParam")
+    val ObjectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
+    val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
+    val Validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
+    val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
+
 
     object SpringTestTypes {
       val SpringExtension = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringExtension")

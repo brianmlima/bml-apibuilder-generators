@@ -124,7 +124,7 @@ object SpringServices {
     val serviceName = toServiceClassName(nameSpaces, resource)
     val implName = toServiceMockClassName(nameSpaces, resource)
     val implBuilder = TypeSpec.classBuilder(implName).addModifiers(PUBLIC)
-      .addAnnotation(ClassNames.springBootTest)
+      .addAnnotation(SpringTypes.SpringBootTest)
       .addField(
         FieldSpec.builder(serviceName, JavaPojoUtil.toParamName(serviceName.simpleName(), true), PRIVATE)
           .addAnnotation(ClassNames.mock)
@@ -151,7 +151,7 @@ object SpringServices {
   private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
     val methodName = toOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
-      .returns(ClassNames.responseEntity)
+      .returns(SpringTypes.ResponseEntity)
     if (isconcrete) {
       methodSpec.addModifiers(PUBLIC)
     } else {
@@ -159,7 +159,7 @@ object SpringServices {
     }
     methodSpec.addJavadoc(operation.description.getOrElse(""))
       .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
-      .addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
+      .addJavadoc(s"@return ${SpringTypes.ResponseEntity.simpleName()}")
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)

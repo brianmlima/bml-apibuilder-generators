@@ -1,6 +1,7 @@
 package models.generator.java.persistence.sql
 
 import bml.util.java.ClassNames
+import bml.util.java.ClassNames.SpringTypes
 import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model}
@@ -13,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import scala.collection.mutable.ListBuffer
 
 /**
-  * Utilities for generating java persistance code.
-  */
+ * Utilities for generating java persistance code.
+ */
 class GenUtils {
 
 }
@@ -90,7 +91,7 @@ object GenUtils {
 
   def table(tableName: String): AnnotationSpec = AnnotationSpec.builder(classOf[Table]).addMember("name", "$S", tableName).build()
 
-  def validated: AnnotationSpec = AnnotationSpec.builder(ClassNames.validated).build()
+  def validated: AnnotationSpec = AnnotationSpec.builder(SpringTypes.Validated).build()
 
   def valid: AnnotationSpec = AnnotationSpec.builder(ClassNames.valid).build()
 
