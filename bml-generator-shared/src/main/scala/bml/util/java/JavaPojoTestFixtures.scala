@@ -24,7 +24,7 @@ import collection.JavaConverters._
 
 object JavaPojoTestFixtures extends JavaPojoUtil {
 
-  private val LOG: Logger = LoggerFactory.getLogger(this.getClass)
+  private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
 
   def mockFactoryClassName(nameSpace: String, name: String): ClassName = {
@@ -81,7 +81,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         model.fields
           .map(
             (field) => {
-              LOG.info("Service={} Model={} Field.name={} Field.type={}", service.name, model.name, field.name, field.`type`)
+              log.info("Service={} Model={} Field.name={} Field.type={}", service.name, model.name, field.name, field.`type`)
 
               val fieldName = toFieldName(field)
               val fieldType = dataTypeFromField(field, nameSpaces.model)
@@ -97,34 +97,27 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-              if (field.`type` == "date-iso8601") {
+              } else if (field.`type` == "date-iso8601") {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-              if (field.`type` == "string") {
+              } else if (field.`type` == "string") {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-              if (field.`type` == "integer") {
+              } else if (field.`type` == "integer") {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-              if (JavaPojoUtil.isEnumType(service, field)) {
+              } else if (JavaPojoUtil.isEnumType(service, field)) {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-              if (JavaPojoUtil.isParameterArray(field)) {
+              } else if (JavaPojoUtil.isParameterArray(field)) {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              }
-
-              if (JavaPojoUtil.isModelType(service, field)) {
+              } else if (JavaPojoUtil.isModelType(service, field)) {
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
                   .initializer(
@@ -132,8 +125,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                     mockFactoryClassName(nameSpaces.modelFactory.nameSpace, field.`type`),
                     defaultObjectSupplierMethodName
                   )
-              }
-              if (JavaPojoUtil.isModelNameWithPackage(field.`type`)) {
+              } else if (JavaPojoUtil.isModelNameWithPackage(field.`type`)) {
                 val externalNameSpace = JavaPojoUtil.externalNameSpaceFromType(field.`type`)
                 fiedlSpec
                   .addAnnotation(ClassNames.builderDefault)
@@ -142,7 +134,13 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                     mockFactoryClassName(externalNameSpace.modelFactory.nameSpace, field.`type`),
                     defaultObjectSupplierMethodName
                   )
-
+              } else {
+                log.error(
+                  s"Unable to create a default builder value for " +
+                    s"Model=${model.name} " +
+                    s"Field=${field.name} " +
+                    s"Field.Type=${field.`type`} " +
+                    s"isModelNameWithPackage=${JavaPojoUtil.isModelNameWithPackage(field.`type`)}")
               }
 
               fiedlSpec.build()

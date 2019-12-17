@@ -71,7 +71,8 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   }
 
   def isModelNameWithPackage(modelName: String): Boolean = {
-    modelName.toLowerCase.equals(modelName) && modelName.contains(".")
+    // modelName.toLowerCase.equals(modelName) && modelName.contains(".")
+    modelName.contains(".")
   }
 
   def capitalizeModelNameWithPackage(modelName: String): String = {
