@@ -1,17 +1,16 @@
 package bml.util.spring
 
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.java.ClassNames._
-import bml.util.java.ClassNames.java.`override`
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
-import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource, Service}
 
 object SpringServices {
 
+  import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
+  import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
 
@@ -54,7 +53,7 @@ object SpringServices {
       ).addMethod(
       MethodSpec.methodBuilder("configureContentNegotiation")
         .addModifiers(PUBLIC)
-        .addAnnotation(`override`)
+        .addAnnotation(JavaTypes.`Override`)
         .addParameter(ParameterSpec.builder(contentNegotiationConfigurer, "configurer", FINAL).build())
         .addCode(
           CodeBlock.builder()
@@ -73,7 +72,7 @@ object SpringServices {
 
       MethodSpec.methodBuilder("extendMessageConverters")
         .addModifiers(PUBLIC)
-        .addAnnotation(`override`)
+        .addAnnotation(JavaTypes.`Override`)
         .addParameter(
           ParameterSpec.builder(
             ParameterizedTypeName.get(JavaTypes.List, ParameterizedTypeName.get(httpMessageConverter, ClassName.get("", "?"))),

@@ -21,70 +21,15 @@ object ClassNames {
     ClassName.get(namespace.nameSpace, className);
   }
 
-  val java = new Object {
-    val `override` = classOf[Override]
-  }
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
-  //val string = ClassName.get(classOf[String])
-  //  val integer = ClassName.get(classOf[Integer])
-  //  val localDate = ClassName.get(classOf[LocalDate])
-
-  //  val random = ClassName.get(classOf[Random])
-  //  val threadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
-
-//  val locale = ClassName.get(classOf[Locale])
-//  val supplier = ClassName.get("java.util.function", "Supplier")
-//  val uuid = ClassName.get(classOf[UUID])
-
-//  def supplier(className: ClassName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(supplier, className)
-//  }
-//
-//  def supplier(typeName: TypeName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(supplier, typeName)
-//  }
-
-//  val list = ClassName.get("java.util", "List")
-//
-//  def list(className: ClassName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(list, className)
-//  }
-//
-//  def list(typeName: TypeName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(list, typeName)
-//  }
-
-//
-//  val linkedList = ClassName.get("java.util", "LinkedList")
-//
-//  def linkedList(className: ClassName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(linkedList, className)
-//  }
-//
-//  def linkedList(typeName: TypeName): ParameterizedTypeName = {
-//    ParameterizedTypeName.get(linkedList, typeName)
-//  }
-
-  //val arrays = ClassName.get("java.util", "Arrays")
-//  val math = ClassName.get(classOf[Math])
-//
-//  val illegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
-//
-//  val `boolean` = ClassName.get("java.lang", "Boolean")
-//
-//  val `class` = ClassName.get("", "Class")
-//
-//  val invocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
-
-  //val method = ClassName.get("java.lang.reflect", "Method")
-
 
   object JavaTypes {
+    val `Override` = classOf[Override]
     val String = ClassName.get(classOf[String])
     val Collections = ClassName.bestGuess("java.util.Collections")
     val Arrays = ClassName.get("java.util", "Arrays")
-    val Supplier = ClassName.get("java.util.function", "Supplier")
+      val Supplier = ClassName.get("java.util.function", "Supplier")
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
     val Random = ClassName.get(classOf[Random])

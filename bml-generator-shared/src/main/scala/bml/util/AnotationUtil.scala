@@ -1,6 +1,7 @@
 package bml.util
 
 import bml.util.java.ClassNames
+import bml.util.java.ClassNames.JavaTypes
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, TypeSpec}
@@ -59,7 +60,7 @@ object AnotationUtil {
     .builder(classOf[Accessors])
     .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
-  def `override` = ClassNames.java.`override`
+  def `override` = JavaTypes.`Override`
 
   def autowired = ClassNames.autowired
 
