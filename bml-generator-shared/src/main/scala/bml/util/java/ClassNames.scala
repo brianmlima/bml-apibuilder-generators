@@ -8,6 +8,7 @@ import java.util.{Locale, Random, UUID, stream}
 
 import bml.util.JavaNameSpace
 import bml.util.java.ClassNames.HamcrestTypes.MatcherAssert
+import bml.util.java.ClassNames.displayName
 import bml.util.java.poet.{StaticImport, StaticImportMethod}
 import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName}
 import lombok.Builder.Default
@@ -104,35 +105,6 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Spring ######################################################################################################
-  //  val ResponseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
-  //  def ResponseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(ResponseEntity, className)
-  //  val ResponseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
-  //  val ResponseStatus = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseStatus")
-  //  val ResponseEntityOfObject: ParameterizedTypeName = ResponseEntity(ClassName.OBJECT)
-  //  val SpringApplication = ClassName.get("org.springframework.boot", "SpringApplication")
-  //  val SpringBootApplication = ClassName.get("org.springframework.boot.autoconfigure", "SpringBootApplication")
-  //  val Controller = ClassName.get("org.springframework.stereotype", "Controller")
-  //  val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
-  //  val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
-  //  val GetMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
-  //  val PostMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
-  //  val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
-  //  val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
-  //  val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
-  //  val MethodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
-  //  val ExceptionHandler = ClassName.bestGuess("org.springframework.web.bind.annotation.ExceptionHandler")
-  //  val ControllerAdvice = ClassName.bestGuess("org.springframework.web.bind.annotation.ControllerAdvice")
-  //  val FieldError = ClassName.bestGuess("org.springframework.validation.FieldError")
-  //  val BindingResult = ClassName.bestGuess("org.springframework.validation.BindingResult")
-  //  val Ordered = ClassName.bestGuess("org.springframework.core.Ordered")
-  //  val Order = ClassName.bestGuess("org.springframework.core.annotation.Order")
-  //  val PathVariable = ClassName.bestGuess("org.springframework.web.bind.annotation.PathVariable")
-  //  val RequestHeader = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestHeader")
-  //  val RequestParam = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestParam")
-  //  val ObjectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
-  //  val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
-  //  val Validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
-  //  val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
 
   object SpringTypes {
 
@@ -169,7 +141,6 @@ object ClassNames {
     val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
     val Validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
     val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
-
 
     object SpringTestTypes {
       val SpringExtension = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringExtension")
@@ -215,10 +186,10 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Junit5 ######################################################################################################
-  val test = ClassName.get("org.junit.jupiter.api", "Test")
-  val displayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
+  //val test = ClassName.get("org.junit.jupiter.api", "Test")
+  //val displayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
 
-  def displayName(testNAme: String): AnnotationSpec = AnnotationSpec.builder(displayName).addMember("value", "$S", testNAme).build()
+  def displayName(testNAme: String): AnnotationSpec = AnnotationSpec.builder(JunitTypes.DisplayName).addMember("value", "$S", testNAme).build()
 
   object JunitTypes {
     val Test = ClassName.get("org.junit.jupiter.api", "Test")

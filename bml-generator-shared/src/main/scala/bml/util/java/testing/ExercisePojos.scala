@@ -2,7 +2,7 @@ package bml.util.java.testing
 
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
-import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes, LombokTypes}
+import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes, JunitTypes, LombokTypes}
 import bml.util.java.{ClassNames, JavaPojoTestFixtures, JavaPojoUtil, JavaPojos}
 import bml.util.java.poet.StaticImport
 import com.squareup.javapoet.{ClassName, CodeBlock, MethodSpec, ParameterSpec, TypeSpec}
@@ -54,7 +54,7 @@ object ExercisePojos {
           .map(JavaPojoUtil.toClassName)
           .map(
             name =>
-              MethodSpec.methodBuilder(s"exercise${name}Pojo").addAnnotation(ClassNames.test)
+              MethodSpec.methodBuilder(s"exercise${name}Pojo").addAnnotation(JunitTypes.Test)
                 .addAnnotation(ClassNames.displayName(s"Exercising ${name} Pojo, Checking mock factory,default builders, and checking required fields"))
                 .addException(ClassName.get("", "Exception"))
                 .addCode(
