@@ -188,9 +188,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       TestSuppliers.methods.stringRangeSupplier,
       Locale,
       ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-      JavaPojos.toMinFieldStaticFieldName(field),
+      if (field.`type` == "[string]") JavaPojos.toMinStringValueLengthStaticFieldName(field) else JavaPojos.toMinFieldStaticFieldName(field),
       ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-      JavaPojos.toMaxFieldStaticFieldName(field)
+      if (field.`type` == "[string]") JavaPojos.toMaxStringValueLengthStaticFieldName(field) else JavaPojos.toMaxFieldStaticFieldName(field)
     )
 
     def enumTypeReturn(dataTypeOverride: TypeName = fieldType) = {

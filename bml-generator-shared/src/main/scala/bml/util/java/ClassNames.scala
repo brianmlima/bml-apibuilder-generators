@@ -10,18 +10,24 @@ import bml.util.JavaNameSpace
 import bml.util.java.ClassNames.HamcrestTypes.MatcherAssert
 import bml.util.java.ClassNames.displayName
 import bml.util.java.poet.{StaticImport, StaticImportMethod}
-import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName}
+import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName, TypeVariableName}
 import lombok.Builder.Default
 import lombok.{AllArgsConstructor, Builder, Getter, NoArgsConstructor}
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
 import org.junit.jupiter.api.DisplayName
+import play.api.data
+import play.api.data.validation
 
 object ClassNames {
 
   def toClassName(namespace: JavaNameSpace, className: String): ClassName = {
     ClassName.get(namespace.nameSpace, className);
   }
+
+
+  val T = TypeVariableName.get("T")
+
 
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
@@ -31,6 +37,12 @@ object ClassNames {
     val String = ClassName.get(classOf[String])
     val Collections = ClassName.bestGuess("java.util.Collections")
     val Arrays = ClassName.get("java.util", "Arrays")
+    val Set = ClassName.get("java.util", "Set")
+
+    def Set(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Set, typeName)
+    }
+
     val Supplier = ClassName.get("java.util.function", "Supplier")
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
@@ -46,6 +58,8 @@ object ClassNames {
     val StringBuilder = ClassName.get("java.lang", "StringBuilder")
 
     def Collectors = ClassName.get("java.util.stream", "Collectors")
+
+    def joining = StaticImportMethod(Collectors, "joining")
 
 
     def supplier(className: ClassName): ParameterizedTypeName = {
@@ -100,7 +114,23 @@ object ClassNames {
   // END JAVA CORE #####################################################################################################
   //####################################################################################################################
 
+  //####################################################################################################################
+  // BEGIN COMMONS LANG ################################################################################################
   val randomUtils = ClassName.get("org.apache.commons.lang3", "RandomUtils")
+
+  object CommonsLangTypes {
+
+
+  }
+
+  object CommonsTextTypes {
+    val StringEscapeUtils = ClassName.get("org.apache.commons.text", "StringEscapeUtils")
+
+  }
+
+
+  // END COMMONS LANG ##################################################################################################
+  //####################################################################################################################
 
 
   //####################################################################################################################
@@ -211,6 +241,8 @@ object ClassNames {
     val MatcherAssert = ClassName.get("org.hamcrest", "MatcherAssert")
     val assertThat = StaticImportMethod(MatcherAssert, "assertThat")
     val notNullValue = StaticImportMethod(Matchers, "notNullValue")
+    val is = StaticImportMethod(Matchers, "is")
+
   }
 
 
@@ -226,12 +258,6 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Javax.Validation ############################################################################################
-  //  val notNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
-  //  val notBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
-  //  val pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
-  //  val size = ClassName.bestGuess("javax.validation.constraints.Size")
-  //  val email = ClassName.bestGuess("javax.validation.constraints.Email")
-  //  val valid = ClassName.bestGuess("javax.validation.Valid")
 
   object JavaxTypes {
 
@@ -245,6 +271,12 @@ object ClassNames {
       val Valid = ClassName.bestGuess("javax.validation.Valid")
       val Validation = ClassName.bestGuess("javax.validation.Validation")
       val Validator = ClassName.bestGuess("javax.validation.Validator")
+      val ConstraintViolation = ClassName.get("javax.validation", "ConstraintViolation")
+
+
+      def ConstraintViolation(typeName: TypeName): ParameterizedTypeName = {
+        ParameterizedTypeName.get(ConstraintViolation, typeName)
+      }
     }
 
   }
