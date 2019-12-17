@@ -139,8 +139,12 @@ object ClassNames {
     val RequestParam = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestParam")
     val ObjectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
     val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
-    val Validated = ClassName.bestGuess("org.springframework.validation.annotation.Validated")
     val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
+
+
+    object SpringValidationTypes {
+      val Validated = ClassName.get("org.springframework.validation.annotation", "Validated")
+    }
 
     object SpringTestTypes {
       val SpringExtension = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringExtension")
@@ -186,8 +190,6 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Junit5 ######################################################################################################
-  //val test = ClassName.get("org.junit.jupiter.api", "Test")
-  //val displayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
 
   def displayName(testNAme: String): AnnotationSpec = AnnotationSpec.builder(JunitTypes.DisplayName).addMember("value", "$S", testNAme).build()
 
@@ -224,12 +226,12 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Javax.Validation ############################################################################################
-  val notNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
-  val notBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
-  val pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
-  val size = ClassName.bestGuess("javax.validation.constraints.Size")
-  val email = ClassName.bestGuess("javax.validation.constraints.Email")
-  val valid = ClassName.bestGuess("javax.validation.Valid")
+  //  val notNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
+  //  val notBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
+  //  val pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
+  //  val size = ClassName.bestGuess("javax.validation.constraints.Size")
+  //  val email = ClassName.bestGuess("javax.validation.constraints.Email")
+  //  val valid = ClassName.bestGuess("javax.validation.Valid")
 
   object JavaxTypes {
 

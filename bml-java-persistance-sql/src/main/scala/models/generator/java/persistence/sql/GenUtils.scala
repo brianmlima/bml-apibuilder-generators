@@ -1,7 +1,9 @@
 package models.generator.java.persistence.sql
 
 import bml.util.java.ClassNames
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.SpringTypes
+import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model}
@@ -54,14 +56,14 @@ object GenUtils {
 
   def allArgsConstructor = AnnotationSpec.builder(classOf[AllArgsConstructor]).build()
 
-  def notBlank = AnnotationSpec.builder(ClassNames.notBlank).build()
+  def notBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
 
   def jsonIgnoreProperties = AnnotationSpec.builder(classOf[JsonIgnoreProperties]).addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
 
   def table(model: Model) = AnnotationSpec.builder(classOf[Table]).addMember("name", "$S", model.plural).build()
 
   //@Size(min=${min},max=${max})
-  def size(min: Int, max: Int): AnnotationSpec = AnnotationSpec.builder(ClassNames.size).addMember("min", "$L", new Integer(min)).addMember("max", "$L", new Integer(max)).build()
+  def size(min: Int, max: Int): AnnotationSpec = AnnotationSpec.builder(JavaxValidationTypes.Size).addMember("min", "$L", new Integer(min)).addMember("max", "$L", new Integer(max)).build()
 
   def size(attribute: Attribute): AnnotationSpec = size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
 
@@ -78,22 +80,22 @@ object GenUtils {
     classBuilder.addField(FieldSpec.builder(TypeName.INT, minFieldName, PUBLIC, STATIC, FINAL).initializer(s"${min}").build())
     classBuilder.addField(FieldSpec.builder(TypeName.INT, maxFieldName, PUBLIC, STATIC, FINAL).initializer(s"${max}").build())
     fieldBuilder.addAnnotation(
-      AnnotationSpec.builder(ClassNames.size)
+      AnnotationSpec.builder(JavaxValidationTypes.Size)
         .addMember("min", "$L", minFieldName)
         .addMember("max", "$L", maxFieldName).build()
     )
   }
 
 
-  def pattern(regexp: String): AnnotationSpec = AnnotationSpec.builder(ClassNames.pattern).addMember("regexp", "$S", regexp).build()
+  def pattern(regexp: String): AnnotationSpec = AnnotationSpec.builder(JavaxValidationTypes.Pattern).addMember("regexp", "$S", regexp).build()
 
   def pattern(attribute: Attribute): AnnotationSpec = pattern((attribute.value \ "regexp").as[String])
 
   def table(tableName: String): AnnotationSpec = AnnotationSpec.builder(classOf[Table]).addMember("name", "$S", tableName).build()
 
-  def validated: AnnotationSpec = AnnotationSpec.builder(SpringTypes.Validated).build()
+  def validated: AnnotationSpec = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
 
-  def valid: AnnotationSpec = AnnotationSpec.builder(ClassNames.valid).build()
+  def valid: AnnotationSpec = AnnotationSpec.builder(JavaxValidationTypes.Valid).build()
 
   def autowired: AnnotationSpec = AnnotationSpec.builder(classOf[Autowired]).build()
 

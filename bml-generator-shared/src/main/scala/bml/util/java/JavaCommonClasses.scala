@@ -1,6 +1,7 @@
 package bml.util.java
 
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.ClassNames.{LombokTypes, SpringTypes}
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.squareup.javapoet._
@@ -68,7 +69,7 @@ object JavaCommonClasses {
     .addTypeVariable(TypeVariableName.get("T", ClassName.get("", "BaseEntity")))
     .addSuperinterface(SpringTypes.ObjectIdentity)
     .addAnnotation(ClassNames.mappedSuperclass)
-    .addAnnotation(SpringTypes.Validated)
+    .addAnnotation(SpringValidationTypes.Validated)
     .addAnnotation(LombokTypes.Slf4j)
     .addField(serialVersionUID())
     .addMethod(abstractGetThis())

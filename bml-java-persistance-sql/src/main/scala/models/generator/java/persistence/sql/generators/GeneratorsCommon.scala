@@ -1,5 +1,6 @@
 package models.generator.java.persistence.sql.generators
 
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import com.squareup.javapoet.{ClassName, FieldSpec, TypeSpec}
 import io.apibuilder.spec.v0.models.{Field, Model}
@@ -53,7 +54,7 @@ object GeneratorsCommon extends JavaPojoUtil {
         //Handle @Pattern
         case "pattern" => fieldBuilder.addAnnotation(GenUtils.pattern(attribute))
         //Handle @Email
-        case "email" => fieldBuilder.addAnnotation(ClassNames.email)
+        case "email" => fieldBuilder.addAnnotation(JavaxValidationTypes.Email)
         //Handle unknown
         case _ =>
       }

@@ -1,14 +1,12 @@
 package bml.util.spring
 
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
-import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.Get
-import io.apibuilder.spec.v0.models.ParameterLocation.{UNDEFINED, _}
 import io.apibuilder.spec.v0.models.{Operation, Parameter, ParameterLocation, Resource, Service}
-import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
 
 class SpringControllers {
@@ -16,6 +14,10 @@ class SpringControllers {
 }
 
 object SpringControllers {
+
+  import com.squareup.javapoet._
+  import io.apibuilder.spec.v0.models.ParameterLocation._
+  import javax.lang.model.element.Modifier._
 
   def toControllerName(resource: Resource): String = {
     JavaPojoUtil.toClassName(resource.`type` + "Controller")
@@ -117,9 +119,9 @@ object SpringControllers {
     }
     if (parameter.required) {
       if (parameter.`type` == "string") {
-        builder.addAnnotation(ClassNames.notBlank)
+        builder.addAnnotation(JavaxValidationTypes.NotBlank)
       } else {
-        builder.addAnnotation(ClassNames.notNull)
+        builder.addAnnotation(JavaxValidationTypes.NotNull)
       }
     }
 

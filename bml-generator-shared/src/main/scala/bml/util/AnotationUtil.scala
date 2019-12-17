@@ -3,17 +3,17 @@ package bml.util
 import bml.util.java.ClassNames
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, TypeSpec}
 import io.apibuilder.spec.v0.models.Attribute
 import javax.persistence.Table
 import lombok.experimental.Accessors
-import lombok.extern.slf4j.Slf4j
 import lombok.{AllArgsConstructor, Builder, EqualsAndHashCode, NoArgsConstructor, Singular}
-import org.springframework.validation.annotation.Validated
+//import org.springframework.validation.annotation.Validated
 
 object AnotationUtil {
 
+  import com.squareup.javapoet._
 
   object SpringAnno {
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
@@ -77,14 +77,14 @@ object AnotationUtil {
   }
 
   def size(min: Int, max: Int): AnnotationSpec = {
-    AnnotationSpec.builder(ClassNames.size)
+    AnnotationSpec.builder(JavaxValidationTypes.Size)
       .addMember("min", "$L", new Integer(min))
       .addMember("max", "$L", new Integer(max))
       .build()
   }
 
   def size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
-    val spec = AnnotationSpec.builder(ClassNames.size)
+    val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
     if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
     if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
     spec.build()
@@ -95,7 +95,7 @@ object AnotationUtil {
   }
 
   def pattern(regexp: String): AnnotationSpec = {
-    AnnotationSpec.builder(ClassNames.pattern)
+    AnnotationSpec.builder(JavaxValidationTypes.Pattern)
       .addMember("regexp", "$S", regexp)
       .build()
   }
@@ -110,7 +110,7 @@ object AnotationUtil {
       .build()
   }
 
-  def validated(): AnnotationSpec = AnnotationSpec.builder(classOf[Validated]).build()
+  def validated(): AnnotationSpec = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
 
   def equalsAndHashCode(onlyExplicitlyIncluded: Boolean): AnnotationSpec = {
     AnnotationSpec.builder(classOf[EqualsAndHashCode]).addMember("onlyExplicitlyIncluded", "$L", onlyExplicitlyIncluded.toString).build()

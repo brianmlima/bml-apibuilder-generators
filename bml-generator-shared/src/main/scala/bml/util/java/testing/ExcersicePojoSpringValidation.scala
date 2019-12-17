@@ -72,8 +72,14 @@ object ExcersicePojoSpringValidation {
       methodBuilder(pojoValidationTestMethodName(model)).addModifiers(PUBLIC)
         .addAnnotation(JunitAnno.Test)
         .addAnnotation(JunitAnno.DisplayName(pojoValidationTestDisplayName(model)))
-        .addStatement("$T object = $T.$L.get()", modelClassName, mockFactoryClassName, JavaPojoTestFixtures.defaultFactoryStaticParamName)
+        .addStatement("$T factory = $T.$L", mockFactoryClassName, mockFactoryClassName, JavaPojoTestFixtures.defaultFactoryStaticParamName)
+        .addStatement("$L(\" factory instance of $T should not be null\",factory,$L())", HamcrestTypes.assertThat.methodName, mockFactoryClassName, HamcrestTypes.notNullValue.methodName)
+        .addStatement("$T object = factory.get()", modelClassName)
+        .addCode("try{")
         .addStatement("validator.validate(object)")
+        .addCode("}catch($T e){ ", JavaTypes.Exception)
+        .addCode("log.error(\"{} caught while validating instance of {} msg={}\",e.getClass().getSimpleName(),$T.class.getName(),e.getMessage(),e); throw e;}", modelClassName
+        )
         .build()
     }
 

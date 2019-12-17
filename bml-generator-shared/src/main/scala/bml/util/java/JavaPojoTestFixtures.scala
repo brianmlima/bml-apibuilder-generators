@@ -47,7 +47,10 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 val fieldName = toFieldName(field)
                 CodeBlock.builder()
                   .beginControlFlow("if ($L !=null)", fieldName)
-                  .addStatement("builder.$L($L.get())", fieldName, fieldName)
+                  .addStatement("$T $L = $L.get()", JavaPojoUtil.dataTypeFromField(field, nameSpaces.model), fieldName + "Object", fieldName)
+                  .beginControlFlow("if($L!=null)", fieldName + "Object")
+                  .addStatement("builder.$L($L)", fieldName, fieldName + "Object")
+                  .endControlFlow()
                   .endControlFlow()
                   .build()
               }

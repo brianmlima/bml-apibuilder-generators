@@ -8,6 +8,7 @@ import bml.util.java.ClassNames.{builder, _}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
 import bml.util.GeneratorFSUtil.makeFile
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -144,8 +145,8 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       JavaPojos.getSizeStaticFields(model)
         .foreach(classBuilder.addField(_))
 
-//      JavaPojos.getSizeAttributesForStringList(model)
-//        .foreach(classBuilder.addField(_))
+      //      JavaPojos.getSizeAttributesForStringList(model)
+      //        .foreach(classBuilder.addField(_))
 
       model.fields.foreach(field => {
         val javaDataType = dataTypeFromField(field, modelsNameSpace)
@@ -155,16 +156,12 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
           .addAnnotation(getter)
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
-          //fieldBuilder.addAnnotation(singular)
+          fieldBuilder.addAnnotation(singular)
+
         }
         if (field.required) {
           fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
         }
-        //        if (field.minimum.isDefined || field.maximum.isDefined) {
-        //          if (field.`type` != "integer") {
-        //            fieldBuilder.addAnnotation(JavaPojos.handleSizeAttribute(classBuilder, field))
-        //          }
-        //        }
         if (JavaPojoUtil.isParameterArray(field.`type`)) {
           if (field.required) {
             fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotEmpty)
@@ -186,7 +183,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
               fieldBuilder.addAnnotation(AnotationUtil.pattern(attribute))
             }
             case "email" => {
-              fieldBuilder.addAnnotation(ClassNames.email)
+              fieldBuilder.addAnnotation(JavaxValidationTypes.Email)
             }
             case _ =>
           }
