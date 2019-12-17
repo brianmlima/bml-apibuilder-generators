@@ -1,17 +1,16 @@
 package bml.util.java
 
-import bml.util.GeneratorFSUtil.makeFile
 import bml.util.{NameSpaces, Param}
-import bml.util.java.ClassNames
 import bml.util.java.ClassNames.JavaTypes
 import com.squareup.javapoet.{ClassName, MethodSpec, ParameterSpec, TypeSpec}
-import com.squareup.javapoet.TypeName.DOUBLE
-import javax.lang.model.element.Modifier.FINAL
-import com.squareup.javapoet.MethodSpec.methodBuilder
 import io.apibuilder.generator.v0.models.File
-import javax.lang.model.element.Modifier
 
 object ProbabilityTools {
+
+  import javax.lang.model.element.Modifier._
+  import bml.util.GeneratorFSUtil.makeFile
+  import com.squareup.javapoet.TypeName.DOUBLE
+  import com.squareup.javapoet.MethodSpec.methodBuilder
 
   val checkProbParamMethodName = "checkProbParamMethod"
   val shouldNullMethodName = "shouldNull"
@@ -21,7 +20,7 @@ object ProbabilityTools {
 
   def probabilityTool(nameSpaces: NameSpaces): File = {
     val className = probabilityToolClassName(nameSpaces)
-    val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+    val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
       .addAnnotation(ClassNames.utilityClass)
       .addMethod(shouldNullMethod())
       .addMethod(checkProbParamMethod())
@@ -30,12 +29,12 @@ object ProbabilityTools {
 
   // the generated class is getting too big so stuff some helper methods in there to make it shorter
   def checkProbParamMethod(): MethodSpec = {
-    methodBuilder(checkProbParamMethodName).addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+    methodBuilder(checkProbParamMethodName).addModifiers(PUBLIC, STATIC)
       .addJavadoc(
         Seq[String](
-          s"Generated Method, throws ${ClassNames.illegalArgumentException}  if ${probParam.name} argument is not between inclusive 0 - 100",
+          s"Generated Method, throws ${JavaTypes.IllegalArgumentException}  if ${probParam.name} argument is not between inclusive 0 - 100",
           probParam.javadoc,
-          s"@throws ${ClassNames.illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
+          s"@throws ${JavaTypes.IllegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
       .addParameter(probParam.parameterSpec)
@@ -43,7 +42,7 @@ object ProbabilityTools {
         "if($L>100 || $L< 0) throw new $T($T.format(\"probParam must be between 0 and 100 found %s\",$L))",
         probParam.name,
         probParam.name,
-        ClassNames.illegalArgumentException,
+        JavaTypes.IllegalArgumentException,
         JavaTypes.String,
         probParam.name
       )
@@ -52,18 +51,18 @@ object ProbabilityTools {
 
 
   def shouldNullMethod(): MethodSpec = {
-    methodBuilder(shouldNullMethodName).addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+    methodBuilder(shouldNullMethodName).addModifiers(PUBLIC, STATIC)
       .addParameter(probParam.parameterSpec)
       .addJavadoc(
         Seq[String](
           s"Generated Method, also checks ${probParam.name} for range violation.",
           probParam.javadoc,
-          s"@throws ${ClassNames.illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
+          s"@throws ${JavaTypes.IllegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
       .addStatement(
         "if($L>100 || $L< 0) throw new $T(\"probParam must be between 0 and 100 found \" + $L)",
-        probParam.name, probParam.name, ClassNames.illegalArgumentException, probParam.name
+        probParam.name, probParam.name, JavaTypes.IllegalArgumentException, probParam.name
       )
       .addStatement("return $T.nextDouble(0,100)<=$L", ClassNames.randomUtils, probParam.name)
       .returns(classOf[Boolean])

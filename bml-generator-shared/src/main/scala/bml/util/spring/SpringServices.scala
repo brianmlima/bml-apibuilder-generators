@@ -8,10 +8,10 @@ import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource, Service}
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.Modifier._
 
 object SpringServices {
+
+  import javax.lang.model.element.Modifier._
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
 
@@ -29,8 +29,8 @@ object SpringServices {
   def generateBaseConfiguration(nameSpaces: NameSpaces, service: Service): Seq[File] = {
     val serviceName = JavaPojoUtil.toClassName(service.name + "-base-confiuration")
 
-    val mediaTypeYaml="MEDIA_TYPE_YAML"
-    val mediaTypeYml="MEDIA_TYPE_YML"
+    val mediaTypeYaml = "MEDIA_TYPE_YAML"
+    val mediaTypeYml = "MEDIA_TYPE_YML"
 
     val serviceBuilder = TypeSpec.classBuilder(serviceName)
       .addModifiers(PUBLIC)
@@ -65,8 +65,8 @@ object SpringServices {
             .add(".defaultContentType($T.APPLICATION_JSON)", mediaType)
             .add(".mediaType($T.APPLICATION_JSON.getSubtype(),", mediaType)
             .add("$T.APPLICATION_JSON)", mediaType)
-            .add(".mediaType($L.getSubtype(), $L)",mediaTypeYaml,mediaTypeYaml)
-            .addStatement(".mediaType($L.getSubtype(), $L)",mediaTypeYml,mediaTypeYml)
+            .add(".mediaType($L.getSubtype(), $L)", mediaTypeYaml, mediaTypeYaml)
+            .addStatement(".mediaType($L.getSubtype(), $L)", mediaTypeYml, mediaTypeYml)
             .build()
         ).build()
     ).addMethod(
@@ -76,7 +76,7 @@ object SpringServices {
         .addAnnotation(`override`)
         .addParameter(
           ParameterSpec.builder(
-            ParameterizedTypeName.get(list, ParameterizedTypeName.get(httpMessageConverter, ClassName.get("", "?"))),
+            ParameterizedTypeName.get(JavaTypes.List, ParameterizedTypeName.get(httpMessageConverter, ClassName.get("", "?"))),
             "converters",
             FINAL
           ).build()
@@ -154,13 +154,13 @@ object SpringServices {
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .returns(ClassNames.responseEntity)
     if (isconcrete) {
-      methodSpec.addModifiers(Modifier.PUBLIC)
+      methodSpec.addModifiers(PUBLIC)
     } else {
-      methodSpec.addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+      methodSpec.addModifiers(PUBLIC, ABSTRACT)
     }
     methodSpec.addJavadoc(operation.description.getOrElse(""))
-    .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
-    .addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
+      .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
+      .addJavadoc(s"@return ${ClassNames.responseEntity.simpleName()}")
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)

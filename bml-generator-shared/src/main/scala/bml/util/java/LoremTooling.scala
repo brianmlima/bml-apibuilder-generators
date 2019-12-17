@@ -1,7 +1,7 @@
 package bml.util.java
 
 import bml.util.{NameSpaces, Param}
-import bml.util.java.ClassNames.{JavaTypes, illegalArgumentException, locale, loremIpsum, utilityClass}
+import bml.util.java.ClassNames.{JavaTypes, loremIpsum, utilityClass}
 import bml.util.java.ProbabilityTools.probParam
 import com.squareup.javapoet.TypeName.{DOUBLE, INT}
 import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, TypeSpec}
@@ -52,7 +52,7 @@ object LoremTooling {
   //    val name = spec.name
   //  }
 
-  val localeParam = new Param(ParameterSpec.builder(locale, "locale", FINAL).build(), "Currently not supported, always defaults to Latin")
+  val localeParam = new Param(ParameterSpec.builder(JavaTypes.Locale, "locale", FINAL).build(), "Currently not supported, always defaults to Latin")
   //val probParam = new Param(ParameterSpec.builder(DOUBLE, "probability", FINAL).build(), "A 0.0 to 100.0 probability the return will be null")
   val countParam = new Param(ParameterSpec.builder(INT, "count", FINAL).build(), "sets the count of X")
   val minParam = new Param(ParameterSpec.builder(INT, "min", FINAL).build(), "sets the minimum")
@@ -120,7 +120,7 @@ object LoremTooling {
           s"Generated Method, might want a null, Use the ${probParam.name} parameter to get nulls probabilistically",
           s"Delagates Currently to ${loremIpsum.topLevelClassName().toString}.${name}().",
           localeParam.javadoc, probParam.javadoc,
-          s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
+          s"@throws ${JavaTypes.IllegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, probParam).map(_.parameterSpec).asJava)
@@ -141,7 +141,7 @@ object LoremTooling {
           s"Generated Method, might want a null, Use the ${probParam.name} parameter to get nulls probabilistically",
           s"Delagates Currently to ${loremIpsum.topLevelClassName().toString}.${name}().",
           localeParam.javadoc, countParam.javadoc, probParam.javadoc,
-          s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
+          s"@throws ${JavaTypes.IllegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, countParam, probParam).map(_.parameterSpec).asJava)
@@ -191,7 +191,7 @@ object LoremTooling {
           s"Generated Method, might want a null, Use the ${probParam.name} parameter to get nulls probabilistically",
           s"Delagates Currently to ${loremIpsum.topLevelClassName().toString}.${name}().",
           localeParam.javadoc, minParam.javadoc, maxParam.javadoc, probParam.javadoc,
-          s"@throws ${illegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
+          s"@throws ${JavaTypes.IllegalArgumentException.simpleName()} if the ${probParam.name} argument is not between inclusive 0 - 100"
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, minParam, maxParam, probParam).map(_.parameterSpec).asJava)

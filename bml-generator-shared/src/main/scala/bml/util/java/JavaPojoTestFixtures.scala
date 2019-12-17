@@ -1,7 +1,7 @@
 package bml.util.java
 
 
-import bml.util.java.ClassNames.JavaTypes
+import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{AnotationUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
@@ -14,6 +14,8 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
   import bml.util.GeneratorFSUtil.makeFile
   import collection.JavaConverters._
   import com.squareup.javapoet._
+  import bml.util.java.ClassNames.JavaTypes.{Locale, Random, supplier}
+  import bml.util.java.ClassNames.LombokTypes.BuilderDefault
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -64,9 +66,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
-      .addAnnotation(ClassNames.builder)
+      .addAnnotation(LombokTypes.Builder)
       .addAnnotation(AnotationUtil.fluentAccessor)
-      .addSuperinterface(ClassNames.supplier(targetClassName))
+      .addSuperinterface(JavaTypes.supplier(targetClassName))
       .addField(FieldSpec.builder(TypeName.INT, "MAX_GENERATED_LIST_SIZE", PUBLIC, STATIC).initializer("$L", "50").build())
       .addFields(
         model.fields
@@ -76,41 +78,41 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
               val fieldName = toFieldName(field)
               val fieldType = dataTypeFromField(field, nameSpaces.model)
-              val supplierType = ClassNames.supplier(fieldType)
+              val supplierType = supplier(fieldType)
               val fiedlSpec = FieldSpec.builder(supplierType, fieldName, PRIVATE).addAnnotation(ClassNames.getter)
               if (field.`type` == "boolean") {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               }
 
               if (field.`type` == "uuid") {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (field.`type` == "date-iso8601") {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (field.`type` == "string") {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (field.`type` == "integer") {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (JavaPojoUtil.isEnumType(service, field)) {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (JavaPojoUtil.isParameterArray(field)) {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (JavaPojoUtil.isModelType(service, field)) {
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer(
                     "$T.$L()",
                     mockFactoryClassName(nameSpaces.modelFactory.nameSpace, field.`type`),
@@ -119,7 +121,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
               } else if (JavaPojoUtil.isModelNameWithPackage(field.`type`)) {
                 val externalNameSpace = JavaPojoUtil.externalNameSpaceFromType(field.`type`)
                 fiedlSpec
-                  .addAnnotation(ClassNames.builderDefault)
+                  .addAnnotation(BuilderDefault)
                   .initializer(
                     "$T.$L()",
                     mockFactoryClassName(externalNameSpace.modelFactory.nameSpace, field.`type`),
@@ -146,7 +148,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       .addMethod(
         MethodSpec.methodBuilder(defaultObjectSupplierMethodName)
           .addModifiers(PUBLIC, STATIC)
-          .returns(ClassNames.supplier(targetClassName))
+          .returns(JavaTypes.supplier(targetClassName))
           .addStatement("return ()-> $L.$L()", defaultFactoryStaticParamName, generateMethodName)
           .build()
       )
@@ -166,7 +168,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
   def generateDefaultSupplier(service: Service, nameSpaces: NameSpaces, model: Model, field: Field): Option[MethodSpec] = {
     val fieldName = defaultSupplierMethodName(field)
     val fieldType = dataTypeFromField(field, nameSpaces.model)
-    val supplierType = ClassNames.supplier(fieldType)
+    val supplierType = supplier(fieldType)
     val testSuppliers = TestSuppliers.className(nameSpaces)
 
 
@@ -181,7 +183,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       "$T.$L($T.ENGLISH,$T.$L,$T.$L)",
       TestSuppliers.className(nameSpaces),
       TestSuppliers.methods.stringRangeSupplier,
-      ClassNames.locale,
+      Locale,
       ClassNames.toClassName(nameSpaces.model, toClassName(model)),
       JavaPojos.toMinFieldStaticFieldName(field),
       ClassNames.toClassName(nameSpaces.model, toClassName(model)),
@@ -195,15 +197,15 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         .builder()
         .add("$L",
           TypeSpec.anonymousClassBuilder("")
-            .addSuperinterface(ParameterizedTypeName.get(ClassNames.supplier, dataTypeOverride))
+            .addSuperinterface(supplier(dataTypeOverride))
             .addField(
               FieldSpec.builder(ArrayTypeName.of(dataTypeOverride), "values")
                 .addModifiers(PRIVATE, FINAL)
                 .initializer("$T.values()", dataTypeOverride).build())
             .addField(
-              FieldSpec.builder(JavaTypes.Random, "random")
+              FieldSpec.builder(Random, "random")
                 .addModifiers(PRIVATE, FINAL)
-                .initializer("new $T()", JavaTypes.Random).build())
+                .initializer("new $T()", Random).build())
             .addMethod(
               MethodSpec.methodBuilder("get").returns(dataTypeOverride).addModifiers(PUBLIC)
                 .addStatement("return values[random.nextInt(values.length)]")

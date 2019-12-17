@@ -33,50 +33,51 @@ object ClassNames {
   //  val random = ClassName.get(classOf[Random])
   //  val threadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
 
-  val locale = ClassName.get(classOf[Locale])
-  val supplier = ClassName.get("java.util.function", "Supplier")
-  val uuid = ClassName.get(classOf[UUID])
+//  val locale = ClassName.get(classOf[Locale])
+//  val supplier = ClassName.get("java.util.function", "Supplier")
+//  val uuid = ClassName.get(classOf[UUID])
 
-  def supplier(className: ClassName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(supplier, className)
-  }
+//  def supplier(className: ClassName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(supplier, className)
+//  }
+//
+//  def supplier(typeName: TypeName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(supplier, typeName)
+//  }
 
-  def supplier(typeName: TypeName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(supplier, typeName)
-  }
+//  val list = ClassName.get("java.util", "List")
+//
+//  def list(className: ClassName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(list, className)
+//  }
+//
+//  def list(typeName: TypeName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(list, typeName)
+//  }
 
-  val list = ClassName.get("java.util", "List")
-
-  def list(className: ClassName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(list, className)
-  }
-
-  def list(typeName: TypeName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(list, typeName)
-  }
-
-
-  val linkedList = ClassName.get("java.util", "LinkedList")
-
-  def linkedList(className: ClassName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(linkedList, className)
-  }
-
-  def linkedList(typeName: TypeName): ParameterizedTypeName = {
-    ParameterizedTypeName.get(linkedList, typeName)
-  }
+//
+//  val linkedList = ClassName.get("java.util", "LinkedList")
+//
+//  def linkedList(className: ClassName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(linkedList, className)
+//  }
+//
+//  def linkedList(typeName: TypeName): ParameterizedTypeName = {
+//    ParameterizedTypeName.get(linkedList, typeName)
+//  }
 
   //val arrays = ClassName.get("java.util", "Arrays")
-  val math = ClassName.get(classOf[Math])
+//  val math = ClassName.get(classOf[Math])
+//
+//  val illegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
+//
+//  val `boolean` = ClassName.get("java.lang", "Boolean")
+//
+//  val `class` = ClassName.get("", "Class")
+//
+//  val invocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
 
-  val illegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
-
-  val `boolean` = ClassName.get("java.lang", "Boolean")
-
-  val `class` = ClassName.get("", "Class")
-
-  val invocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
-  val method = ClassName.get("java.lang.reflect", "Method")
+  //val method = ClassName.get("java.lang.reflect", "Method")
 
 
   object JavaTypes {
@@ -86,9 +87,15 @@ object ClassNames {
     val Supplier = ClassName.get("java.util.function", "Supplier")
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
-
     val Random = ClassName.get(classOf[Random])
     val ThreadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
+    val Locale = ClassName.get(classOf[Locale])
+    val UUID = ClassName.get(classOf[UUID])
+    val Math = ClassName.get(classOf[Math])
+    val IllegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
+    val `Boolean` = ClassName.get("java.lang", "Boolean")
+    val `Class` = ClassName.get("", "Class")
+    val InvocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
 
 
     def supplier(className: ClassName): ParameterizedTypeName = {

@@ -139,7 +139,7 @@ object TestSuppliers {
 
     val simpleClassName = ClassName.get("", simpleName)
 
-    val supplierParameterizedType = ClassNames.supplier(suppliedType)
+    val supplierParameterizedType = JavaTypes.supplier(suppliedType)
 
     val emptyGetDefaultSupplierMethod = methodBuilder(methodName).addModifiers(PUBLIC, STATIC)
       .returns(supplierParameterizedType)
@@ -153,10 +153,10 @@ object TestSuppliers {
     val recallSupplier = new TestSupplierInfo("RecallSupplier", ClassName.get("", "T"))
     val probNull = new TestSupplierInfo("ProbabilityNullSupplier", ClassName.get("", "T"))
 
-    val `boolean` = new TestSupplierInfo("BooleanSupplier", ClassNames.`boolean`)
+    val `boolean` = new TestSupplierInfo("BooleanSupplier", JavaTypes.`Boolean`)
     val localDate = new TestSupplierInfo("LocalDateSupplier", JavaTypes.LocalDate)
     val integer = new TestSupplierInfo("IntegerSupplier", JavaTypes.Integer)
-    val uuid = new TestSupplierInfo("UUIDSupplier", ClassNames.uuid, Some("UUIDSupplier"))
+    val uuid = new TestSupplierInfo("UUIDSupplier", JavaTypes.UUID, Some("UUIDSupplier"))
     val list = new TestSupplierInfo("ListSupplier", JavaTypes.List(t))
 
   }
@@ -270,20 +270,20 @@ object TestSuppliers {
 
     methodBuilder(methods.stringRangeSupplier)
       .addModifiers(PUBLIC, STATIC)
-      .returns(ClassNames.supplier(JavaTypes.String))
+      .returns(JavaTypes.supplier(JavaTypes.String))
       .addParameters(Seq(
         LoremTooling.localeParam,
         LoremTooling.minParam,
         LoremTooling.maxParam
       ).map(_.parameterSpec).asJava)
-      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L={} $L={}\", $L, $L))", max, min, ClassNames.illegalArgumentException, JavaTypes.String, max, min, max, min, max)
-      .addStatement("if ($L == 0 && $L == 0) throw new $T(\"$L param and $L param can not both be 0\")", min, max, ClassNames.illegalArgumentException, max, min)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", min, ClassNames.illegalArgumentException, JavaTypes.String, min, min, max, min, max)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", max, ClassNames.illegalArgumentException, JavaTypes.String, max, min, max, min, max)
+      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L={} $L={}\", $L, $L))", max, min, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
+      .addStatement("if ($L == 0 && $L == 0) throw new $T(\"$L param and $L param can not both be 0\")", min, max, JavaTypes.IllegalArgumentException, max, min)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", min, JavaTypes.IllegalArgumentException, JavaTypes.String, min, min, max, min, max)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", max, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
       .addCode(
         CodeBlock.builder()
           .add("return () -> {\n")
-          .addStatement("int requestWordCount = (int) $T.ceil(max / $T.ENGLISH_AVG_WORD_LENGTH)", ClassNames.math, JavaPojoTestFixtures.languagesClassName(nameSpaces))
+          .addStatement("int requestWordCount = (int) $T.ceil(max / $T.ENGLISH_AVG_WORD_LENGTH)", JavaTypes.Math, JavaPojoTestFixtures.languagesClassName(nameSpaces))
           .addStatement("final $T[] words = $T.getWords(locale, requestWordCount).split(\"[ ]\")", JavaTypes.String, LoremTooling.loremToolClassName(nameSpaces))
           .addStatement("final int randStringLength = $T.nextInt(min, max)", ClassNames.randomUtils)
           .addStatement("final $T buff = new $T()", ClassNames.stringBuilder, ClassNames.stringBuilder)

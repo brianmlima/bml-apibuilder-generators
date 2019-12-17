@@ -5,9 +5,11 @@ import io.apibuilder.spec.v0.models.{Field, Model}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
 import akka.http.scaladsl.model.headers.LinkParams.`type`
+import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.attribute
 import bml.util.attribute.StringValueLength
-import bml.util.java.ClassNames.{JavaTypes, linkedList, size}
+import bml.util.java.ClassNames.JavaTypes
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeName, TypeSpec}
 import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
 import play.api.Logger
@@ -55,14 +57,14 @@ object JavaPojos {
 
   def makeRequiredFieldsField(model: Model): FieldSpec = {
     val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name)
-    val fieldSpec = FieldSpec.builder(ClassNames.list(JavaTypes.String), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
+    val fieldSpec = FieldSpec.builder(JavaTypes.List(JavaTypes.String), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
     if (fieldNames.isEmpty) {
       fieldSpec.initializer("$T.emptyList", JavaTypes.Collections)
     } else {
       fieldSpec.initializer(
         "$T.unmodifiableList(new $T($T.asList($L)))",
         JavaTypes.Collections,
-        linkedList(JavaTypes.String),
+        JavaTypes.LinkedList(JavaTypes.String),
         JavaTypes.Arrays,
         fieldNames.map(name => s"Fields.${JavaPojoUtil.toFieldName(name)} ").mkString(",")
       )
@@ -157,31 +159,6 @@ object JavaPojos {
       ).flatten
   }
 
-  //  def getSizeAttributesForStringList(model: Model): Seq[FieldSpec] = {
-  //    val out = Seq[FieldSpec]()
-  //    model.fields.filter(JavaPojoUtil.isParameterArray)
-  //      .filter(_.`type` == "[string]")
-  //      .map(
-  //        field => {
-  //
-  //
-  //          Seq(
-  //            FieldSpec.builder(
-  //              TypeName.INT,
-  //              toMinFieldStaticFieldName(field, Some("string")),
-  //              PUBLIC, STATIC, FINAL
-  //            ).build(),
-  //            FieldSpec.builder(
-  //              TypeName.INT,
-  //              toMaxFieldStaticFieldName(field, Some("string")),
-  //              PUBLIC, STATIC, FINAL
-  //            ).build()
-  //          )
-  //        }
-  //      ).flatten
-  //  }
-
-
   def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field): AnnotationSpec = {
     val isString = (field.`type` == "string")
 
@@ -190,7 +167,7 @@ object JavaPojos {
 
     val minStaticParamName = toMinFieldStaticFieldName(field)
     val maxStaticParamName = toMaxFieldStaticFieldName(field)
-    val spec = AnnotationSpec.builder(size)
+    val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
 
     if (isList) {
       return spec.addMember("min", "$L", minStaticParamName)

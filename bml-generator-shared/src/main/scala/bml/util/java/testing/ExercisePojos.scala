@@ -70,8 +70,8 @@ object ExercisePojos {
       .addMethod(
         MethodSpec.methodBuilder("excersizePojo").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
           .addException(ClassName.get("", "Exception"))
-          .addParameter(ParameterSpec.builder(ClassNames.`class`, "objectClass", Modifier.FINAL).build())
-          .addParameter(ParameterSpec.builder(ClassNames.`class`, "factoryClass", Modifier.FINAL).build())
+          .addParameter(ParameterSpec.builder(JavaTypes.`Class`, "objectClass", Modifier.FINAL).build())
+          .addParameter(ParameterSpec.builder(JavaTypes.`Class`, "factoryClass", Modifier.FINAL).build())
           .addStatement("final Object factoryBuilder = factoryClass.getDeclaredMethod(\"builder\", null).invoke(null, null)")
           .addStatement("final Object factory = factoryBuilder.getClass().getDeclaredMethod(\"build\", null).invoke(factoryBuilder, null)")
 
@@ -105,11 +105,11 @@ object ExercisePojos {
             ClassNames.notNullValue.methodName)
           .addStatement(
             "$T requiredFields = ($T) objectClass.getDeclaredField(\"$L\").get(null)" +
-              "", ClassNames.list(JavaTypes.String), ClassNames.list(JavaTypes.String), JavaPojos.requiredFieldsFieldName)
+              "", JavaTypes.List(JavaTypes.String), JavaTypes.List(JavaTypes.String), JavaPojos.requiredFieldsFieldName)
           .addCode(
             CodeBlock.builder()
               .beginControlFlow("for ($T field : requiredFields)", JavaTypes.String)
-              .addStatement("$T fieldGetter = anObject.getClass().getMethod(field)",JavaTypes.Method )
+              .addStatement("$T fieldGetter = anObject.getClass().getMethod(field)", JavaTypes.Method)
               .add("assertThat(")
               .add("String.format(\"%s.%s should not be null\", anObject.getClass().getName(), field),")
               .add("fieldGetter.invoke(anObject),")
