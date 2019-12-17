@@ -3,6 +3,7 @@ package bml.util.java
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.{NameSpaces, Param}
 import bml.util.java.ClassNames
+import bml.util.java.ClassNames.JavaTypes
 import com.squareup.javapoet.{ClassName, MethodSpec, ParameterSpec, TypeSpec}
 import com.squareup.javapoet.TypeName.DOUBLE
 import javax.lang.model.element.Modifier.FINAL
@@ -43,7 +44,7 @@ object ProbabilityTools {
         probParam.name,
         probParam.name,
         ClassNames.illegalArgumentException,
-        ClassNames.string,
+        JavaTypes.String,
         probParam.name
       )
       .build()

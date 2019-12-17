@@ -101,15 +101,15 @@ object ExercisePojos {
           .addStatement("" +
             "$L($T.format(\"%s should not be null\", anObject.getClass()), anObject, $L())",
             ClassNames.assertThat.methodName,
-            ClassNames.string,
+            JavaTypes.String,
             ClassNames.notNullValue.methodName)
           .addStatement(
             "$T requiredFields = ($T) objectClass.getDeclaredField(\"$L\").get(null)" +
-              "", ClassNames.list(ClassNames.string), ClassNames.list(ClassNames.string), JavaPojos.requiredFieldsFieldName)
+              "", ClassNames.list(JavaTypes.String), ClassNames.list(JavaTypes.String), JavaPojos.requiredFieldsFieldName)
           .addCode(
             CodeBlock.builder()
-              .beginControlFlow("for ($T field : requiredFields)", ClassNames.string)
-              .addStatement("$T fieldGetter = anObject.getClass().getMethod(field)", ClassNames.method)
+              .beginControlFlow("for ($T field : requiredFields)", JavaTypes.String)
+              .addStatement("$T fieldGetter = anObject.getClass().getMethod(field)",JavaTypes.Method )
               .add("assertThat(")
               .add("String.format(\"%s.%s should not be null\", anObject.getClass().getName(), field),")
               .add("fieldGetter.invoke(anObject),")

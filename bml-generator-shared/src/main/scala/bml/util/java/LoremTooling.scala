@@ -1,24 +1,24 @@
 package bml.util.java
 
-import akka.http.scaladsl.model.headers.CacheDirectives.public
-import bml.util.GeneratorFSUtil.makeFile
 import bml.util.{NameSpaces, Param}
-import bml.util.java.ClassNames.{illegalArgumentException, locale, loremIpsum, randomUtils, string, utilityClass}
+import bml.util.java.ClassNames.{JavaTypes, illegalArgumentException, locale, loremIpsum, utilityClass}
 import bml.util.java.ProbabilityTools.probParam
-import com.squareup.javapoet.MethodSpec.methodBuilder
 import com.squareup.javapoet.TypeName.{DOUBLE, INT}
-import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, TypeName, TypeSpec}
+import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, TypeSpec}
 import io.apibuilder.generator.v0.models.File
-import javax.lang.model.element.Modifier._
-import lib.Text
-import lib.Text.initCap
 
-import collection.JavaConverters._
 
 /**
  * Builds the LoremTool. A handy tool for generating text with a little probabilistic sugar for nullable testing.
  */
 object LoremTooling {
+
+  import bml.util.GeneratorFSUtil.makeFile
+  import com.squareup.javapoet.MethodSpec.methodBuilder
+  import javax.lang.model.element.Modifier._
+  import lib.Text.initCap
+  //import JavaTypes._
+  import collection.JavaConverters._
 
 
   def loremToolClassName(nameSpaces: NameSpaces) = ClassName.get(nameSpaces.tool.nameSpace, "LoremTool")
@@ -108,7 +108,7 @@ object LoremTooling {
         ).mkString("\n")
       )
       .addParameter(localeParam.parameterSpec)
-      .returns(string)
+      .returns(JavaTypes.String)
       .addStatement("return LOREM.$L()", name).build()
   }
 
@@ -124,7 +124,7 @@ object LoremTooling {
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, probParam).map(_.parameterSpec).asJava)
-      .returns(string)
+      .returns(JavaTypes.String)
       .addCode(
         CodeBlock.builder()
           .addStatement("if ( $T.$L( $L ) ) return null", ProbabilityTools.probabilityToolClassName(nameSpaces), ProbabilityTools.shouldNullMethodName, probParam.name)
@@ -145,7 +145,7 @@ object LoremTooling {
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, countParam, probParam).map(_.parameterSpec).asJava)
-      .returns(string)
+      .returns(JavaTypes.String)
       .addCode(
         CodeBlock.builder()
           //.addStatement(s"${checkProbParamMethodName}(${probParam.name})")
@@ -180,7 +180,7 @@ object LoremTooling {
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, minParam, maxParam).map(_.parameterSpec).asJava)
-      .returns(string)
+      .returns(JavaTypes.String)
       .addStatement("return LOREM.$L($L,$L)", name, minParam.name, maxParam.name).build()
   }
 
@@ -195,7 +195,7 @@ object LoremTooling {
         ).mkString("\n")
       )
       .addParameters(Seq(localeParam, minParam, maxParam, probParam).map(_.parameterSpec).asJava)
-      .returns(string)
+      .returns(JavaTypes.String)
       .addCode(
         CodeBlock.builder()
           .addStatement("if ( $T.$L( $L ) ) return null", ProbabilityTools.probabilityToolClassName(nameSpaces), ProbabilityTools.shouldNullMethodName, probParam.name)

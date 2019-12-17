@@ -1,5 +1,6 @@
 package bml.util.java
 
+import bml.util.java.ClassNames.JavaTypes
 import com.squareup.javapoet.{ClassName, ParameterizedTypeName}
 
 class JavaMaps {
@@ -14,14 +15,14 @@ object JavaMaps {
 
   def mapClassName = ClassName.bestGuess("java.util.Map")
 
-  def stringToStringMap = mapStringTo(ClassNames.string)
+  def stringToStringMap = mapStringTo(JavaTypes.String)
 
   def mapOf(key: ClassName, value: ClassName): ParameterizedTypeName = {
     ParameterizedTypeName.get(mapClassName, key, value)
   }
 
   def mapStringTo(value: ClassName): ParameterizedTypeName = {
-    mapOf(ClassNames.string, value)
+    mapOf(JavaTypes.String, value)
   }
 
   def mapStringTo(className: String): ParameterizedTypeName = {

@@ -2,27 +2,18 @@ package bml.util.java
 
 import java.util.Locale
 
-import akka.http.scaladsl
-import akka.http.scaladsl.model
-import akka.http.scaladsl.model.headers.CacheDirectives.public
-import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.GeneratorFSUtil.makeFile
-import bml.util.java.ClassNames.{illegalArgumentException, math, randomUtils, string, stringBuilder, supplier}
-import bml.util.java.JavaPojoTestFixtures.defaultSupplierMethodName
 import bml.util.{AnotationUtil, NameSpaces, java}
-import com.squareup.javapoet
-import com.squareup.javapoet.TypeName.INT
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.Modifier._
-import org.checkerframework.checker.units.qual.min
 import org.slf4j.{Logger, LoggerFactory}
 
-import collection.JavaConverters._
 
 object JavaPojoTestFixtures extends JavaPojoUtil {
+
+  import javax.lang.model.element.Modifier._
+  import collection.JavaConverters._
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -72,7 +63,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     val className = mockFactoryClassName(nameSpaces, model)
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
-    val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+    val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
       .addAnnotation(ClassNames.builder)
       .addAnnotation(AnotationUtil.fluentAccessor)
       .addSuperinterface(ClassNames.supplier(targetClassName))
@@ -148,13 +139,13 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
           ).asJava
       )
       .addField(
-        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, Modifier.PUBLIC, Modifier.STATIC)
+        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, PUBLIC, STATIC)
           .initializer("builder().build()")
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder(defaultObjectSupplierMethodName)
-          .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+          .addModifiers(PUBLIC, STATIC)
           .returns(ClassNames.supplier(targetClassName))
           .addStatement("return ()-> $L.$L()", defaultFactoryStaticParamName, generateMethodName)
           .build()
@@ -207,14 +198,14 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
             .addSuperinterface(ParameterizedTypeName.get(ClassNames.supplier, dataTypeOverride))
             .addField(
               FieldSpec.builder(ArrayTypeName.of(dataTypeOverride), "values")
-                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .addModifiers(PRIVATE, FINAL)
                 .initializer("$T.values()", dataTypeOverride).build())
             .addField(
               FieldSpec.builder(ClassNames.random, "random")
-                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .addModifiers(PRIVATE, FINAL)
                 .initializer("new $T()", ClassNames.random).build())
             .addMethod(
-              MethodSpec.methodBuilder("get").returns(dataTypeOverride).addModifiers(Modifier.PUBLIC)
+              MethodSpec.methodBuilder("get").returns(dataTypeOverride).addModifiers(PUBLIC)
                 .addStatement("return values[random.nextInt(values.length)]")
                 .build())
             .build()

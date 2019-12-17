@@ -271,27 +271,27 @@ object TestSuppliers {
 
     methodBuilder(methods.stringRangeSupplier)
       .addModifiers(PUBLIC, STATIC)
-      .returns(ClassNames.supplier(ClassNames.string))
+      .returns(ClassNames.supplier(JavaTypes.String))
       .addParameters(Seq(
         LoremTooling.localeParam,
         LoremTooling.minParam,
         LoremTooling.maxParam
       ).map(_.parameterSpec).asJava)
-      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L={} $L={}\", $L, $L))", max, min, ClassNames.illegalArgumentException, ClassNames.string, max, min, max, min, max)
+      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L={} $L={}\", $L, $L))", max, min, ClassNames.illegalArgumentException, JavaTypes.String, max, min, max, min, max)
       .addStatement("if ($L == 0 && $L == 0) throw new $T(\"$L param and $L param can not both be 0\")", min, max, ClassNames.illegalArgumentException, max, min)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", min, ClassNames.illegalArgumentException, ClassNames.string, min, min, max, min, max)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", max, ClassNames.illegalArgumentException, ClassNames.string, max, min, max, min, max)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", min, ClassNames.illegalArgumentException, JavaTypes.String, min, min, max, min, max)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", max, ClassNames.illegalArgumentException, JavaTypes.String, max, min, max, min, max)
       .addCode(
         CodeBlock.builder()
           .add("return () -> {\n")
           .addStatement("int requestWordCount = (int) $T.ceil(max / $T.ENGLISH_AVG_WORD_LENGTH)", ClassNames.math, JavaPojoTestFixtures.languagesClassName(nameSpaces))
-          .addStatement("final $T[] words = $T.getWords(locale, requestWordCount).split(\"[ ]\")", ClassNames.string, LoremTooling.loremToolClassName(nameSpaces))
+          .addStatement("final $T[] words = $T.getWords(locale, requestWordCount).split(\"[ ]\")", JavaTypes.String, LoremTooling.loremToolClassName(nameSpaces))
           .addStatement("final int randStringLength = $T.nextInt(min, max)", ClassNames.randomUtils)
           .addStatement("final $T buff = new $T()", ClassNames.stringBuilder, ClassNames.stringBuilder)
-          .beginControlFlow("for ($T word : words)", ClassNames.string)
+          .beginControlFlow("for ($T word : words)", JavaTypes.String)
           .add("if (buff.length() <= randStringLength) { buff.append(word); } else { break; }")
           .endControlFlow()
-          .addStatement("$T returnValue = (buff.length() > randStringLength) ? buff.toString().substring(0, randStringLength).trim() : buff.toString()", ClassNames.string)
+          .addStatement("$T returnValue = (buff.length() > randStringLength) ? buff.toString().substring(0, randStringLength).trim() : buff.toString()", JavaTypes.String)
           .addStatement("log.trace(\"Returning Lorem String length={} text=\\\"{}\\\"\", returnValue.length(),returnValue)")
           .addStatement("return returnValue")
           .addStatement("}")

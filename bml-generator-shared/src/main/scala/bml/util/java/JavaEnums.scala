@@ -1,6 +1,7 @@
 package bml.util.java
 
 import bml.util.AnotationUtil
+import bml.util.java.ClassNames.JavaTypes
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.Enum
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC, STATIC}
@@ -22,15 +23,14 @@ object JavaEnums {
   ).mkString("\n")
 
   /**
-    * Translates an input value into an valid java enum name.
-    *
-    * @param input a value to translate into an enum name
-    * @return input value translated in to a valid java enum name
-    */
+   * Translates an input value into an valid java enum name.
+   *
+   * @param input a value to translate into an enum name
+   * @return input value translated in to a valid java enum name
+   */
   def toEnumName(input: String): String = {
     Text.safeName(input.replaceAll("\\.", "_").replaceAll("-", "_")).toUpperCase
   }
-
 
 
   def standardEnumBuilder(enum: Enum, apiDocComments: String): TypeSpec.Builder = {
@@ -43,7 +43,6 @@ object JavaEnums {
     )
 
     //enum.attributes.filter(ExampleAttribute.isThisAttribute).map(ExampleAttribute.asThisAttribute)
-
 
 
     TypeSpec.enumBuilder(className)
@@ -71,10 +70,9 @@ object JavaEnums {
               .addStatement("tmp.put(e.$L,e)", stringValueParam)
               .endControlFlow()
               .build()
-          ).addStatement("$L = $T.unmodifiableMap(tmp)", stringMapFieldName, ClassNames.collections)
+          ).addStatement("$L = $T.unmodifiableMap(tmp)", stringMapFieldName, JavaTypes.Collections)
           .build()
       )
-      //
       .addField(
         FieldSpec.builder(classOf[String], stringValueParam, PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])

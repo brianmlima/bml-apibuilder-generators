@@ -7,7 +7,7 @@ import JavaPojoUtil.toStaticFieldName
 import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.attribute
 import bml.util.attribute.StringValueLength
-import bml.util.java.ClassNames.{arrays, collections, linkedList, size, string}
+import bml.util.java.ClassNames.{JavaTypes, linkedList, size}
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeName, TypeSpec}
 import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
 import play.api.Logger
@@ -55,15 +55,15 @@ object JavaPojos {
 
   def makeRequiredFieldsField(model: Model): FieldSpec = {
     val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name)
-    val fieldSpec = FieldSpec.builder(ClassNames.list(string), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
+    val fieldSpec = FieldSpec.builder(ClassNames.list(JavaTypes.String), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
     if (fieldNames.isEmpty) {
-      fieldSpec.initializer("$T.emptyList", collections)
+      fieldSpec.initializer("$T.emptyList", JavaTypes.Collections)
     } else {
       fieldSpec.initializer(
         "$T.unmodifiableList(new $T($T.asList($L)))",
-        collections,
-        linkedList(string),
-        arrays,
+        JavaTypes.Collections,
+        linkedList(JavaTypes.String),
+        JavaTypes.Arrays,
         fieldNames.map(name => s"Fields.${JavaPojoUtil.toFieldName(name)} ").mkString(",")
       )
     }
