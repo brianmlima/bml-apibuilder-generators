@@ -27,11 +27,11 @@ object ClassNames {
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
   //val string = ClassName.get(classOf[String])
-  val integer = ClassName.get(classOf[Integer])
-  val localDate = ClassName.get(classOf[LocalDate])
+  //  val integer = ClassName.get(classOf[Integer])
+  //  val localDate = ClassName.get(classOf[LocalDate])
 
-  val random = ClassName.get(classOf[Random])
-  val threadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
+  //  val random = ClassName.get(classOf[Random])
+  //  val threadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
 
   val locale = ClassName.get(classOf[Locale])
   val supplier = ClassName.get("java.util.function", "Supplier")
@@ -81,12 +81,15 @@ object ClassNames {
 
   object JavaTypes {
     val String = ClassName.get(classOf[String])
-
     val Collections = ClassName.bestGuess("java.util.Collections")
     val Arrays = ClassName.get("java.util", "Arrays")
-
-
     val Supplier = ClassName.get("java.util.function", "Supplier")
+    val Integer = ClassName.get(classOf[Integer])
+    val LocalDate = ClassName.get(classOf[LocalDate])
+
+    val Random = ClassName.get(classOf[Random])
+    val ThreadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
+
 
     def supplier(className: ClassName): ParameterizedTypeName = {
       ParameterizedTypeName.get(Supplier, className)

@@ -1,10 +1,8 @@
 package bml.util.java
 
-import java.util.Locale
 
-import bml.util.GeneratorFSUtil.makeFile
-import bml.util.{AnotationUtil, NameSpaces, java}
-import com.squareup.javapoet._
+import bml.util.java.ClassNames.JavaTypes
+import bml.util.{AnotationUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import org.slf4j.{Logger, LoggerFactory}
@@ -13,7 +11,9 @@ import org.slf4j.{Logger, LoggerFactory}
 object JavaPojoTestFixtures extends JavaPojoUtil {
 
   import javax.lang.model.element.Modifier._
+  import bml.util.GeneratorFSUtil.makeFile
   import collection.JavaConverters._
+  import com.squareup.javapoet._
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -201,9 +201,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 .addModifiers(PRIVATE, FINAL)
                 .initializer("$T.values()", dataTypeOverride).build())
             .addField(
-              FieldSpec.builder(ClassNames.random, "random")
+              FieldSpec.builder(JavaTypes.Random, "random")
                 .addModifiers(PRIVATE, FINAL)
-                .initializer("new $T()", ClassNames.random).build())
+                .initializer("new $T()", JavaTypes.Random).build())
             .addMethod(
               MethodSpec.methodBuilder("get").returns(dataTypeOverride).addModifiers(PUBLIC)
                 .addStatement("return values[random.nextInt(values.length)]")

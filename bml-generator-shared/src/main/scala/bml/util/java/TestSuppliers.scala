@@ -2,8 +2,7 @@ package bml.util.java
 
 import java.util
 
-import akka.http.scaladsl.model.headers.CacheDirectives.public
-import bml.util.java.ClassNames.JavaTypes
+import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{NameSpaces, Param}
 import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeName, TypeSpec, TypeVariableName}
 import io.apibuilder.generator.v0.models.File
@@ -15,7 +14,7 @@ import io.apibuilder.generator.v0.models.File
 object TestSuppliers {
 
   import bml.util.AnotationUtil.fluentAccessor
-  import bml.util.java.ClassNames.{slf4j, random, supplier, threadLocalRandom}
+  //import bml.util.java.ClassNames.{supplier}
   import bml.util.java.ProbabilityTools.{probParam, probabilityToolClassName, shouldNullMethodName}
   import bml.util.GeneratorFSUtil.makeFile
   import com.squareup.javapoet.MethodSpec.methodBuilder
@@ -99,7 +98,7 @@ object TestSuppliers {
     val theClassName = className(nameSpaces)
 
     val typeBuilder = classBuilder(theClassName).addModifiers(PUBLIC)
-      .addAnnotation(slf4j)
+      .addAnnotation(LombokTypes.Slf4j)
       .addMethods(
         (Seq(
           wrapRecallMethod,
@@ -155,8 +154,8 @@ object TestSuppliers {
     val probNull = new TestSupplierInfo("ProbabilityNullSupplier", ClassName.get("", "T"))
 
     val `boolean` = new TestSupplierInfo("BooleanSupplier", ClassNames.`boolean`)
-    val localDate = new TestSupplierInfo("LocalDateSupplier", ClassNames.localDate)
-    val integer = new TestSupplierInfo("IntegerSupplier", ClassNames.integer)
+    val localDate = new TestSupplierInfo("LocalDateSupplier", JavaTypes.LocalDate)
+    val integer = new TestSupplierInfo("IntegerSupplier", JavaTypes.Integer)
     val uuid = new TestSupplierInfo("UUIDSupplier", ClassNames.uuid, Some("UUIDSupplier"))
     val list = new TestSupplierInfo("ListSupplier", JavaTypes.List(t))
 
@@ -166,10 +165,10 @@ object TestSuppliers {
   private val t = TypeVariableName.get("T")
 
 
-  private val supplierParam = new Param(ParameterSpec.builder(ParameterizedTypeName.get(supplier, t), "supplier", FINAL).build(), "")
+  private val supplierParam = new Param(ParameterSpec.builder(ParameterizedTypeName.get(JavaTypes.Supplier, t), "supplier", FINAL).build(), "")
   private val lastValueParam = new Param(ParameterSpec.builder(t, "lastValue").build(), "")
 
-  private val randomField = FieldSpec.builder(random, "random").initializer("new $T()", random).build()
+  private val randomField = FieldSpec.builder(JavaTypes.Random, "random").initializer("new $T()", JavaTypes.Random).build()
 
 
   private def booleanSupplier(nameSpaces: NameSpaces): TypeSpec = {
@@ -213,7 +212,7 @@ object TestSuppliers {
         methodBuilder("get").addModifiers(PUBLIC).returns(templates.localDate.suppliedType)
           .addStatement("long minDay = $T.of(1970, 1, 1).toEpochDay()", templates.localDate.suppliedType)
           .addStatement("long maxDay = $T.of(2015, 12, 31).toEpochDay()", templates.localDate.suppliedType)
-          .addStatement("long randomDay = $T.current().nextLong(minDay, maxDay)", threadLocalRandom)
+          .addStatement("long randomDay = $T.current().nextLong(minDay, maxDay)", JavaTypes.ThreadLocalRandom)
           .addStatement("return $T.ofEpochDay(randomDay)", templates.localDate.suppliedType)
           .build()
       ).build()
@@ -223,7 +222,7 @@ object TestSuppliers {
     classBuilder(templates.recallSupplier.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
       .addTypeVariable(t)
       .addAnnotation(fluentAccessor)
-      .addSuperinterface(ParameterizedTypeName.get(supplier, t))
+      .addSuperinterface(ParameterizedTypeName.get(JavaTypes.Supplier, t))
       .addFields(Seq(supplierParam.fieldSpecFinal, lastValueParam.fieldSpec).asJava)
       .addMethod(
         MethodSpec.constructorBuilder().addModifiers(PUBLIC)
