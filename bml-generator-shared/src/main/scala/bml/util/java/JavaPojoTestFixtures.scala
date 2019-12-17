@@ -66,6 +66,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
   val generateMethodName = "get"
 
+
   def generateMockFactory(service: Service, nameSpaces: NameSpaces, model: Model): File = {
     val className = mockFactoryClassName(nameSpaces, model)
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
@@ -74,6 +75,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       .addAnnotation(ClassNames.builder)
       .addAnnotation(AnotationUtil.fluentAccessor)
       .addSuperinterface(ClassNames.supplier(targetClassName))
+      .addField(FieldSpec.builder(TypeName.INT, "MAX_GENERATED_LIST_SIZE", PUBLIC, STATIC).initializer("$L", "50").build())
       .addFields(
         model.fields
           .map(
@@ -164,133 +166,132 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
   def defaultSupplierMethodName(field: Field) = toFieldName(field) + "DefaultSupplier"
 
+
   def generateDefaultSupplier(service: Service, nameSpaces: NameSpaces, model: Model, field: Field): Option[MethodSpec] = {
     val fieldName = defaultSupplierMethodName(field)
     val fieldType = dataTypeFromField(field, nameSpaces.model)
     val supplierType = ClassNames.supplier(fieldType)
+    val testSuppliers = TestSuppliers.className(nameSpaces)
 
-    if (field.`type` == "boolean") {
-      val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC)
-        .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.booleanSupplier)
-        .returns(supplierType)
-      return Some(spec.build())
+
+    val booleanTypeReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.booleanSupplier)
+    val integerTypeReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.integerSupplier)
+
+    val uuidTypeRequiredReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.uuidSupplier)
+
+    val dateIso8601TypeReturn = CodeBlock.of("$T.$L()", testSuppliers, TestSuppliers.methods.localDateSupplier)
+
+    val stringTypeRequiredReturn = CodeBlock.of(
+      "$T.$L($T.ENGLISH,$T.$L,$T.$L)",
+      TestSuppliers.className(nameSpaces),
+      TestSuppliers.methods.stringRangeSupplier,
+      ClassNames.locale,
+      ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+      JavaPojos.toMinFieldStaticFieldName(field),
+      ClassNames.toClassName(nameSpaces.model, toClassName(model)),
+      JavaPojos.toMaxFieldStaticFieldName(field)
+    )
+
+    def enumTypeReturn(dataTypeOverride: TypeName = fieldType) = {
+
+
+      CodeBlock
+        .builder()
+        .add("$L",
+          TypeSpec.anonymousClassBuilder("")
+            .addSuperinterface(ParameterizedTypeName.get(ClassNames.supplier, dataTypeOverride))
+            .addField(
+              FieldSpec.builder(ArrayTypeName.of(dataTypeOverride), "values")
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("$T.values()", dataTypeOverride).build())
+            .addField(
+              FieldSpec.builder(ClassNames.random, "random")
+                .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("new $T()", ClassNames.random).build())
+            .addMethod(
+              MethodSpec.methodBuilder("get").returns(dataTypeOverride).addModifiers(Modifier.PUBLIC)
+                .addStatement("return values[random.nextInt(values.length)]")
+                .build())
+            .build()
+        ).build()
     }
 
-    if (field.`type` == "integer") {
-      val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC)
-        .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.integerSupplier)
-        .returns(supplierType)
-      return Some(spec.build())
-    }
+    def modelTypeReturn(`type`: String = field.`type`) = CodeBlock.of(
+      "$T.$L",
+      ClassName.get("", mockFactoryClassName(nameSpaces, `type`).simpleName()),
+      defaultFactoryStaticParamName
+    )
 
-    if (field.`type` == "uuid") {
+
+    def stdWithNullable(requiredCodeBlock: CodeBlock): MethodSpec = {
       val spec = MethodSpec.methodBuilder(fieldName).addModifiers(PUBLIC, STATIC);
       if (field.required) {
         spec
           .returns(supplierType)
-          .addStatement("return $T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.uuidSupplier)
+          .addStatement(
+            CodeBlock.builder().add("return ").add(requiredCodeBlock).build()
+          )
       } else {
-        val testSuppliers = TestSuppliers.className(nameSpaces)
         spec
           .returns(supplierType)
-          .addStatement(
-            "return $T.$L($T.$L(),$L)", testSuppliers, TestSuppliers.methods.wrapProbNull, testSuppliers, TestSuppliers.methods.uuidSupplier, "50")
+          .addStatement(CodeBlock.builder().add("return ").add(
+            CodeBlock.of(
+              "$T.$L($L,$L)",
+              TestSuppliers.className(nameSpaces),
+              TestSuppliers.methods.wrapProbNull,
+              requiredCodeBlock,
+              "50")
+          ).build())
       }
-      return Some(spec.build())
-    }
-    if (field.`type` == "date-iso8601") {
-      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
-      spec.addStatement("return $T.$L()",
-        testSuppliersClassName,
-        TestSuppliers.methods.localDateSupplier,
-      )
-      return Some(spec.build())
+      spec.build()
     }
 
 
-    if (field.`type` == "string") {
-      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
+    field.`type` match {
+      case "boolean" => return Some(stdWithNullable(booleanTypeReturn))
+      case "integer" => return Some(stdWithNullable(integerTypeReturn))
+      case "uuid" => return Some(stdWithNullable(uuidTypeRequiredReturn))
+      case "date-iso8601" => return Some(stdWithNullable(dateIso8601TypeReturn))
+      case "string" => return Some(stdWithNullable(stringTypeRequiredReturn))
+      case _ =>
+    }
+
+    if (JavaPojoUtil.isModelType(service, field)) return Some(stdWithNullable(modelTypeReturn()))
+    if (JavaPojoUtil.isEnumType(service, field)) return Some(stdWithNullable(enumTypeReturn()))
 
 
-      if (field.required) {
-        spec.addStatement(
-          "return $T.$L($T.ENGLISH,$T.$L,$T.$L)",
-          testSuppliersClassName,
-          TestSuppliers.methods.stringRangeSupplier,
-          ClassNames.locale,
-          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-          JavaPojos.toMinFieldStaticFieldName(field),
-          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-          JavaPojos.toMaxFieldStaticFieldName(field)
-        )
-      } else {
-        spec.addStatement(
-          "return $T.$L($T.$L($T.ENGLISH,$T.$L,$T.$L),$L)",
-          testSuppliersClassName,
-          TestSuppliers.methods.wrapProbNull,
-          testSuppliersClassName,
-          TestSuppliers.methods.stringRangeSupplier,
-          ClassNames.locale,
-          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-          JavaPojos.toMinFieldStaticFieldName(field),
-          ClassNames.toClassName(nameSpaces.model, toClassName(model)),
-          JavaPojos.toMaxFieldStaticFieldName(field),
-          "50"
-        )
+    def wrapList(codeBlock: CodeBlock): CodeBlock = {
+
+      CodeBlock.builder()
+        .add("$T.$L($L,50)", TestSuppliers.className(nameSpaces), TestSuppliers.methods.listSupplier, codeBlock)
+        .build()
+    }
+
+
+    if (JavaPojoUtil.isParameterArray(field)) {
+      val memberType = JavaPojoUtil.getArrayType(field)
+      memberType match {
+        case "boolean" => return Some(stdWithNullable(wrapList(booleanTypeReturn)))
+        case "integer" => return Some(stdWithNullable(wrapList(integerTypeReturn)))
+        case "uuid" => return Some(stdWithNullable(wrapList(uuidTypeRequiredReturn)))
+        case "date-iso8601" => return Some(stdWithNullable(wrapList(dateIso8601TypeReturn)))
+        case "string" => return Some(stdWithNullable(wrapList(stringTypeRequiredReturn)))
+        case _ =>
       }
-      return Some(spec.build())
-
-    }
-    if (JavaPojoUtil.isModelType(service, field)) {
-      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      val testSuppliersClassName = TestSuppliers.className(nameSpaces)
-      spec.addStatement(
-        "return $T.$L",
-        ClassName.get("", mockFactoryClassName(nameSpaces, field.`type`).simpleName()),
-        defaultFactoryStaticParamName
+      if (JavaPojoUtil.isModelType(service, memberType)) return Some(stdWithNullable(wrapList(modelTypeReturn(memberType))))
+      if (JavaPojoUtil.isEnumType(service, memberType)) return Some(
+        stdWithNullable(
+          wrapList(
+            enumTypeReturn(
+              dataTypeFromField(memberType, nameSpaces.model.nameSpace)
+            )
+          )
+        )
       )
-      return Some(spec.build())
     }
-    if (JavaPojoUtil.isEnumType(service, field)) {
-      val spec = MethodSpec.methodBuilder(fieldName).returns(supplierType).addModifiers(PUBLIC, STATIC)
-      spec.addCode(
-        CodeBlock
-          .builder()
-          .add("return $L;",
-            TypeSpec.anonymousClassBuilder("")
-              .addSuperinterface(ParameterizedTypeName.get(ClassNames.supplier, fieldType))
-              .addField(
-                FieldSpec.builder(ArrayTypeName.of(fieldType), "values")
-                  .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                  .initializer("$T.values()", fieldType).build())
-              .addField(
-                FieldSpec.builder(ClassNames.random, "random")
-                  .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-                  .initializer("new $T()", ClassNames.random).build())
 
-              .addMethod(
-                MethodSpec.methodBuilder("get").returns(fieldType).addModifiers(Modifier.PUBLIC)
-                  .addStatement("return values[random.nextInt(values.length)]")
-                  .build())
-              .build()
-          ).build()
-      )
-      return Some(spec.build())
-    }
     None
   }
-
-  //  private Supplier<IsiType> isiType = new Supplier<IsiType>() {
-  //    private IsiType[] values = IsiType.values();
-  //    Random random = new Random();
-  //
-  //    @Override
-  //    public IsiType get() {
-  //      return values[random.nextInt(values.length)]
-  //    }
-  //  }
 
 
   def languagesClassName(nameSpaces: NameSpaces): ClassName = {

@@ -1,7 +1,11 @@
 package bml.util.java
 
+import java.util
+
+import akka.http.scaladsl.model.headers.CacheDirectives.public
+import bml.util.java.ClassNames.JavaTypes
 import bml.util.{NameSpaces, Param}
-import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeSpec, TypeVariableName}
+import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeName, TypeSpec, TypeVariableName}
 import io.apibuilder.generator.v0.models.File
 
 
@@ -46,6 +50,7 @@ object TestSuppliers {
     val localDateSupplier = templates.localDate.methodName
     val stringRangeSupplier = "stringRangeSupplier"
     val integerSupplier = templates.integer.methodName
+    val listSupplier = templates.list.methodName
   }
 
   // END java class method names for use in java classes that need to refrence them ####################################
@@ -66,6 +71,14 @@ object TestSuppliers {
       .addParameters(Seq(supplierParam, probParam).map(_.parameterSpec).asJava)
       .addStatement("return new $L($L,$L)", templates.probNull.className(nameSpaces).simpleName(), supplierParam.name, probParam.name)
       .build()
+
+    val listSupplierlMethod = methodBuilder(templates.list.methodName).addModifiers(PUBLIC, STATIC)
+      .addTypeVariable(t)
+      .returns(templates.list.supplierParameterizedType)
+      .addParameters(Seq(supplierParam.parameterSpec, maxSizeParameter).asJava)
+      .addStatement("return new $L($L,$L)", templates.list.className(nameSpaces).simpleName(), supplierParam.name, maxSizeParameter.name)
+      .build()
+
 
     //generate the common ones with a template
     val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.integer).map(
@@ -91,6 +104,7 @@ object TestSuppliers {
         (Seq(
           wrapRecallMethod,
           wrapProbNullMethod,
+          listSupplierlMethod,
           generateRangeStringSupplier(nameSpaces)
         ) ++ stdGetMethods).asJava
       )
@@ -101,7 +115,8 @@ object TestSuppliers {
           probNullSupplier(nameSpaces),
           localDateSupplier(nameSpaces),
           integerSupplier(nameSpaces),
-          uuidSupplier(nameSpaces)
+          uuidSupplier(nameSpaces),
+          listSupplier(nameSpaces)
         ).asJava
       )
     // END Make the class ##############################################################################################
@@ -118,7 +133,7 @@ object TestSuppliers {
    * @param suppliedType     the type that is supplied
    * @param methodNameOption pass this to override the default which makes the method name using the class name
    */
-  private class TestSupplierInfo(val simpleName: String, val suppliedType: ClassName, methodNameOption: Option[String] = None) {
+  private class TestSupplierInfo(val simpleName: String, val suppliedType: TypeName, methodNameOption: Option[String] = None) {
     def className(nameSpaces: NameSpaces) = ClassName.get(nameSpaces.tool.nameSpace + ".TestSuppliers", simpleName)
 
     val methodName = if (methodNameOption.isDefined) methodNameOption.get else initLowerCase(simpleName)
@@ -138,10 +153,13 @@ object TestSuppliers {
     // These are used to template common methods
     val recallSupplier = new TestSupplierInfo("RecallSupplier", ClassName.get("", "T"))
     val probNull = new TestSupplierInfo("ProbabilityNullSupplier", ClassName.get("", "T"))
+
     val `boolean` = new TestSupplierInfo("BooleanSupplier", ClassNames.`boolean`)
     val localDate = new TestSupplierInfo("LocalDateSupplier", ClassNames.localDate)
     val integer = new TestSupplierInfo("IntegerSupplier", ClassNames.integer)
     val uuid = new TestSupplierInfo("UUIDSupplier", ClassNames.uuid, Some("UUIDSupplier"))
+    val list = new TestSupplierInfo("ListSupplier", JavaTypes.List(t))
+
   }
 
   // gotta have a T to do generic methods.
@@ -280,4 +298,43 @@ object TestSuppliers {
           .build()
       ).build()
   }
+
+  //val sourceParameter = ParameterSpec.builder(JavaTypes.supplier(t), "source", FINAL).build()
+  val maxSizeParameter = ParameterSpec.builder(TypeName.INT, "maxSize", FINAL).build()
+
+
+  def listSupplier(nameSpaces: NameSpaces): TypeSpec = {
+
+    val sourceField = FieldSpec.builder(JavaTypes.supplier(t), "supplier", PRIVATE, FINAL).build()
+    val maxSizeField = FieldSpec.builder(TypeName.INT, "maxSize", PRIVATE, FINAL).build()
+
+
+    val fields = Seq(sourceField, maxSizeField, randomField).asJava
+
+
+    val constructor = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
+      .addParameter(supplierParam.parameterSpec)
+      .addParameter(maxSizeParameter)
+      .addStatement("this.supplier = supplier")
+      .addStatement("this.maxSize = maxSize")
+      .build()
+
+    val getMethod = MethodSpec.methodBuilder("get").addModifiers(PUBLIC).returns(JavaTypes.List(t))
+      .addStatement("int size = random.nextInt(maxSize + 1)")
+      .addStatement("$T list = new $T(maxSize)", JavaTypes.List(t), JavaTypes.ArrayList(t))
+      .addCode("for (int c = 0; c < size; c++) {list.add(supplier.get());}")
+      .addStatement("return list")
+      .build()
+
+    TypeSpec.classBuilder(templates.list.className(nameSpaces))
+      .addModifiers(PUBLIC, STATIC)
+      .addTypeVariable(t)
+      .addSuperinterface(JavaTypes.supplier(JavaTypes.List(t)))
+      .addFields(fields)
+      .addMethod(constructor)
+      .addMethod(getMethod)
+      .build()
+  }
+
+
 }

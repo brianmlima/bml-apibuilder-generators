@@ -135,8 +135,20 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       classBuilder.addSuperinterfaces(unionClassTypeNames.asJava)
       //      val shouldAnnotateAsDyanmoDb = isDynamoDbModel(model)
 
+      JavaPojos.getStringValueLengthStaticFields(model)
+        .foreach(classBuilder.addField(_))
+
+      JavaPojos.getListSizeStaticFields(model)
+        .foreach(classBuilder.addField(_))
+
+      JavaPojos.getSizeStaticFields(model)
+        .foreach(classBuilder.addField(_))
+
+//      JavaPojos.getSizeAttributesForStringList(model)
+//        .foreach(classBuilder.addField(_))
+
       model.fields.foreach(field => {
-        val javaDataType = dataTypeFromField(field.`type`, modelsNameSpace)
+        val javaDataType = dataTypeFromField(field, modelsNameSpace)
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(PROTECTED)
@@ -148,11 +160,11 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         if (field.required) {
           fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
         }
-        if (field.minimum.isDefined || field.maximum.isDefined) {
-          if (field.`type` != "integer") {
-            fieldBuilder.addAnnotation(JavaPojos.handleSizeAttribute(classBuilder, field))
-          }
-        }
+        //        if (field.minimum.isDefined || field.maximum.isDefined) {
+        //          if (field.`type` != "integer") {
+        //            fieldBuilder.addAnnotation(JavaPojos.handleSizeAttribute(classBuilder, field))
+        //          }
+        //        }
         if (JavaPojoUtil.isParameterArray(field.`type`)) {
           if (field.required) {
             fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotEmpty)

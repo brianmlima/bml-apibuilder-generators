@@ -2,26 +2,93 @@ package bml.util
 
 import akka.http.scaladsl
 import akka.http.scaladsl.model
+import bml.util.java.JavaPojoUtil
 import io.apibuilder.spec.v0.models.{Operation, ResponseCodeInt, Service}
 import lombok.extern.slf4j.Slf4j
+import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.json.JsNumber
 
 @Slf4j
 object SpecValidation {
+  val log = LoggerFactory.getLogger(this.getClass)
+
   def validate(service: Service, header: Option[String]): Option[Seq[String]] = {
     val errors =
-      checkAllPathVarOperationsHave404(service) ++
-        checkAllFieldsWithMinRequirementHaveAMax(service) ++
-        checkAllModelsHaveADescription(service) ++
-        checkAllStringFieldsHaveMinMax(service) ++
-        checkAllModelsDontHaveUnderscores(service) ++
-        checkAllModelFieldsDontHaveUnderscores(service) ++
-        checkAllEnumsDontHaveUnderscores(service)
+      Seq(
+        checkAllPathVarOperationsHave404(service),
+        checkAllFieldsWithMinRequirementHaveAMax(service),
+        checkAllModelsHaveADescription(service),
+        checkAllStringFieldsHaveMinMax(service),
+        checkAllModelsDontHaveUnderscores(service),
+        checkAllModelFieldsDontHaveUnderscores(service),
+        checkAllEnumsDontHaveUnderscores(service),
+        checkAllStringArraysHaveAStringValueLengthAttribute(service),
+        checkAllArraysHaveMaximum(service)
+      ).flatten
     if (errors.isEmpty) {
       None
     } else {
       Some(errors)
     }
   }
+
+  def checkAllArraysHaveMaximum(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        model.fields.foreach(
+          field => {
+            if (JavaPojoUtil.isParameterArray(field)) {
+              if (field.maximum.isEmpty) {
+                val msg = s"ERROR: All Fields of array type must have an maximum set for array sizing constraints. Service='${service.name}' Model '${model.name}' Field='${field.name}'"
+                log.error(msg)
+                out = out ++ Seq(msg)
+              }
+            }
+          }
+        )
+    )
+    out
+  }
+
+
+  def checkAllStringArraysHaveAStringValueLengthAttribute(service: Service): Seq[String] = {
+    val value = "string_value_length"
+    var out: Seq[String] = Seq()
+    service.models.foreach(
+      model =>
+        model.fields.filter(JavaPojoUtil.isParameterArray)
+          .filter(_.`type` == "[string]").foreach(
+          field => {
+            val option = field.attributes.find(_.name == value)
+
+            if (option.isEmpty) {
+              val foundAttributes = field.attributes.map(_.name).mkString(", ")
+              out = out ++ Seq(s"ERROR: All Fields with a type of [string] must have an ${value} attribute. Service='${service.name}' Model '${model.name}' Field='${field.name}' Found Attributes = ${foundAttributes}")
+            } else {
+              val attribute = option.get
+              val minimumValue = attribute.value.value.get("minimum")
+              val maximumValue = attribute.value.value.get("minimum")
+              if (minimumValue.isEmpty) {
+                out = out ++ Seq(s"ERROR: All ${value} attributes must have a minimum field defined in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}'")
+              }
+              if (maximumValue.isEmpty) {
+                out = out ++ Seq(s"ERROR: All ${value} attributes must have a maximum field defined in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}'")
+              }
+
+              if (!minimumValue.get.isInstanceOf[JsNumber]) {
+                out = out ++ Seq(s"ERROR: All ${value} attributes must have a minimum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${minimumValue.get.toString()}'")
+              }
+              if (!maximumValue.get.isInstanceOf[JsNumber]) {
+                out = out ++ Seq(s"ERROR: All ${value} attributes must have a maximum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${maximumValue.get.toString()}'")
+              }
+            }
+          }
+        )
+    )
+    out
+  }
+
 
   def checkAllModelsHaveADescription(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()
@@ -37,10 +104,12 @@ object SpecValidation {
   def checkAllModelsDontHaveUnderscores(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()
     service.models.foreach(
-      model =>
-        if (model.name.contains("_") || model.name.contains("-")) {
-          out = out ++ Seq(s"ERROR: All Model names should be camel case and must not have underscores or hyphens. Service='${service.name}'=Model='${model.name}'")
+      model => {
+        val name = model.name.replaceFirst("_form$", "")
+        if (name.contains("_") || name.contains("-")) {
+          out = out ++ Seq(s"ERROR: All Model names should be camel case and must not have underscores or hyphens except the suffix _form. Service='${service.name}'=Model='${model.name}'")
         }
+      }
     )
     out
   }

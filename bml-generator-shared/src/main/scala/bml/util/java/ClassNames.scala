@@ -81,6 +81,8 @@ object ClassNames {
 
 
   object JavaTypes {
+    val String = ClassName.get(classOf[String])
+
     val Supplier = ClassName.get("java.util.function", "Supplier")
 
     def supplier(className: ClassName): ParameterizedTypeName = {
@@ -94,6 +96,36 @@ object ClassNames {
     def Collectors = ClassName.get("java.util.stream", "Collectors")
 
     def toList = StaticImportMethod(Collectors, "toList")
+
+    val List = ClassName.get("java.util", "List")
+
+    def List(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(List, className)
+    }
+
+    def List(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(List, typeName)
+    }
+
+    val LinkedList = ClassName.get("java.util", "LinkedList")
+
+    def LinkedList(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(LinkedList, className)
+    }
+
+    def LinkedList(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(LinkedList, typeName)
+    }
+
+    val ArrayList = ClassName.get("java.util", "ArrayList")
+
+    def ArrayList(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(ArrayList, className)
+    }
+
+    def ArrayList(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(ArrayList, typeName)
+    }
 
   }
 
@@ -246,6 +278,12 @@ object ClassNames {
       val Validation = ClassName.bestGuess("javax.validation.Validation")
       val Validator = ClassName.bestGuess("javax.validation.Validator")
     }
+
+  }
+
+  object HValidatorTypes {
+    val Length = ClassName.get("org.hibernate.validator.constraints", "Length")
+
 
   }
 
