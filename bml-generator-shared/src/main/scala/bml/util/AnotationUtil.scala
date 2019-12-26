@@ -1,15 +1,17 @@
 package bml.util
 
-import bml.util.java.ClassNames
-import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
-import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.java.ClassNames.{HibernateTypes, JavaTypes, SpringTypes}
+import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
+import bml.util.jpa.JPA
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import io.apibuilder.spec.v0.models.Attribute
+import io.apibuilder.spec.v0.models.{Attribute, Field, Model}
 import javax.persistence.Table
 import lombok.experimental.Accessors
 import lombok.{AllArgsConstructor, Builder, EqualsAndHashCode, NoArgsConstructor, Singular}
 //import org.springframework.validation.annotation.Validated
+import scala.collection.JavaConverters._
 
 object AnotationUtil {
 
@@ -53,6 +55,42 @@ object AnotationUtil {
       def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
     }
 
+    object JavaxPersistanceAnnotations {
+      def Basic(optional: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Basic)
+        .addMember("optional", "$L", optional.toString)
+        .build()
+
+      val Id = AnnotationSpec.builder(JavaxPersistanceTypes.Id).build()
+
+      //@GeneratedValue(strategy = GenerationType.IDENTITY)
+
+      def GeneratedValue(strategy: CodeBlock) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
+        .addMember("strategy", strategy).build()
+
+      def Column(field: Field) = {
+        val isId = (field.name == "id")
+        val isUUID = (field.`type` == "uuid")
+
+        AnnotationSpec.builder(JavaxPersistanceTypes.Column)
+          .addMember("name", "$S", JPA.toColumnName(field))
+          .addMember("nullable", "$L", (!field.required).toString)
+          .addMember("unique", "$L", (isId || field.annotations.find(_ == "unique").isDefined).toString)
+          .addMember("insertable", "$L", (!(isId && isUUID)).toString)
+          .build()
+      }
+
+      def Table(model: Model): AnnotationSpec = {
+        AnnotationSpec.builder(JavaxPersistanceTypes.Table).addMember("name", "$S", JPA.toTableName(model)).build()
+      }
+
+    }
+
+  }
+
+  object HibernateAnnotations {
+    val GeneratedInserted = AnnotationSpec.builder(HibernateTypes.Generated)
+      .addMember("value", "$T.INSERT", HibernateTypes.GenerationTime)
+      .build()
   }
 
 

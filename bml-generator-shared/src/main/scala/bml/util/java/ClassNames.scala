@@ -28,6 +28,19 @@ object ClassNames {
 
   val T = TypeVariableName.get("T")
 
+  //####################################################################################################################
+  // BEGIN Hibernate ###################################################################################################
+
+  object HibernateTypes {
+    val Generated = ClassName.get("org.hibernate.annotations", "Generated")
+    val UpdateTimestamp = ClassName.get("org.hibernate.annotations", "UpdateTimestamp")
+    val GenerationTime = ClassName.get("org.hibernate.annotations", "GenerationTime")
+
+  }
+
+  // END Hibernate #####################################################################################################
+  //####################################################################################################################
+
 
   //####################################################################################################################
   // BEGIN JAVA CORE ###################################################################################################
@@ -279,12 +292,27 @@ object ClassNames {
       }
     }
 
+    object JavaxPersistanceTypes {
+      val Basic = ClassName.get("javax.persistence", "Basic")
+      val Column = ClassName.get("javax.persistence", "Column")
+      val Entity = ClassName.get("javax.persistence", "Entity")
+      val GeneratedValue = ClassName.get("javax.persistence", "GeneratedValue")
+      val GenerationType = ClassName.get("javax.persistence", "GenerationType")
+      val Id = ClassName.get("javax.persistence", "Id")
+      val MappedSuperclass = ClassName.get("javax.persistence", "MappedSuperclass")
+      val PrePersist = ClassName.get("javax.persistence", "PrePersist")
+      val PreUpdate = ClassName.get("javax.persistence", "PreUpdate")
+      val Temporal = ClassName.get("javax.persistence", "Temporal")
+      val TemporalType = ClassName.get("javax.persistence", "TemporalType")
+      val Version = ClassName.get("javax.persistence", "Version")
+      val Table = ClassName.get("javax.persistence", "Table")
+    }
+
+
   }
 
   object HValidatorTypes {
     val Length = ClassName.get("org.hibernate.validator.constraints", "Length")
-
-
   }
 
   // END Javax.Validation ##############################################################################################

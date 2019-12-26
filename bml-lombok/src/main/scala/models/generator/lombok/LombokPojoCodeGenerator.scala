@@ -2,12 +2,14 @@ package models.generator.lombok
 
 import java.lang.IllegalArgumentException
 
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
+import akka.http.scaladsl
+import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
 import bml.util.AnotationUtil.singular
 import bml.util.java.ClassNames.{builder, _}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
 import bml.util.GeneratorFSUtil.makeFile
+import bml.util.attribute.Hibernate
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
@@ -16,12 +18,12 @@ import io.apibuilder.spec.v0.models.{Attribute, Enum, Field, Model, Service, Uni
 import javax.lang.model.element.Modifier._
 import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
-import org.checkerframework.checker.units.qual.min
+//import org.checkerframework.checker.units.qual.min
 import play.api.{Logger, PlayException, UsefulException}
 import lib.Text._
-import org.apache.commons.lang3.StringUtils
-import views.html.defaultpages
-import views.html.defaultpages.error
+//import org.apache.commons.lang3.StringUtils
+//import views.html.defaultpages
+//import views.html.defaultpages.error
 
 import scala.collection.JavaConverters._
 
@@ -108,6 +110,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
     }
 
     def generateModel(model: Model, relatedUnions: Seq[Union]): File = {
+      //Should we add in hibernate
+      val useHibernate = Hibernate.fromModel(model).getOrElse(Hibernate(false)).use;
+
       val className = toClassName(model.name)
       //logger.info(s"Generating Model Class ${className}")
 
@@ -145,11 +150,13 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       JavaPojos.getSizeStaticFields(model)
         .foreach(classBuilder.addField(_))
 
-      //      JavaPojos.getSizeAttributesForStringList(model)
-      //        .foreach(classBuilder.addField(_))
+      if (useHibernate) {
+        classBuilder.addAnnotation(JavaxPersistanceAnnotations.Table(model))
+      }
 
       model.fields.foreach(field => {
         val javaDataType = dataTypeFromField(field, modelsNameSpace)
+
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(PROTECTED)
@@ -161,11 +168,21 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
         if (field.required) {
           fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
+
         }
-        if (JavaPojoUtil.isParameterArray(field.`type`)) {
-          if (field.required) {
-            fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotEmpty)
-          }
+        //        if (JavaPojoUtil.isParameterArray(field.`type`)) {
+        //          if (field.required) {
+        //            fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotEmpty)
+        //          }
+        //        }
+
+        val sizeAnnotation = JavaPojos.handleSizeAttribute(classBuilder, field)
+        if (sizeAnnotation.isDefined) {
+          fieldBuilder.addAnnotation(sizeAnnotation.get)
+        }
+
+        if (useHibernate) {
+          JavaPojos.handlePersisitanceAnnontations(className, field).foreach(fieldBuilder.addAnnotation(_))
         }
 
         ///////////////////////////////////////

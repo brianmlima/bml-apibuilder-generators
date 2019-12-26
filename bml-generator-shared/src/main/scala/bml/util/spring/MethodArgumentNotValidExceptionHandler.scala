@@ -9,7 +9,6 @@ object MethodArgumentNotValidExceptionHandler {
   import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
   import com.squareup.javapoet.CodeBlock.of
-  import bml.util.java.JavaArrays.arrayOf
   import bml.util.GeneratorFSUtil.makeFile
 
   /**
@@ -40,14 +39,14 @@ object MethodArgumentNotValidExceptionHandler {
           .addAnnotation(SpringTypes.ResponseBody)
           .addAnnotation(badArgExceptionHandler)
           .addStatement(of("$T result = ex.getBindingResult()", SpringTypes.BindingResult))
-          .addStatement(of("$T fieldErrors = result.getFieldErrors()", arrayOf(SpringTypes.FieldError)))
+          .addStatement(of("$T fieldErrors = result.getFieldErrors()", JavaTypes.List(SpringTypes.FieldError)))
           .addStatement(of("return processFieldErrors(fieldErrors)"))
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("processFieldErrors")
           .returns(fieldValidationResponse)
-          .addParameter(arrayOf(SpringTypes.FieldError), "fieldErrors", FINAL)
+          .addParameter(JavaTypes.List(SpringTypes.FieldError), "fieldErrors", FINAL)
           .addModifiers(PRIVATE)
           .addCode("final $T responseBuilder = $T.builder()", fieldValidationResponseBuilder, fieldValidationResponse)
           .addCode(".status($T.BAD_REQUEST.value())", SpringTypes.HttpStatus)

@@ -1,20 +1,25 @@
 package bml.util.java
 
 
+import java.util.Optional
+
 import io.apibuilder.spec.v0.models.{Field, Model}
 import javax.lang.model.element.Modifier._
 import JavaPojoUtil.toStaticFieldName
 import akka.http.scaladsl.model.headers.LinkParams.`type`
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
+import bml.util.AnotationUtil.HibernateAnnotations
+import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
 import bml.util.attribute
 import bml.util.attribute.StringValueLength
 import bml.util.java.ClassNames.JavaTypes
-import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
-import com.squareup.javapoet.{AnnotationSpec, FieldSpec, TypeName, TypeSpec}
+import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
+import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, FieldSpec, TypeName, TypeSpec}
 import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
+import javax.persistence.GenerationType
 import play.api.Logger
 
 import scala.collection.JavaConverters._
+import scala.reflect.internal.util.TableDef.Column
 
 object JavaPojos {
   private val LOG: Logger = Logger.apply(this.getClass())
@@ -22,19 +27,6 @@ object JavaPojos {
   def toMinFieldStaticFieldName(field: Field, overrideType: Option[String] = None): String = {
     toStaticFieldName(field.name) + "_MIN" + (if (overrideType.getOrElse(field.`type`) == "string") "_LENGTH" else "_SIZE")
   }
-
-  //  def toMinFieldStaticFieldName(field: Field): String = {
-  //    toStaticFieldName(field.name) + "_MIN" + (if (field.`type` == "string") "_LENGTH" else "_SIZE")
-  //  }
-
-
-  //  def toMinFieldStaticFieldName(name: String, `type`: String): String = {
-  //    toStaticFieldName(name) + "_MIN" + (if (`type` == "string") "_LENGTH" else "_SIZE")
-  //  }
-  //
-  //  def toMaxFieldStaticFieldName(name: String, `type`: String): String = {
-  //    toStaticFieldName(name) + "_MAX" + (if (`type` == "string") "_LENGTH" else "_SIZE")
-  //  }
 
   def toMaxFieldStaticFieldName(field: Field, overrideType: Option[String] = None): String = {
     toStaticFieldName(field.name) + "_MAX" + (if (overrideType.getOrElse(field.`type`) == "string") "_LENGTH" else "_SIZE")
@@ -126,7 +118,7 @@ object JavaPojos {
           Seq(
             FieldSpec.builder(TypeName.INT, toMinListSizeStaticFieldName(field), PUBLIC, STATIC, FINAL)
               .initializer("$L",
-                field.minimum.getOrElse(if (field.required) "1" else "0").toString
+                field.minimum.getOrElse("0").toString
               )
               .addJavadoc("Added By getListSizeStaticFields")
               .build(),
@@ -138,6 +130,10 @@ object JavaPojos {
         }
       ).flatten
   }
+
+
+  //private
+
 
   def getSizeStaticFields(model: Model): Seq[FieldSpec] = {
     model.fields.filter(_.`type` == "string")
@@ -159,47 +155,66 @@ object JavaPojos {
       ).flatten
   }
 
-  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field): AnnotationSpec = {
-    val isString = (field.`type` == "string")
 
+  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field): Option[AnnotationSpec] = {
+    val isString = (field.`type` == "string")
     val isList = JavaPojoUtil.isParameterArray(field)
 
+    if (!isString && !isList) {
+      return None
+    }
 
     val minStaticParamName = toMinFieldStaticFieldName(field)
     val maxStaticParamName = toMaxFieldStaticFieldName(field)
     val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
 
+
     if (isList) {
-      return spec.addMember("min", "$L", minStaticParamName)
-        .addMember("max", "$L", minStaticParamName)
-        .build()
+      return Some(spec.addMember("min", "$L", minStaticParamName)
+        .addMember("max", "$L", maxStaticParamName)
+        .build())
     }
 
     val hasMin = field.minimum.isDefined
     val hasMax = field.maximum.isDefined
 
     if (hasMin || hasMax) {
-      //sLOG.trace("field.minimum.isDefined")
       spec.addMember("min", "$L", minStaticParamName)
-      //      classSpec.addField(
-      //        FieldSpec.builder(INT, minStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.minimum.getOrElse(1).toString)
-      //          .addJavadoc(s"The minimum ${if (isString) "length" else "size"} of the field ${JavaPojoUtil.toParamName(field.name, true)}. Useful for reflection test rigging.")
-      //          .build()
-      //      )
     }
 
     if (hasMax) {
       //LOG.trace("{} field.maximum.isDefined=true",field.name)
       spec.addMember("max", "$L", maxStaticParamName)
-      //      classSpec.addField(
-      //        FieldSpec.builder(INT, maxStaticParamName, PUBLIC, STATIC, FINAL).initializer("$L", field.maximum.get.toString)
-      //          .addJavadoc(s"The maximum ${if (isString) "length" else "size"} of the field ${JavaPojoUtil.toParamName(field.name, true)}. Useful for reflection test rigging.")
-      //          .build()
-      //      )
     } else {
       throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
     }
-    spec.build()
+    Some(spec.build())
   }
+
+  def handlePersisitanceAnnontations(className: String, field: Field): Seq[AnnotationSpec] = {
+    val isId = (field.name == "id")
+    val isUUID = (field.`type` == "uuid")
+    var out: Seq[AnnotationSpec] = Seq()
+    out ++ Seq(JavaxPersistanceAnnotations.Id)
+
+    out = out ++ Seq(JavaxPersistanceAnnotations.Basic(field.required))
+
+    if (isId) {
+      LOG.info(s"Found id field in class=${className}")
+      out = out ++ Seq(JavaxPersistanceAnnotations.Id)
+    }
+    if (isUUID) {
+      out = out ++ Seq(JavaxPersistanceAnnotations.GeneratedValue(CodeBlock.of("$T.IDENTITY", JavaxPersistanceTypes.GenerationType)))
+    }
+    out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
+
+    if (isId && isUUID) {
+      out = out ++ Seq(HibernateAnnotations.GeneratedInserted)
+    }
+
+    out
+
+  }
+
 
 }

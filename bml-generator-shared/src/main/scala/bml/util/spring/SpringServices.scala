@@ -157,9 +157,20 @@ object SpringServices {
     } else {
       methodSpec.addModifiers(PUBLIC, ABSTRACT)
     }
-    methodSpec.addJavadoc(operation.description.getOrElse(""))
-      .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
-      .addJavadoc(s"@return ${SpringTypes.ResponseEntity.simpleName()}")
+
+
+    val javadocs =
+      Seq[String](
+        operation.description.getOrElse("")
+      ).filter(_ != "") ++
+        operation.parameters.map(serviceParamJavadoc(nameSpaces, _)) ++
+        Seq[String](s"@return ${SpringTypes.ResponseEntity.simpleName()}")
+
+    methodSpec.addJavadoc(javadocs.mkString("\n"))
+
+    //    methodSpec.addJavadoc(operation.description.getOrElse(""))
+    //      .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
+    //      .addJavadoc(s"@return ${SpringTypes.ResponseEntity.simpleName()}")
     //Add Parameters
     operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)
