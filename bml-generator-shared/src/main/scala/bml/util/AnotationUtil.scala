@@ -1,17 +1,17 @@
 package bml.util
 
-import bml.util.java.{ClassNames, JavaPojoUtil}
-import bml.util.java.ClassNames.{HibernateTypes, JavaTypes, SpringTypes}
+import bml.util.attribute.FieldRef
 import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
+import bml.util.java.ClassNames.{HibernateTypes, JavaTypes, SpringTypes}
+import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.jpa.JPA
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import io.apibuilder.spec.v0.models.{Attribute, Field, Model}
+import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
 import javax.persistence.Table
+import lombok._
 import lombok.experimental.Accessors
-import lombok.{AllArgsConstructor, Builder, EqualsAndHashCode, NoArgsConstructor, Singular}
 //import org.springframework.validation.annotation.Validated
-import scala.collection.JavaConverters._
 
 object AnotationUtil {
 
@@ -53,9 +53,43 @@ object AnotationUtil {
       def NotBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
 
       def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
+
+      val Validated = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
     }
 
     object JavaxPersistanceAnnotations {
+      def JoinColumn(field: Field) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+        .addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
+        .build()
+
+      def JoinColumn(service: Service, field: Field) = {
+        val isModel = JavaPojoUtil.isModelType(service, field)
+        val isList = JavaPojoUtil.isListOfModeslType(service, field)
+
+        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+
+        if (isModel) {
+          spec.addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
+        }
+
+        if (isList) {
+
+          val fieldRef = FieldRef.fromField(field)
+
+          //spec.addMember("name", "$S", Text.camelToSnakeCase(field.`type`.replaceAll("[\\[\\]]", "")))
+
+
+          spec.addMember("name", "$S", Text.camelToSnakeCase(if (fieldRef.isDefined) fieldRef.get.field else ""))
+        }
+        spec.build()
+      }
+
+      //@JoinColumn(name="store", referencedColumnName= "store_id")
+
+      val ManyToOne = AnnotationSpec.builder(JavaxPersistanceTypes.ManyToOne).build()
+
+      val OneToMany = AnnotationSpec.builder(JavaxPersistanceTypes.OneToMany).build()
+
       def Basic(optional: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Basic)
         .addMember("optional", "$L", optional.toString)
         .build()
@@ -67,22 +101,49 @@ object AnotationUtil {
       def GeneratedValue(strategy: CodeBlock) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
         .addMember("strategy", strategy).build()
 
-      def Column(field: Field) = {
+      def Column(fieldName: String): AnnotationSpec = {
+        AnnotationSpec.builder(JavaxPersistanceTypes.Column)
+          .addMember("name", "$S", Text.camelToSnakeCase(fieldName))
+          .build()
+      }
+
+      def Column(field: Field): AnnotationSpec = {
         val isId = (field.name == "id")
         val isUUID = (field.`type` == "uuid")
+        val isString = (field.`type` == "string")
 
-        AnnotationSpec.builder(JavaxPersistanceTypes.Column)
+
+        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.Column)
           .addMember("name", "$S", JPA.toColumnName(field))
           .addMember("nullable", "$L", (!field.required).toString)
           .addMember("unique", "$L", (isId || field.annotations.find(_ == "unique").isDefined).toString)
-          .addMember("insertable", "$L", (!(isId && isUUID)).toString)
-          .build()
+
+        if (isString && field.maximum.isDefined) {
+          spec.addMember("length", "$L", field.maximum.get.toString)
+        }
+
+        if (isUUID && isId) {
+          spec.addMember("updatable", "$L", false.toString)
+            .addMember("insertable", "$L", true.toString)
+        }
+
+
+        spec.build()
+
       }
 
       def Table(model: Model): AnnotationSpec = {
         AnnotationSpec.builder(JavaxPersistanceTypes.Table).addMember("name", "$S", JPA.toTableName(model)).build()
       }
 
+      val Entity = AnnotationSpec.builder(JavaxPersistanceTypes.Entity).build()
+      val Version = AnnotationSpec.builder(JavaxPersistanceTypes.Version).build()
+
+      val TemporalTIMESTAMP = AnnotationSpec.builder(JavaxPersistanceTypes.Temporal).addMember("value", "$T.TIMESTAMP", JavaxPersistanceTypes.TemporalType).build()
+
+      def GeneratedValue(generator: String) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
+        .addMember("generator", "$S", generator)
+        .build()
     }
 
   }
@@ -91,6 +152,13 @@ object AnotationUtil {
     val GeneratedInserted = AnnotationSpec.builder(HibernateTypes.Generated)
       .addMember("value", "$T.INSERT", HibernateTypes.GenerationTime)
       .build()
+
+    def GenericGenerator(name: String, strategy: String) = AnnotationSpec.builder(HibernateTypes.GenericGenerator)
+      .addMember("name", "$S", name)
+      .addMember("strategy", "$S", strategy)
+      .build()
+
+
   }
 
 

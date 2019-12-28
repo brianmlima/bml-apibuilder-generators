@@ -12,13 +12,13 @@ object Hibernate {
   val useValueKey = "use"
   val maximumValueKey = "maximum"
 
-  def fromModel(field: Model): Option[Hibernate] = {
-    val optional = field.attributes.find(_.name == attributeName)
+  def fromModel(model: Model): Hibernate = {
+    val optional = model.attributes.find(_.name == attributeName)
     if (optional.isEmpty) {
-      return None
+      return Hibernate(false)
     }
     val value = optional.get.value
-    Some(Hibernate((value \ useValueKey).as[Boolean]))
+    Hibernate((value \ useValueKey).as[Boolean])
   }
 
   def apply(use: Boolean) = new Hibernate(use)

@@ -1,23 +1,16 @@
 package bml.util.java
 
-import java.time.LocalDate
-import java.util
+import java.time.{LocalDate, LocalDateTime}
 import java.util.concurrent.ThreadLocalRandom
-import java.util.stream.Collectors
-import java.util.{Locale, Random, UUID, stream}
+import java.util.{Locale, Random, UUID}
 
 import bml.util.JavaNameSpace
-import bml.util.java.ClassNames.HamcrestTypes.MatcherAssert
-import bml.util.java.ClassNames.displayName
-import bml.util.java.poet.{StaticImport, StaticImportMethod}
-import com.squareup.javapoet.{AnnotationSpec, ClassName, ParameterizedTypeName, TypeName, TypeVariableName}
+import bml.util.java.poet.StaticImportMethod
+import com.squareup.javapoet._
 import lombok.Builder.Default
-import lombok.{AllArgsConstructor, Builder, Getter, NoArgsConstructor}
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
-import org.junit.jupiter.api.DisplayName
-import play.api.data
-import play.api.data.validation
+import lombok.{AllArgsConstructor, Builder, Getter, NoArgsConstructor}
 
 object ClassNames {
 
@@ -33,8 +26,13 @@ object ClassNames {
 
   object HibernateTypes {
     val Generated = ClassName.get("org.hibernate.annotations", "Generated")
+    val CreationTimestamp = ClassName.get("org.hibernate.annotations", "CreationTimestamp")
     val UpdateTimestamp = ClassName.get("org.hibernate.annotations", "UpdateTimestamp")
+
+
     val GenerationTime = ClassName.get("org.hibernate.annotations", "GenerationTime")
+    val GenericGenerator = ClassName.get("org.hibernate.annotations", "GenericGenerator")
+
 
   }
 
@@ -52,6 +50,9 @@ object ClassNames {
     val Arrays = ClassName.get("java.util", "Arrays")
     val Set = ClassName.get("java.util", "Set")
 
+    val Long = ClassName.get("java.lang", "Long")
+
+
     def Set(typeName: TypeName): ParameterizedTypeName = {
       ParameterizedTypeName.get(Set, typeName)
     }
@@ -59,6 +60,7 @@ object ClassNames {
     val Supplier = ClassName.get("java.util.function", "Supplier")
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
+    val LocalDateTime = ClassName.get(classOf[LocalDateTime])
     val Random = ClassName.get(classOf[Random])
     val ThreadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
     val Locale = ClassName.get(classOf[Locale])
@@ -69,6 +71,13 @@ object ClassNames {
     val `Class` = ClassName.get("", "Class")
     val InvocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
     val StringBuilder = ClassName.get("java.lang", "StringBuilder")
+
+
+    val Optional = ClassName.get("java.util", "Optional")
+
+    def Optional(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Optional, className)
+    }
 
     def Collectors = ClassName.get("java.util.stream", "Collectors")
 
@@ -85,6 +94,13 @@ object ClassNames {
 
 
     def toList = StaticImportMethod(Collectors, "toList")
+
+
+    val Iterable = ClassName.get("java.lang", "Iterable")
+
+    def Iterable(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Iterable, className)
+    }
 
     val List = ClassName.get("java.util", "List")
 
@@ -183,6 +199,7 @@ object ClassNames {
     val ObjectIdentity = ClassName.bestGuess("org.springframework.security.acls.model.ObjectIdentity")
     val NoRepositoryBean = ClassName.bestGuess("org.springframework.data.repository.NoRepositoryBean")
     val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
+    val Repository = ClassName.bestGuess("org.springframework.data.repository.Repository")
 
 
     object SpringValidationTypes {
@@ -194,6 +211,12 @@ object ClassNames {
       val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
       val SpringJUnitConfig = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringJUnitConfig")
     }
+
+    object SpringDataTypes {
+
+      val Repository = ClassName.get("org.springframework.stereotype", "Repository")
+    }
+
 
   }
 
@@ -306,6 +329,15 @@ object ClassNames {
       val TemporalType = ClassName.get("javax.persistence", "TemporalType")
       val Version = ClassName.get("javax.persistence", "Version")
       val Table = ClassName.get("javax.persistence", "Table")
+
+      val ManyToOne = ClassName.get("javax.persistence", "ManyToOne")
+
+      val OneToMany = ClassName.get("javax.persistence", "OneToMany")
+
+
+      val JoinColumn = ClassName.get("javax.persistence", "JoinColumn")
+
+
     }
 
 

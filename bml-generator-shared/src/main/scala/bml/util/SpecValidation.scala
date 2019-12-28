@@ -1,11 +1,10 @@
 package bml.util
 
-import akka.http.scaladsl
-import akka.http.scaladsl.model
+import bml.util.attribute.{FieldRef, Hibernate}
 import bml.util.java.JavaPojoUtil
 import io.apibuilder.spec.v0.models.{Operation, ResponseCodeInt, Service}
 import lombok.extern.slf4j.Slf4j
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 import play.api.libs.json.JsNumber
 
 @Slf4j
@@ -23,7 +22,8 @@ object SpecValidation {
         checkAllModelFieldsDontHaveUnderscores(service),
         checkAllEnumsDontHaveUnderscores(service),
         checkAllStringArraysHaveAStringValueLengthAttribute(service),
-        checkAllArraysHaveMaximum(service)
+        checkAllArraysHaveMaximum(service),
+        checkAllHibernateModelsHaveFieldRefWhereNecessary(service)
       ).flatten
     if (errors.isEmpty) {
       None
@@ -31,6 +31,28 @@ object SpecValidation {
       Some(errors)
     }
   }
+
+
+  def checkAllHibernateModelsHaveFieldRefWhereNecessary(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+
+    service.models.filter(Hibernate.fromModel(_).use)
+      .foreach(
+        model =>
+          model.fields.foreach(
+            field =>
+              if (JavaPojoUtil.isListOfModeslType(service, field)) {
+                if (FieldRef.fromField(field).isEmpty) {
+                  val msg = s"ERROR: A model that has the hibernate attribute has a field that is and array of models and does not have a field_ref attribute defined. This is used to derrive foreign keys and is required. Service='${service.name}' Model '${model.name}' Field='${field.name}'"
+                  log.error(msg)
+                  out = out ++ Seq(msg)
+                }
+              }
+          )
+      )
+    out
+  }
+
 
   def checkAllArraysHaveMaximum(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()

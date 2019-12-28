@@ -59,6 +59,17 @@ object Generators {
 
     CodeGenTarget(
       metaData = Generator(
+        key = "jpa_repository",
+        name = "JPA Repository generator",
+        description = Some("Generate Spring specific JPA repositories from the API description."),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.jpa.JPARepository)
+    ),
+
+    CodeGenTarget(
+      metaData = Generator(
         key = "spring_service",
         name = "EBSCO Spring Service",
         description = Some("Generate EBSCO specific Spring Service from the API description."),
@@ -67,6 +78,7 @@ object Generators {
       status = lib.generator.Status.InDevelopment,
       codeGenerator = Some(models.generator.spring.service.SpringService)
     ),
+
 
 
     CodeGenTarget(

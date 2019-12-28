@@ -1,7 +1,5 @@
 package bml.util.java
 
-import akka.http.scaladsl.model.headers.LinkParams.`type`
-import bml.util.attribute.StringValueLength
 import bml.util.java.ClassNames.HValidatorTypes
 import bml.util.{GeneratorFSUtil, JavaNameSpace, NameSpaces}
 import com.squareup.javapoet._
@@ -24,6 +22,24 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   def toClassName(model: Model): String = {
     toClassName(model.name)
   }
+
+  def toClassName(javaNameSpace: JavaNameSpace, model: Model): ClassName = {
+    // We don't support upper case class names so if a word is upper case then make it lower case
+    def checkForUpperCase(word: String): String =
+      if (word == word.toUpperCase) word.toLowerCase
+      else word
+
+    val cleanedName = model.name.split("\\.").last
+    if (isModelNameWithPackage(cleanedName)) {
+      ClassName.bestGuess(replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName)))
+    } else {
+      ClassName.get(
+        javaNameSpace.nameSpace,
+        Text.safeName(Text.splitIntoWords(cleanedName).map(checkForUpperCase(_).capitalize).mkString)
+      )
+    }
+  }
+
 
   def toClassName(modelName: String): String = {
     // We don't support upper case class names so if a word is upper case then make it lower case
@@ -237,6 +253,15 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   def isModelType(service: Service, field: Field): Boolean = {
     !service.models.filter(_.name == field.`type`).isEmpty
   }
+
+  def isListOfModeslType(service: Service, field: Field): Boolean = {
+    if (!isParameterArray(field)) {
+      return false
+    }
+    val clean = field.`type`.replaceAll("[\\[\\]]", "")
+    !service.models.filter(_.name == clean).isEmpty
+  }
+
 
   def isModelType(service: Service, `type`: String): Boolean = {
     !service.models.filter(_.name == `type`).isEmpty

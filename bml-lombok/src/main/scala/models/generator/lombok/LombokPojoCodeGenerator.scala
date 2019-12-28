@@ -1,26 +1,23 @@
 package models.generator.lombok
 
-import java.lang.IllegalArgumentException
-
-import akka.http.scaladsl
 import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
 import bml.util.AnotationUtil.singular
-import bml.util.java.ClassNames.{builder, _}
-import bml.util.java.{ClassNames, JavaDataTypes, JavaEnums, JavaPojoUtil, JavaPojos}
-import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.attribute.Hibernate
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.ClassNames.{builder, _}
+import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
+import bml.util.jpa.JPA
+import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Attribute, Enum, Field, Model, Service, Union}
+import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
 import javax.lang.model.element.Modifier._
 import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
 //import org.checkerframework.checker.units.qual.min
-import play.api.{Logger, PlayException, UsefulException}
-import lib.Text._
+import play.api.Logger
 //import org.apache.commons.lang3.StringUtils
 //import views.html.defaultpages
 //import views.html.defaultpages.error
@@ -111,9 +108,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
     def generateModel(model: Model, relatedUnions: Seq[Union]): File = {
       //Should we add in hibernate
-      val useHibernate = Hibernate.fromModel(model).getOrElse(Hibernate(false)).use;
+      val useHibernate = Hibernate.fromModel(model).use;
 
-      val className = toClassName(model.name)
+      val className = toClassName(nameSpaces.model, model)
       //logger.info(s"Generating Model Class ${className}")
 
       val classBuilder = TypeSpec.classBuilder(className)
@@ -131,7 +128,17 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           AnnotationSpec.builder(classOf[JsonIgnoreProperties])
             .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
         )
+        //private static final long serialVersionUID = 1L;
+        .addField(
+          FieldSpec.builder(
+            TypeName.LONG, "serialVersionUID", PRIVATE, STATIC, FINAL)
+            .initializer("$LL", service.version.split("\\.")(0))
+            .build()
+        )
         .addField(JavaPojos.makeRequiredFieldsField(model))
+
+
+
       // Add in static booleans for each field to tell if the field is required.
       //model.fields.foreach(JavaPojos.handleRequiredFieldAddition(classBuilder, _))
 
@@ -151,7 +158,9 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .foreach(classBuilder.addField(_))
 
       if (useHibernate) {
+        classBuilder.addAnnotation(JavaxPersistanceAnnotations.Entity)
         classBuilder.addAnnotation(JavaxPersistanceAnnotations.Table(model))
+
       }
 
       model.fields.foreach(field => {
@@ -176,13 +185,13 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         //          }
         //        }
 
-        val sizeAnnotation = JavaPojos.handleSizeAttribute(classBuilder, field)
+        val sizeAnnotation = JavaPojos.handleSizeAttribute(className, field)
         if (sizeAnnotation.isDefined) {
           fieldBuilder.addAnnotation(sizeAnnotation.get)
         }
 
         if (useHibernate) {
-          JavaPojos.handlePersisitanceAnnontations(className, field).foreach(fieldBuilder.addAnnotation(_))
+          JavaPojos.handlePersisitanceAnnontations(service, className, field).foreach(fieldBuilder.addAnnotation(_))
         }
 
         ///////////////////////////////////////
@@ -207,7 +216,12 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         })
         classBuilder.addField(fieldBuilder.build)
       })
-      makeFile(className, nameSpaces.model, classBuilder)
+
+      if (useHibernate) {
+        JPA.addJPAStandardFields(model).foreach(classBuilder.addField)
+      }
+
+      makeFile(className.simpleName(), nameSpaces.model, classBuilder)
     }
 
 

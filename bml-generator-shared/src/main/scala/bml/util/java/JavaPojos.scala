@@ -1,25 +1,18 @@
 package bml.util.java
 
 
-import java.util.Optional
-
-import io.apibuilder.spec.v0.models.{Field, Model}
-import javax.lang.model.element.Modifier._
-import JavaPojoUtil.toStaticFieldName
-import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.AnotationUtil.HibernateAnnotations
-import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
+import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.attribute
 import bml.util.attribute.StringValueLength
 import bml.util.java.ClassNames.JavaTypes
-import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
-import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, FieldSpec, TypeName, TypeSpec}
-import com.squareup.javapoet.TypeName.{BOOLEAN, INT}
-import javax.persistence.GenerationType
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
+import bml.util.java.JavaPojoUtil.toStaticFieldName
+import com.squareup.javapoet.TypeName.BOOLEAN
+import com.squareup.javapoet._
+import io.apibuilder.spec.v0.models.{Field, Model, Service}
+import javax.lang.model.element.Modifier._
 import play.api.Logger
-
-import scala.collection.JavaConverters._
-import scala.reflect.internal.util.TableDef.Column
 
 object JavaPojos {
   private val LOG: Logger = Logger.apply(this.getClass())
@@ -155,8 +148,7 @@ object JavaPojos {
       ).flatten
   }
 
-
-  def handleSizeAttribute(classSpec: TypeSpec.Builder, field: Field): Option[AnnotationSpec] = {
+  def handleSizeAttribute(className: ClassName, field: Field): Option[AnnotationSpec] = {
     val isString = (field.`type` == "string")
     val isList = JavaPojoUtil.isParameterArray(field)
 
@@ -170,8 +162,8 @@ object JavaPojos {
 
 
     if (isList) {
-      return Some(spec.addMember("min", "$L", minStaticParamName)
-        .addMember("max", "$L", maxStaticParamName)
+      return Some(spec.addMember("min", "$T.$L", className, minStaticParamName)
+        .addMember("max", "$T.$L", className, maxStaticParamName)
         .build())
     }
 
@@ -179,37 +171,51 @@ object JavaPojos {
     val hasMax = field.maximum.isDefined
 
     if (hasMin || hasMax) {
-      spec.addMember("min", "$L", minStaticParamName)
+      spec.addMember("min", "$T.$L", className, minStaticParamName)
     }
 
     if (hasMax) {
       //LOG.trace("{} field.maximum.isDefined=true",field.name)
-      spec.addMember("max", "$L", maxStaticParamName)
+      spec.addMember("max", "$T.$L", className, maxStaticParamName)
     } else {
       throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
     }
     Some(spec.build())
   }
 
-  def handlePersisitanceAnnontations(className: String, field: Field): Seq[AnnotationSpec] = {
+  def handlePersisitanceAnnontations(service: Service, className: ClassName, field: Field): Seq[AnnotationSpec] = {
     val isId = (field.name == "id")
     val isUUID = (field.`type` == "uuid")
+    val isString = (field.`type` == "string")
+
+    val isModel = JavaPojoUtil.isModelType(service, field)
+    val isList = JavaPojoUtil.isParameterArray(field)
+
     var out: Seq[AnnotationSpec] = Seq()
     out ++ Seq(JavaxPersistanceAnnotations.Id)
 
     out = out ++ Seq(JavaxPersistanceAnnotations.Basic(field.required))
 
     if (isId) {
-      LOG.info(s"Found id field in class=${className}")
+      LOG.info(s"Found id field in class=${className.toString}")
       out = out ++ Seq(JavaxPersistanceAnnotations.Id)
     }
-    if (isUUID) {
-      out = out ++ Seq(JavaxPersistanceAnnotations.GeneratedValue(CodeBlock.of("$T.IDENTITY", JavaxPersistanceTypes.GenerationType)))
+    //    if (isUUID) {
+    //      out = out ++ Seq(JavaxPersistanceAnnotations.GeneratedValue(CodeBlock.of("$T.IDENTITY", JavaxPersistanceTypes.GenerationType)))
+    //    }
+    if (isModel) {
+      out = out ++ Seq(JavaxPersistanceAnnotations.ManyToOne, JavaxPersistanceAnnotations.JoinColumn(service, field))
+    } else if (JavaPojoUtil.isListOfModeslType(service, field)) {
+      out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinColumn(service, field))
+    } else {
+      out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
     }
-    out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
 
     if (isId && isUUID) {
-      out = out ++ Seq(HibernateAnnotations.GeneratedInserted)
+      out = out ++ Seq(
+        JavaxPersistanceAnnotations.GeneratedValue("UUID"),
+        HibernateAnnotations.GenericGenerator("UUID", "org.hibernate.id.UUIDGenerator")
+      )
     }
 
     out
