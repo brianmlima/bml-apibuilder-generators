@@ -51,17 +51,29 @@ object SpringControllers {
 
   def generateController(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val name = SpringControllers.toControllerName(resource)
+
+    val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource))
+    val serviceFieldName = Text.initLowerCase(SpringServices.toServiceName(resource))
+
     val builder = TypeSpec.classBuilder(name)
       .addModifiers(PUBLIC)
       .addAnnotation(SpringTypes.Controller)
       .addAnnotation(ClassNames.slf4j)
       .addFields(controllerOperationNameFields(service, resource).asJava)
       .addField(
-        FieldSpec.builder(
-          ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource)),
-          Text.initLowerCase(SpringServices.toServiceName(resource)),
-          PRIVATE
-        ).addAnnotation(AnotationUtil.autowired)
+        FieldSpec.builder(serviceClassName, serviceFieldName, PRIVATE)
+          //.addAnnotation(AnotationUtil.autowired)
+          .build()
+      )
+      .addMethod(
+        MethodSpec.constructorBuilder()
+          .addModifiers(PUBLIC)
+          .addParameter(
+            ParameterSpec.builder(serviceClassName, serviceFieldName, FINAL)
+              .addAnnotation(AnotationUtil.autowired)
+              .build()
+          )
+          .addStatement("this.$L = $L", serviceFieldName, serviceFieldName)
           .build()
       )
 
