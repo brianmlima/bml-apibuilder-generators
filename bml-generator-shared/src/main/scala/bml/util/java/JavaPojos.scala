@@ -1,6 +1,8 @@
 package bml.util.java
 
 
+import akka.http.scaladsl
+import akka.http.scaladsl.model
 import bml.util.AnotationUtil.HibernateAnnotations
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.attribute
@@ -126,6 +128,12 @@ object JavaPojos {
 
 
   //private
+
+  def getApiPathElement(model: Model): FieldSpec = {
+    FieldSpec.builder(JavaTypes.String, "API_PATH_ELEMENT", PUBLIC, STATIC, FINAL)
+      .initializer("$S", model.name)
+      .build()
+  }
 
 
   def getSizeStaticFields(model: Model): Seq[FieldSpec] = {

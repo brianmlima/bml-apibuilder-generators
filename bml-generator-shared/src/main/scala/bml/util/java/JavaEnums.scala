@@ -1,6 +1,6 @@
 package bml.util.java
 
-import bml.util.AnotationUtil
+import bml.util.{AnotationUtil, NameSpaces}
 import bml.util.java.ClassNames.JavaTypes
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.Enum
@@ -32,6 +32,9 @@ object JavaEnums {
     Text.safeName(input.replaceAll("\\.", "_").replaceAll("-", "_")).toUpperCase
   }
 
+  def toEnumName(enum: Enum): String = {
+    toEnumName(enum.name)
+  }
 
   def standardEnumBuilder(enum: Enum, apiDocComments: String): TypeSpec.Builder = {
     val className = ClassName.bestGuess(JavaPojoUtil.toClassName(enum.name))
@@ -87,7 +90,7 @@ object JavaEnums {
       )
       .addMethod(
         MethodSpec.methodBuilder("from" + stringValueParam.capitalize)
-          .addModifiers(PUBLIC, FINAL)
+          .addModifiers(PUBLIC, STATIC, FINAL)
           .addParameter(classOf[String], stringValueParam, FINAL)
           .addStatement(CodeBlock.of("return $L.get($L)", stringMapFieldName, stringValueParam))
           .returns(className)

@@ -136,6 +136,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             .build()
         )
         .addField(JavaPojos.makeRequiredFieldsField(model))
+        .addField(JavaPojos.getApiPathElement(model))
 
 
 
@@ -156,6 +157,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       JavaPojos.getSizeStaticFields(model)
         .foreach(classBuilder.addField(_))
+
 
       if (useHibernate) {
         classBuilder.addAnnotation(JavaxPersistanceAnnotations.Entity)

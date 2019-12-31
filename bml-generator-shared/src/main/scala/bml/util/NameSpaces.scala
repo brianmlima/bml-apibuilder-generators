@@ -15,6 +15,7 @@ class NameSpaces(nameSpaceString: String) extends JavaNamespaceUtil {
   val config = new JavaNameSpace(nameSpace, "config")
   val tool = new JavaNameSpace(nameSpace, "tool")
   val jpa = new JavaNameSpace(nameSpace, "jpa")
+  val converter = new JavaNameSpace(nameSpace, "converter")
 
   def this(apiBuilderService: Service) {
     this(apiBuilderService.namespace);

@@ -2,15 +2,17 @@ package bml.util.spring
 
 import bml.util.java.ClassNames._
 import bml.util.java.{ClassNames, JavaPojoUtil}
-import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
+import bml.util.{GeneratorFSUtil, NameSpaces}
+import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.{Operation, Parameter, Resource, Service}
+import io.apibuilder.spec.v0.models._
 
 object SpringServices {
 
+  import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
   import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
-  import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
 
@@ -42,13 +44,13 @@ object SpringServices {
         MethodSpec.methodBuilder("jsonObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
           .addAnnotation(primary)
           .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "jsonObjectMapper").build())
-          .addStatement(CodeBlock.of("return new $T()", objectMapper))
+          .addStatement("return new $T().registerModule(new $T())", objectMapper, JacksonTypes.JavaTimeModule)
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("yamlObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
           .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "yamlObjectMapper").build())
-          .addStatement(CodeBlock.of("return new $T(new $T())", objectMapper, yAMLFactory))
+          .addStatement(CodeBlock.of("return new $T(new $T()).registerModule(new $T())", objectMapper, yAMLFactory, JacksonTypes.JavaTimeModule))
           .build()
       ).addMethod(
       MethodSpec.methodBuilder("configureContentNegotiation")
@@ -87,7 +89,19 @@ object SpringServices {
         .addMethod(
           MethodSpec.constructorBuilder()
             .addComment("can use overloaded constructor to set supported MediaType")
-            .addStatement("super(new $T(new $T()))", objectMapper, yAMLFactory)
+            //.addStatement("super(new $T(new $T()))", objectMapper, yAMLFactory)
+            .addCode(
+              CodeBlock.builder()
+                .add("")
+                .add("super(")
+                .add("new $T(", objectMapper)
+                .add("new $T()", yAMLFactory)
+                .add(".disable($T.Feature.WRITE_DOC_START_MARKER)", JacksonTypes.YAMLGenerator)
+                .add(").registerModule(new $T())", JacksonTypes.JavaTimeModule)
+                .add(".configure($T.WRITE_DATES_AS_TIMESTAMPS, false)", JacksonTypes.SerializationFeature)
+                .addStatement(")")
+                .build()
+            )
             .addStatement("this.setSupportedMediaTypes($T.of(MEDIA_TYPE_YML, MEDIA_TYPE_YAML))", immutableList)
             .build()
         ).build()
@@ -158,21 +172,38 @@ object SpringServices {
       methodSpec.addModifiers(PUBLIC, ABSTRACT)
     }
 
-
-    val javadocs =
-      Seq[String](
-        operation.description.getOrElse("")
-      ).filter(_ != "") ++
-        operation.parameters.map(serviceParamJavadoc(nameSpaces, _)) ++
-        Seq[String](s"@return ${SpringTypes.ResponseEntity.simpleName()}")
-
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    var javadocs = Seq[String](operation.description.getOrElse("")).filter(_ != "")
+    operation.method match {
+      case Method.Get =>
+        javadocs = javadocs ++ operation.parameters.map(serviceParamJavadoc(nameSpaces, _))
+      case Method.Post =>
+        var body = operation.body.get
+        javadocs = javadocs ++ Seq[String](serviceBodyJavadoc(nameSpaces, body))
+    }
+    javadocs = javadocs ++ Seq[String](s"@return ${SpringTypes.ResponseEntity.simpleName()}")
     methodSpec.addJavadoc(javadocs.mkString("\n"))
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //    methodSpec.addJavadoc(operation.description.getOrElse(""))
-    //      .addJavadoc(operation.parameters.map(serviceParamJavadoc(nameSpaces, _)).mkString("\n"))
-    //      .addJavadoc(s"@return ${SpringTypes.ResponseEntity.simpleName()}")
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    operation.method match {
+      case Method.Get =>
+        operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
+      case Method.Post =>
+        var body = operation.body.get
+        val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+        methodSpec.addParameter(
+          ParameterSpec.builder(bodyClassName, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
+            .addAnnotation(JavaxValidationAnnotations.NotNull)
+            .addAnnotation(JavaxValidationAnnotations.Valid)
+            .build()
+        )
+
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
     //Add Parameters
-    operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
     return Some(methodSpec)
   }
 
@@ -180,6 +211,13 @@ object SpringServices {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
     val javaDataType = modelDataType(nameSpaces, parameter)
     s"@param $paramName ${javaDataType.toString} ${parameter.description.getOrElse("")}".trim
+  }
+
+  private def serviceBodyJavadoc(nameSpaces: NameSpaces, body: Body): String = {
+    val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+    val paramName = JavaPojoUtil.toParamName(bodyClassName.simpleName(), true)
+    //val javaDataType = modelDataType(nameSpaces, parameter)
+    s"@param $paramName ${bodyClassName.simpleName()} ${body.description.getOrElse("")}".trim
   }
 
   private def operationParamToServiceParam(nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {

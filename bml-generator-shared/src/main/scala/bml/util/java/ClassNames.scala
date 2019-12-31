@@ -174,6 +174,10 @@ object ClassNames {
     def ResponseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(ResponseEntity, className)
 
     val ResponseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
+
+    val RequestBody = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestBody")
+
+
     val ResponseStatus = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseStatus")
     val ResponseEntityOfObject: ParameterizedTypeName = ResponseEntity(ClassName.OBJECT)
     val SpringApplication = ClassName.get("org.springframework.boot", "SpringApplication")
@@ -201,6 +205,10 @@ object ClassNames {
     val RestController = ClassName.bestGuess("org.springframework.web.bind.annotation.RestController")
     val Repository = ClassName.bestGuess("org.springframework.data.repository.Repository")
 
+    val Converter = ClassName.bestGuess("org.springframework.core.convert.converter.Converter")
+
+    val FormatterRegistry = ClassName.bestGuess("org.springframework.format.FormatterRegistry")
+
 
     object SpringValidationTypes {
       val Validated = ClassName.get("org.springframework.validation.annotation", "Validated")
@@ -215,6 +223,9 @@ object ClassNames {
     object SpringDataTypes {
 
       val Repository = ClassName.get("org.springframework.stereotype", "Repository")
+
+      val Query = ClassName.bestGuess("org.springframework.data.jpa.repository.Query")
+
     }
 
 
@@ -376,7 +387,9 @@ object ClassNames {
 
 
   val objectMapper = ClassName.get("com.fasterxml.jackson.databind", "ObjectMapper")
+  val JavaTimeModule = ClassName.get("com.fasterxml.jackson.datatype.jsr310", "JavaTimeModule")
   val yAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLFactory")
+
   val immutableList = ClassName.get("com.google.common.collect", "ImmutableList")
   val bean = ClassName.get("org.springframework.context.annotation", "Bean")
   val configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
@@ -389,6 +402,20 @@ object ClassNames {
   val contentNegotiationConfigurer = ClassName.get("org.springframework.web.servlet.config.annotation", "ContentNegotiationConfigurer")
   val enableWebMvc = ClassName.get("org.springframework.web.servlet.config.annotation", "EnableWebMvc")
   val webMvcConfigurer = ClassName.get("org.springframework.web.servlet.config.annotation", "WebMvcConfigurer")
+
+
+  object JacksonTypes {
+    val ObjectMapper = ClassName.get("com.fasterxml.jackson.databind", "ObjectMapper")
+    val JavaTimeModule = ClassName.get("com.fasterxml.jackson.datatype.jsr310", "JavaTimeModule")
+    val YAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLFactory")
+    val YAMLGenerator = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLGenerator")
+
+
+    val DeserializationFeature = ClassName.get("com.fasterxml.jackson.databind", "DeserializationFeature")
+    val SerializationFeature = ClassName.get("com.fasterxml.jackson.databind", "SerializationFeature")
+
+
+  }
 
 
   //val  = ClassName.get("","")

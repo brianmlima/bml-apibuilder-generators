@@ -264,7 +264,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     def wrapList(codeBlock: CodeBlock): CodeBlock = {
 
       CodeBlock.builder()
-        .add("$T.$L($L,50)", TestSuppliers.className(nameSpaces), TestSuppliers.methods.listSupplier, codeBlock)
+        .add("$T.$L($L,$L)", TestSuppliers.className(nameSpaces), TestSuppliers.methods.listSupplier, codeBlock, field.maximum.getOrElse(50).toString)
         .build()
     }
 

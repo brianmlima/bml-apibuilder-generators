@@ -1,13 +1,15 @@
 package bml.util.spring
 
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
-import bml.util.java.ClassNames.SpringTypes
+import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Method.Get
-import io.apibuilder.spec.v0.models.{Operation, Parameter, ParameterLocation, Resource, Service}
+import io.apibuilder.spec.v0.models.Method.{Get, Post}
+import io.apibuilder.spec.v0.models._
+import javax.lang.model.element.Modifier
 import lib.Text
+
 
 class SpringControllers {
 
@@ -18,6 +20,7 @@ object SpringControllers {
   import com.squareup.javapoet._
   import io.apibuilder.spec.v0.models.ParameterLocation._
   import javax.lang.model.element.Modifier._
+  import collection.JavaConverters._
 
   def toControllerName(resource: Resource): String = {
     JavaPojoUtil.toClassName(resource.`type` + "Controller")
@@ -31,6 +34,20 @@ object SpringControllers {
     JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
   }
 
+  def controllerOperationNameFields(service: Service, resource: Resource): Seq[FieldSpec] = {
+    Seq[FieldSpec](
+
+      FieldSpec.builder(JavaTypes.String, "API_VERSION", PUBLIC, STATIC)
+        .initializer("$S",
+          String.format("v%s", service.version.split("\\.")(0))
+        )
+        .build(),
+
+      FieldSpec.builder(JavaTypes.String, "RESOURCE_PATH", PUBLIC, STATIC)
+        .initializer("$S", s"/v${service.version.split("\\.")(0)}${resource.path.get}")
+        .build(),
+    )
+  }
 
   def generateController(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val name = SpringControllers.toControllerName(resource)
@@ -38,6 +55,7 @@ object SpringControllers {
       .addModifiers(PUBLIC)
       .addAnnotation(SpringTypes.Controller)
       .addAnnotation(ClassNames.slf4j)
+      .addFields(controllerOperationNameFields(service, resource).asJava)
       .addField(
         FieldSpec.builder(
           ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource)),
@@ -46,6 +64,8 @@ object SpringControllers {
         ).addAnnotation(AnotationUtil.autowired)
           .build()
       )
+
+
     //Generate Controller methods from operations
     resource.operations.flatMap(SpringControllers.generateControllerOperation(service, nameSpaces, resource, _)).foreach(builder.addMethod)
     //Return the generated Service interface
@@ -64,22 +84,57 @@ object SpringControllers {
     val path = operation.path
 
 
-    if (operation.method.equals(Get)) {
-      methodSpec.addAnnotation(AnotationUtil.getMappingJson(s"/$version$path"))
+    def toSpringPath(path: String): String = {
+      path.split("/").map(
+        element =>
+          if (element.startsWith(":")) {
+            element.replace(":", "{") + "}"
+          } else {
+            element
+          }
+      ).mkString("/")
     }
+
+
+    operation.method match {
+
+
+      case Get =>
+        operation.parameters.map(SpringControllers.operationParamToControllerParam(nameSpaces, _)).foreach(methodSpec.addParameter)
+
+        methodSpec
+          .addAnnotation(AnotationUtil.getMappingJson(toSpringPath(s"/$version$path")))
+          .addCode(
+            CodeBlock.builder()
+              .add("return $L.$L(\n", Text.initLowerCase(SpringServices.toServiceName(resource)), methodName)
+              .add(operation.parameters.map(toControllerParamName).mkString(",\n"))
+              .add(");")
+              .build()
+          )
+      case Post =>
+        methodSpec.addAnnotation(AnotationUtil.postMappingJson(toSpringPath(s"/$version$path")))
+        if (operation.body.isDefined) {
+          val body = operation.body.get
+          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+          methodSpec
+            .addParameter(
+              ParameterSpec.builder(bodyClassName, JavaPojoUtil.toFieldName(bodyClassName.simpleName()), Modifier.FINAL)
+                .addAnnotation(
+                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
+                ).build()
+            )
+            .addCode(
+              CodeBlock.builder()
+                .add("return $L.$L(\n", Text.initLowerCase(SpringServices.toServiceName(resource)), methodName)
+                .add(JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
+                .add(");")
+                .build()
+            )
+        }
+    }
+
     //Add Parameters
-    operation.parameters.map(SpringControllers.operationParamToControllerParam(nameSpaces, _)).foreach(methodSpec.addParameter)
 
-    val code = CodeBlock.builder()
-    code.add(
-      "return $L.$L(\n",
-      Text.initLowerCase(SpringServices.toServiceName(resource)),
-      methodName
-    )
-    code.add(operation.parameters.map(toControllerParamName).mkString(",\n"))
-    code.add(");")
-
-    methodSpec.addCode(code.build())
 
     Some(methodSpec.build())
   }

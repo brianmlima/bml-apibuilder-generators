@@ -2,7 +2,7 @@ package bml.util
 
 import bml.util.attribute.FieldRef
 import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
-import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
+import bml.util.java.ClassNames.SpringTypes.{SpringDataTypes, SpringValidationTypes}
 import bml.util.java.ClassNames.{HibernateTypes, JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.jpa.JPA
@@ -27,6 +27,12 @@ object AnotationUtil {
       def SpringJUnitConfig(className: ClassName) = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringJUnitConfig)
         .addMember("value", "$T.class", className).build()
     }
+
+  }
+
+  object SpringDataAnno {
+
+    def Query(query: String) = AnnotationSpec.builder(SpringDataTypes.Query).addMember("value", "$S", query).build()
 
   }
 
@@ -55,6 +61,7 @@ object AnotationUtil {
       def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
 
       val Validated = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
+      val Valid = AnnotationSpec.builder(JavaxValidationTypes.Valid).build()
     }
 
     object JavaxPersistanceAnnotations {
@@ -178,9 +185,17 @@ object AnotationUtil {
   def getMappingJson(path: String): AnnotationSpec = {
     AnnotationSpec.builder(SpringTypes.GetMapping)
       .addMember("path", "$S", path)
-      .addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
+      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
       .build()
   }
+
+  def postMappingJson(path: String): AnnotationSpec = {
+    AnnotationSpec.builder(SpringTypes.PostMapping)
+      .addMember("path", "$S", path)
+      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
+      .build()
+  }
+
 
   def size(min: Int, max: Int): AnnotationSpec = {
     AnnotationSpec.builder(JavaxValidationTypes.Size)

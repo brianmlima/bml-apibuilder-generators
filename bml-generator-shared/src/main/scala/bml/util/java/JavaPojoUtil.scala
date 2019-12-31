@@ -40,6 +40,23 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     }
   }
 
+  def toClassName(javaNameSpace: JavaNameSpace, `type`: String): ClassName = {
+    // We don't support upper case class names so if a word is upper case then make it lower case
+    def checkForUpperCase(word: String): String =
+      if (word == word.toUpperCase) word.toLowerCase
+      else word
+
+    val cleanedName = `type`.split("\\.").last
+    if (isModelNameWithPackage(cleanedName)) {
+      ClassName.bestGuess(replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName)))
+    } else {
+      ClassName.get(
+        javaNameSpace.nameSpace,
+        Text.safeName(Text.splitIntoWords(cleanedName).map(checkForUpperCase(_).capitalize).mkString)
+      )
+    }
+  }
+
 
   def toClassName(modelName: String): String = {
     // We don't support upper case class names so if a word is upper case then make it lower case
@@ -211,6 +228,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     toParamName(field.name, true)
   }
 
+  def toIdFieldName(field: Field): String = {
+    toParamName(field.name + "_id", true)
+  }
+
   def toFieldName(fieldName: String): String = {
     toParamName(fieldName, true)
   }
@@ -280,6 +301,16 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
       field.required || field.maximum.isDefined || field.minimum.isDefined
     }).isDefined
   }
+
+  def findIdField(service: Service, `type`: String): Option[Field] = {
+    val modelOption = service.models.find(_.name == `type`)
+    if (modelOption.isEmpty) {
+      return None
+    }
+    val model = modelOption.get
+    model.fields.find(_.name == "id")
+  }
+
 
 }
 

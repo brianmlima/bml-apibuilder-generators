@@ -2,9 +2,9 @@ package models.generator.spring.service
 
 import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
-import bml.util.spring.{MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices}
+import bml.util.spring.{MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices, StringToEnumConverters}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.Service
+import io.apibuilder.spec.v0.models.{Enum, Service}
 import lib.generator.{CodeGenerator, GeneratorUtil}
 
 
@@ -35,14 +35,15 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
       generateServices(service) ++
         generateControllers(service) ++
         MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
-        SpringBootApps.foo(nameSpaces, service)++
+        SpringBootApps.foo(nameSpaces, service) ++
+        StringToEnumConverters.enumConverters(nameSpaces, service.enums) ++
         generateBaseConfigration(service)
 
     }
 
     //Generates Services from Resources
     def generateControllers(service: Service): Seq[File] = {
-      service.resources.flatMap(SpringControllers.generateController(service,nameSpaces, _))
+      service.resources.flatMap(SpringControllers.generateController(service, nameSpaces, _))
     }
 
     //Generates Services from Resources
@@ -51,9 +52,8 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
     }
 
     def generateBaseConfigration(service: Service): Seq[File] = {
-      SpringServices.generateBaseConfiguration(nameSpaces,service)
+      SpringServices.generateBaseConfiguration(nameSpaces, service)
     }
-
 
 
   }
