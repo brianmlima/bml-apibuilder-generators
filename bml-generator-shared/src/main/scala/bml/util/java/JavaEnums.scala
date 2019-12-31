@@ -1,8 +1,8 @@
 package bml.util.java
 
 import bml.util.{AnotationUtil, NameSpaces}
-import bml.util.java.ClassNames.JavaTypes
-import com.squareup.javapoet._
+import bml.util.java.ClassNames.{JacksonTypes, JavaTypes}
+import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.spec.v0.models.Enum
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC, STATIC}
 import lib.Text
@@ -108,6 +108,85 @@ object JavaEnums {
       .addJavadoc("\n")
       .addJavadoc("\n")
       .addJavadoc(genericDoc.mkString("\n"))
+
+      .addAnnotation(
+        AnnotationSpec.builder(JacksonTypes.JsonDeserialize)
+          .addMember("converter", "$T.Converters.ToEnum.class", className)
+          .build()
+      ).addAnnotation(
+      AnnotationSpec.builder(JacksonTypes.JsonSerialize)
+        .addMember("converter", "$T.Converters.ToString.class", className)
+        .build()
+    )
+      .addType(makeConverters(className))
+
+  }
+
+
+  def makeConverters(enumClassName: ClassName): TypeSpec = {
+    val convertersClassName = ClassName.get("", "Converters")
+
+    TypeSpec.classBuilder(convertersClassName).addModifiers(PUBLIC, STATIC)
+      .addType(
+        TypeSpec.classBuilder("ToEnum").addModifiers(PUBLIC, STATIC)
+          .addSuperinterface(ParameterizedTypeName.get(JacksonTypes.Converter, JavaTypes.String, enumClassName))
+          .addMethod(
+            MethodSpec.methodBuilder("convert")
+              .addModifiers(PUBLIC)
+              .addAnnotation(JavaTypes.`Override`)
+              .returns(enumClassName)
+              .addParameter(ParameterSpec.builder(JavaTypes.String, "apiValue", FINAL).build())
+              .addStatement("return $T.fromApiValue(apiValue)", enumClassName)
+              .build()
+          ).addMethod(
+          MethodSpec.methodBuilder("getInputType")
+            .addModifiers(PUBLIC)
+            .addAnnotation(JavaTypes.`Override`)
+            .returns(JacksonTypes.JavaType)
+            .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
+            .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), JavaTypes.String)
+            .build()
+        ).addMethod(
+          MethodSpec.methodBuilder("getOutputType")
+            .addModifiers(PUBLIC)
+            .addAnnotation(JavaTypes.`Override`)
+            .returns(JacksonTypes.JavaType)
+            .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
+            .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), enumClassName)
+            .build()
+        ).build()
+      )
+      .addType(
+        TypeSpec.classBuilder("ToString").addModifiers(PUBLIC, STATIC)
+          .addSuperinterface(ParameterizedTypeName.get(JacksonTypes.Converter, enumClassName, JavaTypes.String))
+          .addMethod(
+            MethodSpec.methodBuilder("convert")
+              .addModifiers(PUBLIC)
+              .addAnnotation(JavaTypes.`Override`)
+              .returns(JavaTypes.String)
+              .addParameter(ParameterSpec.builder(enumClassName, "enumValue", FINAL).build())
+              .addStatement("return $L.apiValue()", "enumValue")
+              .build()
+          ).addMethod(
+          MethodSpec.methodBuilder("getInputType")
+            .addModifiers(PUBLIC)
+            .addAnnotation(JavaTypes.`Override`)
+            .returns(JacksonTypes.JavaType)
+            .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
+            .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), enumClassName)
+            .build()
+        ).addMethod(
+          MethodSpec.methodBuilder("getOutputType")
+            .addModifiers(PUBLIC)
+            .addAnnotation(JavaTypes.`Override`)
+            .returns(JacksonTypes.JavaType)
+            .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
+            .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), JavaTypes.String)
+            .build()
+        ).build()
+      ).build()
+
+
   }
 
 

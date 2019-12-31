@@ -414,6 +414,12 @@ object ClassNames {
     val DeserializationFeature = ClassName.get("com.fasterxml.jackson.databind", "DeserializationFeature")
     val SerializationFeature = ClassName.get("com.fasterxml.jackson.databind", "SerializationFeature")
 
+    val JavaType = ClassName.bestGuess("com.fasterxml.jackson.databind.JavaType")
+    val TypeFactory = ClassName.bestGuess("com.fasterxml.jackson.databind.type.TypeFactory")
+    val Converter = ClassName.bestGuess("com.fasterxml.jackson.databind.util.Converter")
+    val JsonDeserialize = ClassName.bestGuess("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
+    val JsonSerialize = ClassName.bestGuess("com.fasterxml.jackson.databind.annotation.JsonSerialize")
+
 
   }
 
