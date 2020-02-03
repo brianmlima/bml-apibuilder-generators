@@ -80,7 +80,6 @@ object Generators {
     ),
 
 
-
     CodeGenTarget(
       metaData = Generator(
         key = "spring_cloud_contract",
@@ -122,6 +121,19 @@ object Generators {
       ),
       status = lib.generator.Status.InDevelopment,
       codeGenerator = Some(models.generator.graphQlSchema.GraphQLSchema)
+    ),
+
+    CodeGenTarget(
+      metaData = Generator(
+        key = "java_client",
+        name = "Java Client Generator",
+        description = Some("Generates a java Client for use in a Spring environment."),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.bml.java.client.JavaClient)
     )
+
+
   ).sortBy(_.metaData.key)
 }

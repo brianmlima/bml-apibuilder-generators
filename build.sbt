@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -109,6 +109,13 @@ lazy val javaPersistanceSql = project
     Seq(ScoverageKeys.coverageMinimum := 69.5)
   )
 
+lazy val javaClient = project
+  .in(file("generators/java-client"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(
+    Seq(ScoverageKeys.coverageMinimum := 69.5)
+  )
 
 
 val springFrameworkVersion = "5.2.1.RELEASE"

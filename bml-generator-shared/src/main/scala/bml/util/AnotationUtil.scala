@@ -49,6 +49,12 @@ object AnotationUtil {
 
   object LombokAnno {
     val Slf4j = AnnotationSpec.builder(ClassNames.LombokTypes.Slf4j).build()
+
+    def fluentAccessor = AnnotationSpec
+      .builder(classOf[Accessors])
+      .addMember("fluent", CodeBlock.builder().add("true").build).build()
+
+
   }
 
   object JavaxAnnotations {

@@ -129,9 +129,9 @@ object JavaPojos {
 
   //private
 
-  def getApiPathElement(model: Model): FieldSpec = {
+  def getApiPathElement(service: Service, model: Model): FieldSpec = {
     FieldSpec.builder(JavaTypes.String, "API_PATH_ELEMENT", PUBLIC, STATIC, FINAL)
-      .initializer("$S", model.name)
+      .initializer("$S", s"/v${service.version.split("\\.")(0)}/${model.plural}")
       .build()
   }
 

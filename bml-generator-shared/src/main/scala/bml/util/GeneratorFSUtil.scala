@@ -52,4 +52,29 @@ object GeneratorFSUtil {
     }
   }
 
+//  def makeFile(name: String, path: String, nameSpace: String, builders: Seq[TypeSpec.Builder], staticImports: StaticImport*): File = {
+//
+//
+//    builders.map(JavaFile.builder(nameSpace, builder.build))
+//
+//    val javaFile = JavaFile.builder(nameSpace, builder.build)
+//    staticImports.foreach(
+//      staticImport =>
+//        javaFile.addStaticImport(staticImport.className, staticImport.names: _*)
+//    )
+//    try {
+//      val options = JavaFormatterOptions.builder().style(JavaFormatterOptions.Style.GOOGLE).build()
+//      File(s"${name}.java", Some(path), new Formatter(options).formatSource(javaFile.build.toString))
+//      //      File(s"${name}.java", Some(path), javaFile.build.toString)
+//    } catch {
+//      case x: com.google.googlejavaformat.java.FormatterException => {
+//        LOG.error(javaFile.build().toString)
+//        LOG.error(x.diagnostics().toString)
+//        LOG.error(x.getLocalizedMessage)
+//        throw x
+//      }
+//    }
+//  }
+
+
 }

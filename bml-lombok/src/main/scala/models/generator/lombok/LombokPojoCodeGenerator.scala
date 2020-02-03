@@ -136,7 +136,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             .build()
         )
         .addField(JavaPojos.makeRequiredFieldsField(model))
-        .addField(JavaPojos.getApiPathElement(model))
+        .addField(JavaPojos.getApiPathElement(service, model))
 
 
 

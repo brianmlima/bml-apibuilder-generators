@@ -209,6 +209,7 @@ object ClassNames {
 
     val FormatterRegistry = ClassName.bestGuess("org.springframework.format.FormatterRegistry")
 
+    val RestTemplate = ClassName.bestGuess("org.springframework.web.client.RestTemplate")
 
     object SpringValidationTypes {
       val Validated = ClassName.get("org.springframework.validation.annotation", "Validated")
