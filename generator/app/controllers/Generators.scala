@@ -71,30 +71,28 @@ object Generators {
     CodeGenTarget(
       metaData = Generator(
         key = "spring_service",
-        name = "EBSCO Spring Service",
-        description = Some("Generate EBSCO specific Spring Service from the API description."),
+        name = "Opinionated Spring Service",
+        description = Some("Generate Opinionated Spring Service from the API description."),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
       codeGenerator = Some(models.generator.spring.service.SpringService)
     ),
-
-
+    //    CodeGenTarget(
+    //      metaData = Generator(
+    //        key = "spring_cloud_contract",
+    //        name = "Spring Clound Contract Generator",
+    //        description = Some("Generates Spring Clound Contracts for an api definition"),
+    //        language = Some("Java")
+    //      ),
+    //      status = lib.generator.Status.InDevelopment,
+    //      codeGenerator = Some(models.generator.spring.cloud.contract.SpringCloudContract)
+    //    ),
     CodeGenTarget(
       metaData = Generator(
-        key = "spring_cloud_contract",
-        name = "Spring Clound Contract Generator",
-        description = Some("Generates Spring Clound Contracts for an api definition"),
-        language = Some("Java")
-      ),
-      status = lib.generator.Status.InDevelopment,
-      codeGenerator = Some(models.generator.spring.cloud.contract.SpringCloudContract)
-    ),
-    CodeGenTarget(
-      metaData = Generator(
-        key = "ebsco_spring_service_testing",
-        name = "EBSCO Spring Service Testing",
-        description = Some("Generate Tests and Test infrastructure for EBSCO specific Spring Service from the API description."),
+        key = "spring_service_testing",
+        name = "Opinionated Spring service testing framework generator.",
+        description = Some("Generates a testing framework for the Opinionated Spring Service from the API description."),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,

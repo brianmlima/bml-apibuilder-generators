@@ -67,7 +67,8 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     val cleanedName = modelName.split("\\.").last
 
     if (isModelNameWithPackage(cleanedName)) {
-      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName))
+      capitalizeModelNameWithPackage(cleanedName)
+      //      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName))
     } else {
       Text.safeName(Text.splitIntoWords(cleanedName).map {
         checkForUpperCase(_).capitalize

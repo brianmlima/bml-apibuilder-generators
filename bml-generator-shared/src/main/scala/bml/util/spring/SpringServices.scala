@@ -13,6 +13,7 @@ object SpringServices {
   import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
   import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
+  import lib.Text
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
 
@@ -20,9 +21,15 @@ object SpringServices {
 
   def toServiceClassName(nameSpaces: NameSpaces, resource: Resource): ClassName = ClassName.get(nameSpaces.service.nameSpace, toServiceName(resource))
 
+  def toResponseSubTypeCLassName(nameSpaces: NameSpaces, operation: Operation): ClassName = {
+    JavaPojoUtil.toClassName(nameSpaces.service, "ResponseModel" + toOperationName(operation).capitalize)
+  }
+
   def toServiceMockClassName(nameSpaces: NameSpaces, resource: Resource): ClassName = ClassName.get(nameSpaces.service.nameSpace, toServiceMockName(resource))
 
-  def toOperationName(operation: Operation) = JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
+  def toOperationName(operation: Operation) = {
+    JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
+  }
 
   private def modelDataType(nameSpaces: NameSpaces, parameter: Parameter) = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
 
@@ -162,10 +169,16 @@ object SpringServices {
     Some(builder)
   }
 
+
+  //  private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation,
+
+
   private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
     val methodName = toOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
-      .returns(SpringTypes.ResponseEntity)
+      //      .returns(SpringTypes.ResponseEntity(toResponseSubTypeCLassName(nameSpaces, operation)))
+      .returns(toResponseSubTypeCLassName(nameSpaces, operation))
+
     if (isconcrete) {
       methodSpec.addModifiers(PUBLIC)
     } else {

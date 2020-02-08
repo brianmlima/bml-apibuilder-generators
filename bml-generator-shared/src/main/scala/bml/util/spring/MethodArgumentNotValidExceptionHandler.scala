@@ -65,12 +65,11 @@ object MethodArgumentNotValidExceptionHandler {
     Seq(makeFile(name, nameSpaces.controller, builder, staticImports: _*))
   }
 
+  private def fieldValidationResponse = ClassName.get("com.ebsco.validation.v0.models", "FieldValidationResponse")
 
-  private def fieldValidationResponse = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationResponse")
+  private def fieldValidationError = ClassName.get("com.ebsco.validation.v0.models", "FieldValidationError")
 
-  private def fieldValidationError = ClassName.get("org.bml.ebsco.validation.v0.models", "FieldValidationError")
-
-  private def fieldValidationResponseBuilder = ClassName.get("org.bml.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
+  private def fieldValidationResponseBuilder = ClassName.get("com.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
 
   private def responseStatusBadRequest = AnnotationSpec.builder(SpringTypes.ResponseStatus).addMember("value", "$T.BAD_REQUEST", SpringTypes.HttpStatus).build()
 
