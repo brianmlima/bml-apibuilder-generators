@@ -54,7 +54,6 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
     )
 
     def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
-
       val errors = SpecValidation.validate(service: Service, header: Option[String])
 
       if (errors.isDefined) {
@@ -94,8 +93,8 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
     def generateResources(resources: Seq[Resource]): Seq[Option[File]] = {
       val resourceDatas = resources.map(ResourceData(_, config))
-      val controlerFiles = resourceDatas.map(ControllerGenerator.generate(_)).map(_.makeControllerFile())
-      val serviceFiles = resourceDatas.map(ControllerServiceGenerator.generate(_)).map(_.makeServiceFile())
+      val controlerFiles = resourceDatas.map(ControllerGenerator.generate(service, _)).map(_.makeControllerFile())
+      val serviceFiles = resourceDatas.map(ControllerServiceGenerator.generate(service, _)).map(_.makeServiceFile())
 
       controlerFiles ++ serviceFiles
     }
@@ -131,18 +130,18 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
     }
 
     /**
-      * Delagated model generation.
-      *
-      */
+     * Delagated model generation.
+     *
+     */
     def generateModel(modelData: ModelData): Seq[Option[File]] = {
       if (modelData.isPersistedModel())
         Seq(
-          PersistanceClassGenerator.generatePersistenceModel(modelData).makeClassFile(),
-          RepositoryGenerator.generate(modelData).makeRepoFile()
+          PersistanceClassGenerator.generatePersistenceModel(service, modelData).makeClassFile(),
+          RepositoryGenerator.generate(service, modelData).makeRepoFile()
         )
       else
         Seq(
-          ClassGenerator.generateNonPersistenceModel(modelData).makeClassFile()
+          ClassGenerator.generateNonPersistenceModel(service, modelData).makeClassFile()
         )
     }
 

@@ -1,12 +1,13 @@
 package bml.util
 
 import bml.util.attribute.FieldRef
+import bml.util.java.ClassNames.JacksonTypes.JsonInclude
 import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames.SpringTypes.{SpringDataTypes, SpringValidationTypes}
-import bml.util.java.ClassNames.{HibernateTypes, JavaTypes, SpringTypes}
+import bml.util.java.ClassNames.{HibernateTypes, JacksonTypes, JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.jpa.JPA
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonInclude}
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
 import javax.persistence.Table
 import lombok._
@@ -16,6 +17,21 @@ import lombok.experimental.Accessors
 object AnotationUtil {
 
   import com.squareup.javapoet._
+
+  object JacksonAnno {
+
+    val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
+      .addMember("value","$L","JsonInclude.Include.NON_NULL")
+      .build()
+
+
+    val JsonIncludeALLWAYS = AnnotationSpec.builder(JacksonTypes.JsonInclude)
+      .addMember("value","$L","JsonInclude.Include.ALWAYS")
+      .build()
+
+
+  }
+
 
   object SpringAnno {
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
@@ -54,6 +70,13 @@ object AnotationUtil {
       .builder(classOf[Accessors])
       .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
+    def Getter = AnnotationSpec
+      .builder(classOf[Getter])
+      .build()
+
+    def Builder = AnnotationSpec
+      .builder(classOf[Builder])
+      .build()
 
   }
 

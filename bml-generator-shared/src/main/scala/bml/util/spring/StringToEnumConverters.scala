@@ -8,7 +8,7 @@ import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil}
 import bml.util.{GeneratorFSUtil, NameSpaces}
 import com.squareup.javapoet.{ClassName, CodeBlock, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeSpec}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Enum
+import io.apibuilder.spec.v0.models.{Enum, Service}
 import javax.lang.model.element.Modifier
 
 
@@ -30,8 +30,8 @@ object StringToEnumConverters {
   }
 
 
-  def enumConverters(nameSpaces: NameSpaces, enums: Seq[Enum]): Seq[File] = {
-    enums.map(enumConverter(nameSpaces, _)) ++
+  def enumConverters(service: Service, nameSpaces: NameSpaces, enums: Seq[Enum]): Seq[File] = {
+    enums.map(enumConverter(service, nameSpaces, _)) ++
       makeConvertersConfigClass(nameSpaces, enums)
 
   }
@@ -59,12 +59,12 @@ object StringToEnumConverters {
     Seq(GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.converter, builder))
   }
 
-  def enumConverter(nameSpaces: NameSpaces, enum: Enum): File = {
+  def enumConverter(service: Service, nameSpaces: NameSpaces, enum: Enum): File = {
 
     val className = toClassName(nameSpaces, enum);
 
 
-    val enumDataType = JavaPojoUtil.dataTypeFromField(`enum`.name, nameSpaces.model)
+    val enumDataType = JavaPojoUtil.dataTypeFromField(service, `enum`.name, nameSpaces.model)
 
     val builder = TypeSpec.classBuilder(className)
       .addModifiers(Modifier.PUBLIC)

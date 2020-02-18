@@ -1,7 +1,7 @@
 package models.generator.lombok
 
 import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
-import bml.util.AnotationUtil.singular
+import bml.util.AnotationUtil.{JacksonAnno, singular}
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.attribute.Hibernate
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
@@ -128,6 +128,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           AnnotationSpec.builder(classOf[JsonIgnoreProperties])
             .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
         )
+        .addAnnotation(JacksonAnno.JsonIncludeNON_NULL)
         //private static final long serialVersionUID = 1L;
         .addField(
           FieldSpec.builder(
@@ -166,13 +167,16 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       }
 
       model.fields.foreach(field => {
-        val javaDataType = dataTypeFromField(field, modelsNameSpace)
+        val javaDataType = dataTypeFromField(service,field, modelsNameSpace)
 
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(PROTECTED)
-          .addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
           .addAnnotation(getter)
+
+
+
+
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
           fieldBuilder.addAnnotation(singular)
 
@@ -195,6 +199,12 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         if (useHibernate) {
           JavaPojos.handlePersisitanceAnnontations(service, className, field).foreach(fieldBuilder.addAnnotation(_))
         }
+        fieldBuilder.addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
+        if(field.required){
+          fieldBuilder.addAnnotation(JacksonAnno.JsonIncludeALLWAYS)
+        }
+
+
 
         ///////////////////////////////////////
         //Deal with javadocs

@@ -45,11 +45,11 @@ class JPARepositoryGenerator extends CodeGenerator {
       }
 
       Right(
-        generateJPARepositories()
+        generateJPARepositories(service)
       )
     }
 
-    def generateJPARepositories(): Seq[File] = {
+    def generateJPARepositories(service: Service): Seq[File] = {
 
       service.models.filter(Hibernate.fromModel(_).use).map(
         model => {
@@ -57,7 +57,7 @@ class JPARepositoryGenerator extends CodeGenerator {
           val entityClassName = JavaPojoUtil.toClassName(nameSpaces.model, model)
 
           val idField = model.fields.filter(_.name == "id").last
-          val idType = JavaPojoUtil.dataTypeFromField(idField, nameSpaces.model)
+          val idType = JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
 
 
           def saveMethod(): MethodSpec = {
@@ -231,12 +231,12 @@ class JPARepositoryGenerator extends CodeGenerator {
                       .addParameters(
                         fields.map(
                           aField => {
-                            val fieldType = JavaPojoUtil.dataTypeFromField(aField, nameSpaces.model)
+                            val fieldType = JavaPojoUtil.dataTypeFromField(service, aField, nameSpaces.model)
                             val idFieldOption = JavaPojoUtil.findIdField(service, aField.`type`)
                             var parameterSpec: ParameterSpec = null
                             if (idFieldOption.isDefined) {
                               val idField = idFieldOption.get
-                              val idFieldType = JavaPojoUtil.dataTypeFromField(idField, nameSpaces.model)
+                              val idFieldType = JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
                               parameterSpec = ParameterSpec.builder(idFieldType, JavaPojoUtil.toIdFieldName(aField), Modifier.FINAL)
                                 .addAnnotation(JavaxValidationAnnotations.NotNull)
                                 .build()
@@ -266,7 +266,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               ParameterizedTypeName.get(
                 SpringTypes.Repository,
                 entityClassName,
-                JavaPojoUtil.dataTypeFromField(idField, nameSpaces.model)
+                JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
               )
             )
             .addAnnotation(JavaxValidationAnnotations.Validated)

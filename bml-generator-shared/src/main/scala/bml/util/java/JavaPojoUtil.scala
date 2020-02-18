@@ -1,9 +1,10 @@
 package bml.util.java
 
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.java.ClassNames.HValidatorTypes
 import bml.util.{GeneratorFSUtil, JavaNameSpace, NameSpaces}
 import com.squareup.javapoet._
-import io.apibuilder.spec.v0.models.{Field, Model, Service}
+import io.apibuilder.spec.v0.models.{Field, Model, Parameter, Service}
 import lib.Text
 
 
@@ -67,7 +68,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     val cleanedName = modelName.split("\\.").last
 
     if (isModelNameWithPackage(cleanedName)) {
-      capitalizeModelNameWithPackage(cleanedName)
+      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName))
       //      replaceEnumsPrefixWithModels(capitalizeModelNameWithPackage(cleanedName))
     } else {
       Text.safeName(Text.splitIntoWords(cleanedName).map {
@@ -161,62 +162,55 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     "json" -> ClassName.get("java.lang", "Object"),
     "string" -> ClassName.get("java.lang", "String"),
     "unit" -> ClassName.get("java.lang", "Void"),
-    "uuid" -> ClassName.get("java.util", "UUID")
+    "uuid" -> ClassName.get("java.util", "UUID"),
+    "guid" -> ClassName.get("java.util", "UUID")
   )
 
 
-  def dataTypeFromField(field: Field, nameSpace: JavaNameSpace): TypeName = {
-    dataTypeFromField(field.`type`, nameSpace.nameSpace)
+  def dataTypeFromField(service: Service, `type`: String, nameSpace: JavaNameSpace): TypeName = {
+    dataTypeFromField(service, `type`, nameSpace.nameSpace)
   }
 
-  def dataTypeFromField(`type`: String, nameSpace: JavaNameSpace): TypeName = {
-    dataTypeFromField(`type`, nameSpace.nameSpace)
-  }
-
-
-  def dataTypeFromField(`type`: String, modelsNameSpace: String): TypeName = {
+  def dataTypeFromField(service: Service, `type`: String, modelsNameSpace: String): TypeName = {
     dataTypes.get(`type`).getOrElse {
       //Helps with external mapped classes IE imports
       val hasNamespace = `type`.contains(".")
-      val nameSpace = if (hasNamespace) `type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
+      var nameSpace = if (hasNamespace) `type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
+
+      //keep enums in the model name space
+      nameSpace = nameSpace.replace(".enums", ".models")
+
 
       val name = toParamName(`type`, false)
       if (isParameterArray(`type`))
-        ParameterizedTypeName.get(ClassName.get("java.util", "List"), dataTypeFromField(getArrayType(`type`), nameSpace))
-      else if (isParameterMap(`type`))
-        ParameterizedTypeName.get(ClassName.get("java.util", "Map"), ClassName.get("java.lang", "String"), dataTypeFromField(getMapType(`type`), nameSpace))
-      else
-        ClassName.get(nameSpace, name)
-
-    }
-  }
-
-  def dataTypeFromField(field: Field, modelsNameSpace: String): TypeName = {
-    dataTypes.get(field.`type`).getOrElse {
-      //Helps with external mapped classes IE imports
-      val hasNamespace = field.`type`.contains(".")
-      val nameSpace = if (hasNamespace) field.`type`.split("\\.").dropRight(1).mkString(".") else modelsNameSpace
-
-      val name = toParamName(field.`type`, false)
-      if (isParameterArray(field.`type`))
-        if (field.`type` == "[string]") {
+        if (`type` == "[string]") {
           ParameterizedTypeName.get(
             ClassName.get("java.util", "List"),
-            dataTypeFromField(
-              getArrayType(field.`type`),
+            dataTypeFromField(service,
+              getArrayType(`type`),
               nameSpace).annotated(
-              AnnotationSpec.builder(HValidatorTypes.Length).addMember("min", "$L", JavaPojos.toMinStringValueLengthStaticFieldName(field)).addMember("max", "$L", JavaPojos.toMaxStringValueLengthStaticFieldName(field)).build()
+              AnnotationSpec.builder(HValidatorTypes.Length).addMember("min", "$L", JavaPojos.toMinStringValueLengthStaticFieldName(`type`)).addMember("max", "$L", JavaPojos.toMaxStringValueLengthStaticFieldName(`type`)).build()
             )
           )
         } else {
-          ParameterizedTypeName.get(ClassName.get("java.util", "List"), dataTypeFromField(getArrayType(field.`type`), nameSpace))
+          ParameterizedTypeName.get(ClassName.get("java.util", "List"), dataTypeFromField(service, getArrayType(`type`), nameSpace))
         }
-      else if (isParameterMap(field.`type`))
-        ParameterizedTypeName.get(ClassName.get("java.util", "Map"), ClassName.get("java.lang", "String"), dataTypeFromField(getMapType(field.`type`), nameSpace))
+      else if (isParameterMap(`type`))
+        ParameterizedTypeName.get(ClassName.get("java.util", "Map"), ClassName.get("java.lang", "String"), dataTypeFromField(service, getMapType(`type`), nameSpace))
       else
+
         ClassName.get(nameSpace, name)
 
     }
+
+  }
+
+  def dataTypeFromField(service: Service, field: Field, nameSpace: JavaNameSpace): TypeName = {
+    dataTypeFromField(service, field.`type`, nameSpace.nameSpace)
+  }
+
+  def dataTypeFromField(service: Service, field: Field, modelsNameSpace: String): TypeName = {
+    dataTypeFromField(service, field.`type`, modelsNameSpace)
   }
 
 
@@ -235,6 +229,10 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
   def toFieldName(fieldName: String): String = {
     toParamName(fieldName, true)
+  }
+
+  def toParamName(parameter: Parameter, startingWithLowercase: Boolean = true): String = {
+    toParamName(parameter.name, startingWithLowercase)
   }
 
   def toParamName(modelName: String, startingWithLowercase: Boolean): String = {

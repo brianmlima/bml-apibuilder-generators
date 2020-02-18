@@ -5,7 +5,9 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
 import bml.util.JavaNameSpace
+import bml.util.java.ClassNames.JacksonTypes.JsonInclude
 import bml.util.java.poet.StaticImportMethod
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.squareup.javapoet._
 import lombok.Builder.Default
 import lombok.experimental.{FieldNameConstants, UtilityClass}
@@ -422,7 +424,17 @@ object ClassNames {
     val JsonSerialize = ClassName.bestGuess("com.fasterxml.jackson.databind.annotation.JsonSerialize")
 
 
+    val JsonInclude = ClassName.get(classOf[JsonInclude])
+
+
+
+
+
   }
+
+
+
+
 
 
   //val  = ClassName.get("","")

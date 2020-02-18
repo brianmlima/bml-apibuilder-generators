@@ -1,6 +1,8 @@
 package bml.util.java
 
 
+import akka.http.scaladsl
+import akka.http.scaladsl.model
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{AnotationUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
@@ -32,7 +34,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     mockFactoryClassName(nameSpaces, model.name)
   }
 
-  def getFunction(model: Model, nameSpaces: NameSpaces): MethodSpec = {
+  def getFunction(service: Service, model: Model, nameSpaces: NameSpaces): MethodSpec = {
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
     MethodSpec.methodBuilder(generateMethodName)
@@ -47,7 +49,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 val fieldName = toFieldName(field)
                 CodeBlock.builder()
                   .beginControlFlow("if ($L !=null)", fieldName)
-                  .addStatement("$T $L = $L.get()", JavaPojoUtil.dataTypeFromField(field, nameSpaces.model), fieldName + "Object", fieldName)
+                  .addStatement("$T $L = $L.get()", JavaPojoUtil.dataTypeFromField(service, field, nameSpaces.model), fieldName + "Object", fieldName)
                   .beginControlFlow("if($L!=null)", fieldName + "Object")
                   .addStatement("builder.$L($L)", fieldName, fieldName + "Object")
                   .endControlFlow()
@@ -80,7 +82,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
               log.info("Service={} Model={} Field.name={} Field.type={}", service.name, model.name, field.name, field.`type`)
 
               val fieldName = toFieldName(field)
-              val fieldType = dataTypeFromField(field, nameSpaces.model)
+              val fieldType = dataTypeFromField(service, field, nameSpaces.model)
               val supplierType = supplier(fieldType)
               val fiedlSpec = FieldSpec.builder(supplierType, fieldName, PRIVATE).addAnnotation(ClassNames.getter)
               if (field.`type` == "boolean") {
@@ -158,7 +160,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       .addMethods(
         model.fields.map(generateDefaultSupplier(service, nameSpaces, model, _)).filter(_.isDefined).map(_.get).asJava
       )
-      .addMethod(getFunction(model, nameSpaces))
+      .addMethod(getFunction(service, model, nameSpaces))
     makeFile(className.simpleName(), nameSpaces.modelFactory, typeBuilder)
   }
 
@@ -170,7 +172,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
   def generateDefaultSupplier(service: Service, nameSpaces: NameSpaces, model: Model, field: Field): Option[MethodSpec] = {
     val fieldName = defaultSupplierMethodName(field)
-    val fieldType = dataTypeFromField(field, nameSpaces.model)
+    val fieldType = dataTypeFromField(service, field, nameSpaces.model)
     val supplierType = supplier(fieldType)
     val testSuppliers = TestSuppliers.className(nameSpaces)
 
@@ -284,7 +286,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         stdWithNullable(
           wrapList(
             enumTypeReturn(
-              dataTypeFromField(memberType, nameSpaces.model.nameSpace)
+              dataTypeFromField(service, memberType, nameSpaces.model.nameSpace)
             )
           )
         )

@@ -56,6 +56,16 @@ object Generators {
       codeGenerator = Some(models.generator.bml.lombok.test.BMLLombokTests)
     ),
 
+    CodeGenTarget(
+      metaData = Generator(
+        key = "bml_openapi",
+        name = "BML Openapi 3.0",
+        description = Some("Generate an openapi yaml 3.0 sepc with refs and a file name so combination works"),
+        language = Some("openapi")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.bml.openapi.Openapi)
+    ),
 
     CodeGenTarget(
       metaData = Generator(

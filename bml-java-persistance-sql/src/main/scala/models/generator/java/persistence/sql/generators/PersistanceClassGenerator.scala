@@ -2,6 +2,7 @@ package models.generator.java.persistence.sql.generators
 
 import bml.util.java.{JavaCommonClasses, JavaPojoUtil}
 import com.squareup.javapoet.{AnnotationSpec, ClassName, FieldSpec, ParameterizedTypeName}
+import io.apibuilder.spec.v0.models.Service
 import javax.lang.model.element.Modifier.PROTECTED
 import javax.persistence.{JoinColumn, ManyToOne}
 import models.generator.java.persistence.sql.{GenUtils, ModelData}
@@ -13,11 +14,11 @@ class PersistanceClassGenerator {
 object PersistanceClassGenerator extends JavaPojoUtil {
 
   /**
-    * Generate Models that are marked for persistence.
-    *
-    * @return
-    */
-  def generatePersistenceModel(modelData: ModelData): ModelData = {
+   * Generate Models that are marked for persistence.
+   *
+   * @return
+   */
+  def generatePersistenceModel(service: Service, modelData: ModelData): ModelData = {
 
     //Create the JavaPoet builder tool for the java file and add the default javadoc header
     val classBuilder = GeneratorsCommon.commonClassBuilder(modelData)
@@ -49,7 +50,7 @@ object PersistanceClassGenerator extends JavaPojoUtil {
     // Process the models fields
     modelData.model.fields.foreach(field => {
       //Get the data type of the field.
-      val javaDataType = dataTypeFromField(field.`type`, modelData.config.modelsNameSpace)
+      val javaDataType = dataTypeFromField(service, field.`type`, modelData.config.modelsNameSpace)
 
       //create the basic builder
       val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true)).addModifiers(PROTECTED)

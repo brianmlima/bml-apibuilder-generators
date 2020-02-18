@@ -1,5 +1,6 @@
 package bml.util.spring
 
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.java.ClassNames._
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{GeneratorFSUtil, NameSpaces}
@@ -7,12 +8,14 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models._
+import javax.lang.model.element.Modifier
 
 object SpringServices {
 
   import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
   import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
+  import collection.JavaConverters._
   import lib.Text
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
@@ -31,7 +34,42 @@ object SpringServices {
     JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
   }
 
-  private def modelDataType(nameSpaces: NameSpaces, parameter: Parameter) = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
+  private def modelDataType(service: Service, nameSpaces: NameSpaces, parameter: Parameter) = JavaPojoUtil.dataTypeFromField(service, parameter.`type`, nameSpaces.model.nameSpace)
+
+
+  def generateServiceOperationResponseContainer(service: Service, nameSpaces: NameSpaces): Seq[File] = {
+    service.resources.flatMap(
+      resource =>
+        resource.operations.flatMap(
+          operation =>
+            operation.responses.flatMap(
+              response =>
+                SpringServices.generateServiceOperationResponseContainer(service, resource, operation, response, nameSpaces)
+            )
+        )
+    )
+  }
+
+  def generateServiceOperationResponseContainer(service: Service, resource: Resource, operation: Operation, response: Response, nameSpaces: NameSpaces): Seq[File] = {
+    val className = toResponseSubTypeCLassName(nameSpaces, operation)
+
+    def doResponse(response: Response): FieldSpec = {
+      val paramClassName = ParameterizedTypeName.get(SpringTypes.ResponseEntity, JavaPojoUtil.dataTypeFromField(service, response.`type`, nameSpaces.model))
+
+
+      FieldSpec.builder(paramClassName, JavaPojoUtil.toParamName(response.`type`, true))
+        .addAnnotation(LombokAnno.Getter)
+        .build()
+    }
+
+    val spec = TypeSpec.classBuilder(className)
+      .addModifiers(Modifier.PUBLIC)
+      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.fluentAccessor).asJava)
+    spec.addFields(
+      operation.responses.map(doResponse(_)).asJava
+    )
+    Seq(GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.service, spec))
+  }
 
 
   def generateBaseConfiguration(nameSpaces: NameSpaces, service: Service): Seq[File] = {
@@ -129,16 +167,16 @@ object SpringServices {
   }
 
 
-  def generateService(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+  def generateService(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val serviceName = toServiceClassName(nameSpaces, resource)
     val serviceBuilder = TypeSpec.interfaceBuilder(serviceName).addModifiers(PUBLIC)
       .addJavadoc(resource.description.getOrElse(""))
     //Generate Service methods from operations and add them to the Service Interface
-    resource.operations.flatMap(generateServiceOperation(nameSpaces, resource, _, false))
+    resource.operations.flatMap(generateServiceOperation(service, nameSpaces, resource, _, false))
       .map(_.build())
       .foreach(serviceBuilder.addMethod)
     //Return the generated Service interface
-    Seq(GeneratorFSUtil.makeFile(serviceName.simpleName(), nameSpaces.service.path, nameSpaces.service.nameSpace, serviceBuilder))
+    Seq(GeneratorFSUtil.makeFile(serviceName.simpleName(), nameSpaces.service, serviceBuilder))
   }
 
   def generateServiceMockTests(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
@@ -163,8 +201,8 @@ object SpringServices {
     Seq(GeneratorFSUtil.makeFile(implName.simpleName(), nameSpaces.service, implBuilder))
   }
 
-  private def generateServiceMockTestOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec.Builder] = {
-    val builder = generateServiceOperation(nameSpaces, resource, operation, true).get
+  private def generateServiceMockTestOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec.Builder] = {
+    val builder = generateServiceOperation(service, nameSpaces, resource, operation, true).get
     //builder.addStatement("return null")
     Some(builder)
   }
@@ -173,7 +211,7 @@ object SpringServices {
   //  private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation,
 
 
-  private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
+  private def generateServiceOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
     val methodName = toOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       //      .returns(SpringTypes.ResponseEntity(toResponseSubTypeCLassName(nameSpaces, operation)))
@@ -187,9 +225,11 @@ object SpringServices {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     var javadocs = Seq[String](operation.description.getOrElse("")).filter(_ != "")
+
+    javadocs = javadocs ++ operation.parameters.map(serviceParamJavadoc(service, nameSpaces, _))
+
     operation.method match {
       case Method.Get =>
-        javadocs = javadocs ++ operation.parameters.map(serviceParamJavadoc(nameSpaces, _))
       case Method.Post =>
         var body = operation.body.get
         javadocs = javadocs ++ Seq[String](serviceBodyJavadoc(nameSpaces, body))
@@ -199,9 +239,22 @@ object SpringServices {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    val bodyTypes = operation.body.map(_.`type`)
+
+    operation.parameters
+      .filter(
+        param =>
+          !bodyTypes.contains(param.`type`)
+      )
+      .map(
+        operationParamToServiceParam(service, operation, nameSpaces, _))
+
+
+      .foreach(methodSpec.addParameter)
+
     operation.method match {
       case Method.Get =>
-        operation.parameters.map(operationParamToServiceParam(nameSpaces, _)).foreach(methodSpec.addParameter)
       case Method.Post =>
         var body = operation.body.get
         val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
@@ -220,9 +273,9 @@ object SpringServices {
     return Some(methodSpec)
   }
 
-  private def serviceParamJavadoc(nameSpaces: NameSpaces, parameter: Parameter): String = {
+  private def serviceParamJavadoc(service: Service, nameSpaces: NameSpaces, parameter: Parameter): String = {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
-    val javaDataType = modelDataType(nameSpaces, parameter)
+    val javaDataType = modelDataType(service, nameSpaces, parameter)
     s"@param $paramName ${javaDataType.toString} ${parameter.description.getOrElse("")}".trim
   }
 
@@ -233,11 +286,19 @@ object SpringServices {
     s"@param $paramName ${bodyClassName.simpleName()} ${body.description.getOrElse("")}".trim
   }
 
-  private def operationParamToServiceParam(nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
+  private def operationParamToServiceParam(service: Service, operation: Operation, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
-    val javaDataType = modelDataType(nameSpaces, parameter)
+    val javaDataType = modelDataType(service, nameSpaces, parameter)
     val builder = ParameterSpec.builder(javaDataType, paramName)
     if (parameter.required || parameter.default.isDefined) builder.addAnnotation(JavaxValidationAnnotations.NotNull)
+
+    if (parameter.required || parameter.default.isDefined && JavaPojoUtil.isModelNameWithPackage(parameter.`type`))
+      builder.addAnnotation(JavaxValidationAnnotations.Valid)
+
+
+    //if(parameter.name == operation.body.map())
+
+
     builder.build()
   }
 

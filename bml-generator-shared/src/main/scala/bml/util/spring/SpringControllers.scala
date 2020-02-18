@@ -30,20 +30,35 @@ object SpringControllers {
     JavaPojoUtil.toParamName((parameter.name + "_In"), true)
   }
 
+  def toControllerParamName(name: String): String = {
+    JavaPojoUtil.toParamName((name + "_In"), true)
+  }
+
   def toControllerOperationName(operation: Operation): String = {
     JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
   }
 
+  def undefinedResponseModelExcpetionClassName(nameSpaces: NameSpaces) =
+    ClassName.get(nameSpaces.controller.nameSpace, JavaPojoUtil.toClassName("UndefinedResponseModelExcpetion"))
+
+  private def undefinedResponseModelExcpetion(nameSpaces: NameSpaces): TypeSpec = {
+    TypeSpec.classBuilder(undefinedResponseModelExcpetionClassName(nameSpaces))
+      .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+      .addSuperinterface(classOf[Exception])
+      .build()
+  }
+
+
   def controllerOperationNameFields(service: Service, resource: Resource): Seq[FieldSpec] = {
     Seq[FieldSpec](
 
-      FieldSpec.builder(JavaTypes.String, "API_VERSION", PUBLIC, STATIC)
+      FieldSpec.builder(JavaTypes.String, "API_VERSION", PUBLIC, STATIC, FINAL)
         .initializer("$S",
           String.format("v%s", service.version.split("\\.")(0))
         )
         .build(),
 
-      FieldSpec.builder(JavaTypes.String, "RESOURCE_PATH", PUBLIC, STATIC)
+      FieldSpec.builder(JavaTypes.String, "RESOURCE_PATH", PUBLIC, STATIC, FINAL)
         .initializer("$S", s"/v${service.version.split("\\.")(0)}${resource.path.get}")
         .build(),
     )
@@ -80,21 +95,34 @@ object SpringControllers {
 
     //Generate Controller methods from operations
     resource.operations.flatMap(SpringControllers.generateControllerOperation(service, nameSpaces, resource, _)).foreach(builder.addMethod)
+
+
+
+
+
+
     //Return the generated Service interface
     Seq(GeneratorFSUtil.makeFile(name, nameSpaces.controller.path, nameSpaces.controller.nameSpace, builder))
+
   }
 
 
+  /**
+   *
+   * @param service    the root service we are working on.
+   * @param nameSpaces the current namespace object we are working with.
+   * @param resource   the current resource we are working on.
+   * @param operation  the Operation we are generating.
+   * @return
+   */
   def generateControllerOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
-      .returns(SpringTypes.ResponseEntityOfObject)
-
+      .returns(SpringTypes.ResponseEntity)
 
     val version = nameSpaces.base.nameSpace.split("\\.").last
     val path = operation.path
-
 
     def toSpringPath(path: String): String = {
       path.split("/").map(
@@ -108,42 +136,95 @@ object SpringControllers {
     }
 
 
+    //    def buildController
+
+    val bodyTypes = operation.body.map(_.`type`)
+
+    operation.parameters
+      .filter(
+        param =>
+          !bodyTypes.contains(param.`type`)
+      )
+      .map(SpringControllers.operationParamToControllerParam(service, nameSpaces, _)).foreach(methodSpec.addParameter)
+
     operation.method match {
-
-
       case Get =>
-        operation.parameters.map(SpringControllers.operationParamToControllerParam(nameSpaces, _)).foreach(methodSpec.addParameter)
-
         methodSpec
           .addAnnotation(AnotationUtil.getMappingJson(toSpringPath(s"/$version$path")))
-          .addCode(
-            CodeBlock.builder()
-              .add("return $L.$L(\n", Text.initLowerCase(SpringServices.toServiceName(resource)), methodName)
-              .add(operation.parameters.map(toControllerParamName).mkString(",\n"))
-              .add(");")
-              .build()
-          )
       case Post =>
         methodSpec.addAnnotation(AnotationUtil.postMappingJson(toSpringPath(s"/$version$path")))
+        // add the response body to the controller method params
         if (operation.body.isDefined) {
           val body = operation.body.get
           val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+
+          val paramName = toControllerParamName(bodyClassName.simpleName())
+
           methodSpec
             .addParameter(
-              ParameterSpec.builder(bodyClassName, JavaPojoUtil.toFieldName(bodyClassName.simpleName()), Modifier.FINAL)
+              ParameterSpec.builder(bodyClassName, paramName, Modifier.FINAL)
                 .addAnnotation(
                   AnnotationSpec.builder(SpringTypes.RequestBody).build()
                 ).build()
             )
-            .addCode(
-              CodeBlock.builder()
-                .add("return $L.$L(\n", Text.initLowerCase(SpringServices.toServiceName(resource)), methodName)
-                .add(JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
-                .add(");")
-                .build()
-            )
         }
     }
+
+    def buildControllerRespondCodeBlock(response: Response): CodeBlock = {
+      val paramName = JavaPojoUtil.toParamName(response.`type`, true)
+      val responseClassName = JavaPojoUtil.toClassName(response.`type`)
+
+      val responseCode: ResponseCode = response.code
+
+      val codeBlock = CodeBlock.builder()
+
+        .beginControlFlow("if(responseModel.$L() !=null)", paramName)
+        .addStatement("final int code = responseModel.$L().getStatusCode().value()", paramName)
+        .beginControlFlow("if(code!=$L)", responseCode.productElement(0).toString)
+        .add("throw new $T( String.format(\"$L ResponseEntity<$L> code must be $L found %s\",code));", classOf[RuntimeException], paramName, responseClassName, responseCode.productElement(0).toString)
+
+        .endControlFlow()
+        //.addStatement("if(responseModel.$L().getStatusCode().value()!=$L){/** Throw runtime exception*/}", paramName, responseCode.productElement(0).toString)
+        .addStatement("return responseModel.$L()", paramName)
+      codeBlock
+        .endControlFlow()
+        .build()
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Call the service and assign the return value to a variable.
+    var codeBlock = CodeBlock.builder()
+      .add(
+        "final $T responseModel = $L.$L(\n",
+        SpringServices.toResponseSubTypeCLassName(nameSpaces, operation),
+        Text.initLowerCase(SpringServices.toServiceName(resource)),
+        methodName
+      )
+
+    operation.method match {
+      case Get =>
+        codeBlock.add(operation.parameters.map(toControllerParamName).mkString(",\n"))
+          .add(");").build()
+      case Post =>
+        val body = operation.body
+        var params = operation.parameters.map(toControllerParamName)
+        if (body.isDefined) {
+          params = params ++ Seq(toControllerParamName(body.get.`type`))
+        }
+        codeBlock.add(params.mkString(","))
+        codeBlock.add(");")
+
+    }
+    methodSpec.addCode(codeBlock.build())
+    methodSpec.addCode(
+      CodeBlock.join(operation.responses.map(buildControllerRespondCodeBlock).asJava, "\n")
+    )
+    methodSpec.addCode(
+      CodeBlock.of("throw new $T();", classOf[RuntimeException])
+    )
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     //Add Parameters
 
@@ -163,10 +244,10 @@ object SpringControllers {
     }
   }
 
-  def operationParamToControllerParam(nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
+  def operationParamToControllerParam(service: Service, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
     val paramName = toControllerParamName(parameter)
 
-    val paramInType = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
+    val paramInType = JavaPojoUtil.dataTypeFromField(service, parameter.`type`, nameSpaces.model.nameSpace)
 
     //val javaDataType = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
     val builder = ParameterSpec.builder(paramInType, paramName, FINAL)

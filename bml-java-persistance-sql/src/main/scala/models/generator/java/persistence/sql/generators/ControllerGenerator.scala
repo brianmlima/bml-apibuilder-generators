@@ -3,7 +3,7 @@ package models.generator.java.persistence.sql.generators
 import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import com.squareup.javapoet._
-import io.apibuilder.spec.v0.models.{Method, Operation, Parameter}
+import io.apibuilder.spec.v0.models.{Method, Operation, Parameter, Service}
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
 import models.generator.java.persistence.sql.{GenUtils, ResourceData}
@@ -14,7 +14,7 @@ class ControllerGenerator {
 
 object ControllerGenerator extends JavaPojoUtil {
 
-  def generate(resourceData: ResourceData): ResourceData = {
+  def generate(service: Service, resourceData: ResourceData): ResourceData = {
     val config = resourceData.config
     resourceData.controllerBuilder = Some(
       TypeSpec.classBuilder(resourceData.controllerClassName).addJavadoc(config.apiDocComments)
@@ -28,7 +28,7 @@ object ControllerGenerator extends JavaPojoUtil {
 
     resourceData.resource.operations
       .foreach(operation => {
-        val methodSpec = ControllerGenerator.buildMethod(resourceData, operation)
+        val methodSpec = ControllerGenerator.buildMethod(service, resourceData, operation)
         classBuilder.addMethod(methodSpec)
       })
 
@@ -44,7 +44,7 @@ object ControllerGenerator extends JavaPojoUtil {
     resourceData
   }
 
-  def buildMethod(resourceData: ResourceData, operation: Operation): MethodSpec = {
+  def buildMethod(service: Service, resourceData: ResourceData, operation: Operation): MethodSpec = {
 
     val methodName = controlerMethodName(operation);
 
@@ -54,7 +54,7 @@ object ControllerGenerator extends JavaPojoUtil {
       .returns(SpringTypes.ResponseEntity)
     operation.parameters.foreach(
       param => {
-        val paramSpec: ParameterSpec = ControllerGenerator.toParameterSpec(param, operation, resourceData)
+        val paramSpec: ParameterSpec = ControllerGenerator.toParameterSpec(service, param, operation, resourceData)
         methodBuilder.addParameter(paramSpec)
       }
     )
@@ -74,9 +74,9 @@ object ControllerGenerator extends JavaPojoUtil {
     methodBuilder.build()
   }
 
-  def toParameterSpec(param: Parameter, operation: Operation, resourceData: ResourceData): ParameterSpec = {
+  def toParameterSpec(service: Service, param: Parameter, operation: Operation, resourceData: ResourceData): ParameterSpec = {
     val paramName = toParamName(param.name, startingWithLowercase = true)
-    val paramType = dataTypeFromField(param.`type`, resourceData.config.modelsNameSpace)
+    val paramType = dataTypeFromField(service, param.`type`, resourceData.config.modelsNameSpace)
 
     val builder = ParameterSpec.builder(paramType, paramName, FINAL)
     var paramAnnotation: AnnotationSpec.Builder = null;

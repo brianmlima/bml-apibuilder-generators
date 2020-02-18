@@ -1,11 +1,12 @@
 package models.generator.java.persistence.sql
 
+
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java._
 import bml.util.persist.PersistModelAttribute
 import com.squareup.javapoet.{ClassName, TypeName, TypeSpec}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.{Field, Model, Union}
+import io.apibuilder.spec.v0.models.{Field, Model, Service, Union}
 
 case class ModelData(model: Model, relatedUnions: Seq[Union], config: GenConfig) extends JavaPojoUtil {
 
@@ -32,10 +33,10 @@ case class ModelData(model: Model, relatedUnions: Seq[Union], config: GenConfig)
     Option.apply(idEntry.get._1)
   }
 
-  def getIdFieldClassName(): Option[TypeName] = {
+  def getIdFieldClassName(service: Service): Option[TypeName] = {
     val idField = getIdField()
     if (idField.isDefined) {
-      Some(dataTypeFromField(idField.get.`type`, config.modelsNameSpace))
+      Some(dataTypeFromField(service, idField.get.`type`, config.modelsNameSpace))
     } else {
       None
     }

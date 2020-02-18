@@ -36,9 +36,9 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
         generateControllers(service) ++
         MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
         SpringBootApps.foo(nameSpaces, service) ++
-        StringToEnumConverters.enumConverters(nameSpaces, service.enums) ++
-        generateBaseConfigration(service)
-
+        StringToEnumConverters.enumConverters(service, nameSpaces, service.enums) ++
+        generateBaseConfigration(service) ++
+        generateServiceOperationResponseContainer(service)
     }
 
     //Generates Services from Resources
@@ -48,11 +48,15 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Generates Services from Resources
     def generateServices(service: Service): Seq[File] = {
-      service.resources.flatMap(SpringServices.generateService(nameSpaces, _))
+      service.resources.flatMap(SpringServices.generateService(service, nameSpaces, _))
     }
 
     def generateBaseConfigration(service: Service): Seq[File] = {
       SpringServices.generateBaseConfiguration(nameSpaces, service)
+    }
+
+    def generateServiceOperationResponseContainer(service: Service): Seq[File] = {
+      SpringServices.generateServiceOperationResponseContainer(service, nameSpaces)
     }
 
 

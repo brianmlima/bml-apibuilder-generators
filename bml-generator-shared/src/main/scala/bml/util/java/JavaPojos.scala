@@ -60,11 +60,19 @@ object JavaPojos {
   }
 
   def toMinStringValueLengthStaticFieldName(field: Field): String = {
-    toStaticFieldName(field.name) + "_MIN" + "_ENTRY_LENGTH"
+    toMinStringValueLengthStaticFieldName(field.name)
+  }
+
+  def toMinStringValueLengthStaticFieldName(fieldName: String): String = {
+    toStaticFieldName(fieldName) + "_MIN" + "_ENTRY_LENGTH"
   }
 
   def toMaxStringValueLengthStaticFieldName(field: Field): String = {
-    toStaticFieldName(field.name) + "_MAX" + "_ENTRY_LENGTH"
+    toMaxStringValueLengthStaticFieldName(field.name)
+  }
+
+  def toMaxStringValueLengthStaticFieldName(fieldName: String): String = {
+    toStaticFieldName(fieldName) + "_MAX" + "_ENTRY_LENGTH"
   }
 
 

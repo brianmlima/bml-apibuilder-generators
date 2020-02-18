@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient,bmlOpenapi)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient,bmlOpenapi)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -59,6 +59,14 @@ lazy val bmlLombokTest = project
   .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
   .settings(commonSettings: _*)
   .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
+
+lazy val bmlOpenapi = project
+  .in(file("generators/bml-openapi"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
+
+
 
 lazy val springServiceGenerator = project
   .in(file("generators/spring-service"))
@@ -145,7 +153,13 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     "org.junit.jupiter" % "junit-jupiter-api" % "5.6.0-M1",
     "org.junit.jupiter" % "junit-jupiter-engine" % "5.6.0-M1",
 
-    "org.mockito" % "mockito-junit-jupiter" % "3.1.0"
+    "org.mockito" % "mockito-junit-jupiter" % "3.1.0",
+
+
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" %"2.10.2",
+    "org.yaml" % "snakeyaml" %"1.25",
+    "javax.validation" % "validation-api" % "2.0.1.Final"
+
 
 
   ),
