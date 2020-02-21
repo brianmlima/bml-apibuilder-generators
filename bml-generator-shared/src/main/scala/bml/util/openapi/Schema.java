@@ -11,6 +11,9 @@ import lombok.Singular;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @Accessors(fluent = true)
@@ -31,9 +34,18 @@ public class Schema {
     @Builder.Default
     protected Type type = Type.object;
 
-    @JsonProperty(value = "properties", required = true)
+    @JsonProperty(value = "properties", required = false)
     @Getter
     @Singular
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     protected Map<String, Property> properties;
+
+
+    @JsonProperty(value = "enum", required = false)
+    @Getter
+    @Singular
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    protected List<String> enums = new LinkedList<>();
+
 
 }

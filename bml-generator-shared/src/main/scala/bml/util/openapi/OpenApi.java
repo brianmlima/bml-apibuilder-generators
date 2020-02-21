@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Singular;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 
@@ -40,8 +41,8 @@ public class OpenApi {
 
     @JsonProperty(required = true)
     @Getter
-    @Builder.Default
-    protected Object paths=new Object();
+    @Singular
+    protected Map<String,Object> paths;
 
 
 }
