@@ -1,6 +1,7 @@
 package bml.util.openapi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,18 +19,38 @@ import java.util.Map;
 @NoArgsConstructor
 @FieldNameConstants
 @JsonIgnoreProperties(ignoreUnknown = true)
+public class Parameter {
 
-public class Components {
     private static final long serialVersionUID = 0L;
 
     @JsonProperty(required = true)
     @Getter
-    @Singular
-    protected Map<String, Schema> schemas;
+    protected String name;
 
     @JsonProperty(required = true)
     @Getter
-    @Singular
-    protected Map<String, Object> securitySchemes;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    protected String description;
+
+    @JsonProperty(required = true)
+    @Getter
+    @Builder.Default
+    protected boolean required = true;
+
+    @JsonProperty(required = true)
+    @Getter
+    @Builder.Default
+    protected boolean deprecated = false;
+
+    @JsonProperty(required = true)
+    @Getter
+    @Builder.Default
+    protected In in = In.query;
+
+    @JsonProperty(required = false)
+    @Getter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    protected ParamSchema schema;
+
 
 }
