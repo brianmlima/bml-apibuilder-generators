@@ -1,18 +1,22 @@
 package bml.util.java
 
+import java.io.IOException
 import java.time.{LocalDate, LocalDateTime}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
+import akka.http.javadsl.model.RequestEntity
 import bml.util.JavaNameSpace
 import bml.util.java.ClassNames.JacksonTypes.JsonInclude
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes.ConstraintViolation
 import bml.util.java.poet.StaticImportMethod
-import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonInclude, JsonValue}
 import com.squareup.javapoet._
 import lombok.Builder.Default
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
-import lombok.{AllArgsConstructor, Builder, Getter, NoArgsConstructor}
+import lombok.{AllArgsConstructor, Builder, Data, EqualsAndHashCode, Getter, NoArgsConstructor}
+
 
 object ClassNames {
 
@@ -46,13 +50,20 @@ object ClassNames {
   // BEGIN JAVA CORE ###################################################################################################
 
   object JavaTypes {
-    val `Override` = classOf[Override]
-    val String = ClassName.get(classOf[String])
+    val Override = ClassName.get("", "Override")
+    val String = ClassName.get("", "String")
     val Collections = ClassName.bestGuess("java.util.Collections")
+
+    val StandardCharsets = ClassName.bestGuess("java.nio.charset.StandardCharsets")
+
+
+    val RuntimeException = ClassName.get("", "RuntimeException")
+
+
     val Arrays = ClassName.get("java.util", "Arrays")
     val Set = ClassName.get("java.util", "Set")
 
-    val Long = ClassName.get("java.lang", "Long")
+    val Long = ClassName.get("", "Long")
 
 
     def Set(typeName: TypeName): ParameterizedTypeName = {
@@ -60,6 +71,12 @@ object ClassNames {
     }
 
     val Supplier = ClassName.get("java.util.function", "Supplier")
+    val Stream = ClassName.get("java.util.stream", "Stream")
+
+    def Stream(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Stream, className)
+    }
+
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
     val LocalDateTime = ClassName.get(classOf[LocalDateTime])
@@ -68,11 +85,18 @@ object ClassNames {
     val Locale = ClassName.get(classOf[Locale])
     val UUID = ClassName.get(classOf[UUID])
     val Math = ClassName.get(classOf[Math])
+
+    val URI = ClassName.get("java.net", "URI")
+
     val IllegalArgumentException = ClassName.get(classOf[IllegalArgumentException])
-    val `Boolean` = ClassName.get("java.lang", "Boolean")
+
+    val IOException = ClassName.get(classOf[IOException])
+
+
+    val `Boolean` = ClassName.get("", "Boolean")
     val `Class` = ClassName.get("", "Class")
     val InvocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
-    val StringBuilder = ClassName.get("java.lang", "StringBuilder")
+    val StringBuilder = ClassName.get("", "StringBuilder")
 
 
     val Optional = ClassName.get("java.util", "Optional")
@@ -98,7 +122,7 @@ object ClassNames {
     def toList = StaticImportMethod(Collectors, "toList")
 
 
-    val Iterable = ClassName.get("java.lang", "Iterable")
+    val Iterable = ClassName.get("", "Iterable")
 
     def Iterable(className: ClassName): ParameterizedTypeName = {
       ParameterizedTypeName.get(Iterable, className)
@@ -124,6 +148,17 @@ object ClassNames {
       ParameterizedTypeName.get(LinkedList, typeName)
     }
 
+
+    val LinkedHashMap = ClassName.get("java.util", "LinkedHashMap")
+
+    def LinkedList(keyClassName: ClassName, valueClassName: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(LinkedHashMap, keyClassName, valueClassName)
+    }
+
+
+    val Field = ClassName.get("java.lang.reflect", "Field")
+    val Modifier = ClassName.get("java.lang.reflect", "Modifier")
+
     val ArrayList = ClassName.get("java.util", "ArrayList")
 
     def ArrayList(className: ClassName): ParameterizedTypeName = {
@@ -139,6 +174,11 @@ object ClassNames {
     def Exception = ClassName.get("", "Exception")
 
 
+    val URLEncoder = ClassName.bestGuess("java.net.URLEncoder")
+    val UnsupportedEncodingException = ClassName.bestGuess("java.io.UnsupportedEncodingException")
+
+    val URISyntaxException = ClassName.bestGuess("java.net.URISyntaxException")
+
   }
 
 
@@ -150,6 +190,8 @@ object ClassNames {
   val randomUtils = ClassName.get("org.apache.commons.lang3", "RandomUtils")
 
   object CommonsLangTypes {
+
+    val StringUtils = ClassName.bestGuess("org.apache.commons.lang3.StringUtils")
 
 
   }
@@ -167,13 +209,40 @@ object ClassNames {
   //####################################################################################################################
   // BEGIN Spring ######################################################################################################
 
+
   object SpringTypes {
 
     val Configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
     val Bean = ClassName.get("org.springframework.context.annotation", "Bean")
     val ResponseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
+    val Primary = ClassName.bestGuess("org.springframework.context.annotation.Primary")
+    val Value = ClassName.bestGuess("org.springframework.beans.factory.annotation.Value")
+
+    def Value(value: String): AnnotationSpec = {
+      AnnotationSpec.builder(Value)
+        .addMember("value", "$S", value)
+        .build()
+    }
+
+
+    //    val RequestEntity: ClassName = ClassName.get("org.springframework.http", "RequestEntity")
+
+    val HttpClientErrorException = ClassName.bestGuess("org.springframework.web.client.HttpClientErrorException")
+
+    val HttpServerErrorException = ClassName.bestGuess("org.springframework.web.client.HttpServerErrorException")
+
+
+    //    org.springframework.web.client.HttpClientErrorException
+
+
+    val DefaultResponseErrorHandler = ClassName.bestGuess("org.springframework.web.client.DefaultResponseErrorHandler")
 
     def ResponseEntity(className: ClassName): ParameterizedTypeName = ParameterizedTypeName.get(ResponseEntity, className)
+
+
+    val HttpHeaders = ClassName.bestGuess("org.springframework.http.HttpHeaders")
+    //    val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+
 
     val ResponseBody = ClassName.bestGuess("org.springframework.web.bind.annotation.ResponseBody")
 
@@ -192,6 +261,8 @@ object ClassNames {
     val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
     val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
     val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+    val HttpMethod = ClassName.bestGuess("org.springframework.http.HttpMethod")
+
     val MethodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
     val ExceptionHandler = ClassName.bestGuess("org.springframework.web.bind.annotation.ExceptionHandler")
     val ControllerAdvice = ClassName.bestGuess("org.springframework.web.bind.annotation.ControllerAdvice")
@@ -213,6 +284,18 @@ object ClassNames {
 
     val RestTemplate = ClassName.bestGuess("org.springframework.web.client.RestTemplate")
 
+    val WebClient = ClassName.bestGuess("org.springframework.web.reactive.function.client.WebClient")
+
+    val Headers = ClassName.bestGuess("org.springframework.web.reactive.function.client.ClientResponse.Headers")
+    val MediaType = ClassName.bestGuess("org.springframework.http.MediaType")
+    val BodyInserters = ClassName.bestGuess("org.springframework.web.reactive.function.BodyInserters")
+    val ClientResponse = ClassName.bestGuess("org.springframework.web.reactive.function.client.ClientResponse")
+    val Mono = ClassName.bestGuess("reactor.core.publisher.Mono")
+
+
+    val RequestEntity = ClassName.bestGuess("org.springframework.http.RequestEntity")
+
+
     object SpringValidationTypes {
       val Validated = ClassName.get("org.springframework.validation.annotation", "Validated")
     }
@@ -229,8 +312,24 @@ object ClassNames {
 
       val Query = ClassName.bestGuess("org.springframework.data.jpa.repository.Query")
 
-    }
+      val Pageable = ClassName.bestGuess("org.springframework.data.domain.Pageable")
+      val Slice = ClassName.bestGuess("org.springframework.data.domain.Slice")
 
+      val Param = ClassName.bestGuess("org.springframework.data.repository.query.Param")
+
+
+      val Page = ClassName.bestGuess("org.springframework.data.domain.Page")
+
+      def Page(typeName: TypeName): ParameterizedTypeName = {
+        ParameterizedTypeName.get(Page, typeName)
+      }
+
+      def Slice(typeName: TypeName): ParameterizedTypeName = {
+        ParameterizedTypeName.get(Slice, typeName)
+      }
+
+
+    }
 
   }
 
@@ -261,6 +360,14 @@ object ClassNames {
     val UtilityClass = ClassName.get(classOf[UtilityClass])
     val Getter = ClassName.get(classOf[Getter])
     val BuilderDefault = ClassName.get(classOf[Default])
+    val JsonIgnore = ClassName.get(classOf[JsonIgnore])
+    val JsonValue = ClassName.get(classOf[JsonValue])
+
+
+    val EqualsAndHashCode = ClassName.get(classOf[EqualsAndHashCode])
+    val Data = ClassName.get(classOf[Data])
+    val `val` = ClassName.get("lombok", "val")
+
 
   }
 
@@ -426,15 +533,10 @@ object ClassNames {
 
     val JsonInclude = ClassName.get(classOf[JsonInclude])
 
-
-
+    val TypeReference = ClassName.bestGuess("com.fasterxml.jackson.core.type.TypeReference")
 
 
   }
-
-
-
-
 
 
   //val  = ClassName.get("","")

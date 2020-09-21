@@ -2,7 +2,7 @@ package bml.util.java
 
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
-import bml.util.java.ClassNames.{LombokTypes, SpringTypes}
+import bml.util.java.ClassNames.{JavaTypes, LombokTypes, SpringTypes}
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.squareup.javapoet._
 import javax.lang.model.element.Modifier._
@@ -44,7 +44,7 @@ object JavaCommonClasses {
 
   def getTypeMethod(className: ClassName): MethodSpec = MethodSpec.methodBuilder("getType")
     .addModifiers(PUBLIC)
-    .returns(classOf[String])
+    .returns(JavaTypes.String)
     .addCode("return getThis().getClass().getCanonicalName();\n")
     .addAnnotation(AnnotationSpec.builder(classOf[JsonIgnore]).build())
     .addAnnotation(AnnotationSpec.builder(classOf[Override]).build())
@@ -55,7 +55,7 @@ object JavaCommonClasses {
 
   def getIdentifierMethod(idFieldName: String): MethodSpec = MethodSpec.methodBuilder("getIdentifier")
     .addModifiers(PUBLIC)
-    .returns(classOf[String])
+    .returns(JavaTypes.String)
     .addCode(s"return this.${
       idFieldName
     }.toString();\n")

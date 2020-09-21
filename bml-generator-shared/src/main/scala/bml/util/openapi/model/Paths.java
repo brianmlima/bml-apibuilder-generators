@@ -1,4 +1,4 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
 
 import java.util.Map;
 

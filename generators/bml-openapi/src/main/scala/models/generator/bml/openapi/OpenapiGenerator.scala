@@ -2,18 +2,24 @@ package models.generator.bml.openapi
 
 import java.util
 
-import bml.util.attribute.OpenAPISecuritySchemes
+import akka.http.scaladsl.model.headers.LinkParams
+import akka.http.scaladsl.model.headers.LinkParams.`type`
+import bml.util.attribute.{OpenAPISecuritySchemes, Servers, Tags}
 import bml.util.java.JavaPojoUtil
 import bml.util.java.JavaPojoUtil.isModelType
+import bml.util.java.JavaPojoUtil.isEnumType
 import bml.util.java.JavaPojoUtil.isModelNameWithPackage
-
-import bml.util.openapi.Info.License
-import bml.util.openapi.{Components, Info, Items, OpenApi, ParamSchema, Parameter, Property, Ref, Schema, Type}
+import bml.util.java.JavaPojoUtil.islistOfModelNameWithPackage
+import bml.util.java.JavaPojoUtil.isParameterArray
+import bml.util.java.JavaPojoUtil.isListOfModeslType
+import bml.util.java.JavaPojoUtil.isListOfEnumlType
+import bml.util.openapi.model.{Components, In, Info, Items, OpenApi, ParamSchema, Parameter, Property, Ref, Schema, Server, Tag, Type}
+import bml.util.openapi.model.Info.License
 import bml.util.{NameSpaces, SpecValidation}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Operation, ResponseCodeInt, Service}
+import io.apibuilder.spec.v0.models.{Operation, ParameterLocation, ResponseCodeInt, Service}
 import lib.generator.CodeGenerator
 import play.api.Logger
 
@@ -23,14 +29,20 @@ import lib.Text._
 
 /**
  * Geenerates an OpenApi v3.0.0 file from a specification.
+ * Includes extenral schemas using file names and Ref.
  *
  * Validates against swagger-cli v3.0.1.
  *
  */
 class OpenapiGenerator extends CodeGenerator {
 
+  //We are using jackson here so we need to convert scala collections to java collections pre-render.
+
   import collection.JavaConverters._
 
+  /**
+   * Standard logger
+   */
   val logger: Logger = Logger.apply(this.getClass())
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,22 +91,22 @@ class OpenapiGenerator extends CodeGenerator {
       //Handle model names with packages
       if (isModelNameWithPackage(typeIn)) {
         val modelName = JavaPojoUtil.replaceEnumsPrefixWithModels(typeIn)
-        val fileName = typeIn.split("\\.").drop(2).dropRight(3).map(_.capitalize).mkString("") + ".yaml"
+        val fileName = typeIn.split("\\.").drop(2).dropRight(3).map(_.capitalize).mkString("") + ".yml"
         return s"${fileName}#/components/schemas/${modelName}"
       }
-      //else if (JavaPojoUtil.isModelType(service, typeIn)) {
-      //        val modelName = typeIn
-      //        val fileName = typeIn.split("\\.").drop(2).dropRight(3).map(_.capitalize).mkString("") + ".yaml"
-      //        return s"HELLO${fileName}#/components/schemas/${modelName}"
-      //
-      //      }
-      //handle file local $refs
       s"#/components/schemas/${nameSpaces.model.nameSpace}.${typeIn}"
     }
 
     val DESCRIPTION = "description"
 
 
+    /**
+     * Enum descriptions are not part of the openapi spec (ameture hour). So we add in some basic HTML into the
+     * description string and hope doc tools show it apropriately. This is a major shortcomming of openapi.
+     *
+     * @param enum the enum to document
+     * @return a description string with all the enum value descriptions.
+     */
     def enumToDescription(enum: io.apibuilder.spec.v0.models.Enum): String = {
       var out = Seq[String]()
       if (`enum`.deprecation.isDefined) {
@@ -108,10 +120,8 @@ class OpenapiGenerator extends CodeGenerator {
       if (`enum`.description.isDefined) {
         out = out ++ Seq(`enum`.description.get)
       }
-
-
-      out = out ++ Seq("<ol>")
-      out = out ++ `enum`.values.map(valueIn => {
+      // assemble descriptions for each enum value
+      out = out ++ Seq("<ol>") ++ `enum`.values.map(valueIn => {
         valueIn.name -> (
           if (valueIn.description.isDefined) {
             valueIn.description.get
@@ -119,12 +129,63 @@ class OpenapiGenerator extends CodeGenerator {
             ""
           }
           )
-      }).map(t => s"${t._1} ${t._2}").map(s => s"<li>${s}</li>")
-      out = out ++ Seq("</ol>")
-
+      }).map(t => s"<b>${t._1}</b> ${t._2}").map(s => s"<li>${s}</li>") ++ Seq("</ol>")
 
       out.mkString("<br> ")
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //BEGIN Mapping of primitive types from apibuilder json to openapi primitives
+    def isPrimitive(typeIn: String): Boolean = {
+      typeIn match {
+        case "uuid" => true
+        case "string" => true
+        case "integer" => true
+        case "date-iso8601" => true
+        case default => false
+      }
+    }
+
+    def toPrimitive(typeIn: String): Option[String] = {
+      typeIn match {
+        case "uuid" => Some("string")
+        case "string" => Some("string")
+        case "integer" => Some("integer")
+        case "date-iso8601" => Some("string")
+        case default => None
+      }
+    }
+
+    /**
+     * Tells if a primitive data type has an accompanying format.
+     *
+     * @param typeIn a type
+     * @return true if the data type has a format false otherwise
+     */
+    def hasFormat(typeIn: String): Boolean = {
+      typeIn match {
+        case "uuid" => true
+        case "date-iso8601" => true
+        case default => false
+      }
+    }
+
+    /**
+     * Returns an openapi format optional if one exists for the type passed.
+     *
+     * @param typeIn a type
+     * @return some format or none if one does not exist
+     */
+    def getFormat(typeIn: String): Option[String] = {
+      typeIn match {
+        case "uuid" => Some("uuid")
+        case "date-iso8601" => Some("date-time")
+        case default => None
+      }
+    }
+
+    //END Mapping of primitive types from apibuilder json to openapi primitives
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     def generate(): Seq[File] = {
@@ -136,37 +197,102 @@ class OpenapiGenerator extends CodeGenerator {
 
           modelIn.fields.foreach(
             fieldIn => {
+              if (fieldIn.required) {
+                schemaOut.requiredField(fieldIn.name)
+              }
+            }
+          )
+
+
+
+
+          //For all model Fields
+          modelIn.fields.foreach(
+            fieldIn => {
+              //              if (fieldIn.name == "errors") {
+              //                logger.warn(s"Processing serivce=${service.name} model=${modelIn.name} field=${fieldIn.name}")
+              //              }
+
+              //Get builder
               val propertyOut = Property.builder()
+
+              //Set Description
               if (fieldIn.description.isDefined) {
                 propertyOut
                   .description(fieldIn.description.get)
               }
-              if (isModelNameWithPackage(fieldIn.`type`)) {
+
+              //Adds a list of models to the property
+              def addArrayType(): Unit = {
                 propertyOut
-                  .oneOf(Ref.builder().ref(fieldIn.`type`).build())
-              } else if (isModelType(service, fieldIn)) {
+                  .`type`(Type.array.name())
+                  .items(
+                    Items.builder()
+                      .ref(
+                        toRef(JavaPojoUtil.getArrayType(fieldIn))
+                      ).build())
+              }
+
+
+              if (isModelType(service, fieldIn) || isEnumType(service, fieldIn)) {
+                //IS Local model
                 propertyOut
                   .oneOf(
                     Ref.builder()
                       .ref(toRef(fieldIn.`type`))
                       .build())
+
+
+
+                //Add OneOf if we are a local model
+              } else if (isListOfModeslType(service, fieldIn) || isListOfEnumlType(service, fieldIn)) {
+                //I am a list of models or enums
+                addArrayType()
+              } else if (islistOfModelNameWithPackage(fieldIn.`type`)) {
+                //I am a list of models
+                addArrayType()
+              }
+              else if (isModelNameWithPackage(fieldIn.`type`)) {
+                //Is remote model
+                if (JavaPojoUtil.isListOfModeslType(service, fieldIn)) {
+                  //I am a list of models
+                  addArrayType()
+                } else {
+                  propertyOut
+                    .oneOf(Ref.builder().ref(fieldIn.`type`).build())
+                }
+
               } else if (JavaPojoUtil.isParameterArray(fieldIn)) {
-                propertyOut.`type`(Type.array.name())
-                val itemType = fieldIn.`type`.toCharArray.drop(1).dropRight(1).mkString("")
-                propertyOut.items(Items.builder().ref(toRef(itemType)).build())
+                //Is array
+                logger.info(s"Property Type ='${fieldIn.`type`}'")
+                addArrayType()
               } else {
-                propertyOut.`type`(Type.`object`.name())
-                if (fieldIn.`type` == "uuid") {
-                  propertyOut.format("uuid")
-                } else if (fieldIn.`type` == "date-iso8601")
-                  propertyOut.`type`("string")
-                    .format("date-time")
+                val typeIn = fieldIn.`type`
+                if (isPrimitive(typeIn)) {
+                  val typeOut = toPrimitive(typeIn)
+                  if (typeOut.isDefined) {
+                    propertyOut.`type`(typeOut.get)
+                  }
+                  if (fieldIn.minimum.isDefined) {
+                    propertyOut.minLength(fieldIn.minimum.get)
+                  }
+                  if (fieldIn.maximum.isDefined) {
+                    propertyOut.maxLength(fieldIn.maximum.get)
+                  }
+                  if (hasFormat(typeIn)) {
+                    val formatOut = getFormat(typeIn)
+                    if (formatOut.isDefined) {
+                      propertyOut.format(formatOut.get)
+                    }
+                  }
+                }
               }
               schemaOut.property(fieldIn.name, propertyOut.build())
             }
           )
           nameSpaces.model.nameSpace + "." + modelIn.name -> schemaOut.build()
         }
+
       ).toMap ++ service.enums.map(
         enumIn => {
           val schemaOut = Schema.builder().description(enumToDescription(enumIn))
@@ -208,15 +334,64 @@ class OpenapiGenerator extends CodeGenerator {
         resourceIn => {
           resourceIn.operations.foreach(
             operationIn => {
+
+              val method = operationIn.method.toString.toLowerCase()
+
               val pathOut = new mutable.LinkedHashMap[String, Object].asJava
               val operationOut = new mutable.LinkedHashMap[String, Object].asJava
               pathOut.put(operationIn.method.toString.toLowerCase(), operationOut)
-              operationOut.put(DESCRIPTION, operationIn.description.getOrElse(null))
+
+              if (operationIn.description.isDefined) {
+                operationOut.put(DESCRIPTION, operationIn.description.get)
+              }
+
               operationOut.put("operationId", toOperationId(operationIn))
+              //////////////////////////////////////////////////////////////////////////////////////////////////////////
+              //////////////////////////////////////////////////////////////////////////////////////////////////////////
+              // BEGIN Post Request body
+              if (method == "post") {
+                if (operationIn.body.isDefined) {
+                  val bodyIn = operationIn.body.get
+                  val requestBody = new mutable.LinkedHashMap[String, Object].asJava
+                  operationIn.body.get.description
+                  if (bodyIn.description.isDefined) {
+                    requestBody.put("description", bodyIn.description.get)
+                  }
+                  requestBody.put("required", java.lang.Boolean.TRUE)
+
+                  val content = new mutable.LinkedHashMap[String, Object].asJava
+
+                  val applicationJson = new mutable.LinkedHashMap[String, Object].asJava
+                  content.put("application/json", applicationJson)
+
+                  if (isListOfModeslType(service, bodyIn.`type`)) {
+
+                    val schema = new mutable.LinkedHashMap[String, Object].asJava
+                    schema.put("type", Type.array)
+                    schema.put("items", Items.builder().ref(toRef(JavaPojoUtil.getArrayType(bodyIn.`type`))).build())
+                    applicationJson.put("schema", schema)
+                  }
+                  requestBody.put("content", content)
+
+
+                  operationOut.put("requestBody", requestBody)
+
+                }
+              }
+              // END Post Request body
+              //////////////////////////////////////////////////////////////////////////////////////////////////////////
+              //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
               val parameters = new util.LinkedList[Parameter]()
               operationOut.put("parameters", parameters)
               val responsesOut = new mutable.LinkedHashMap[String, Object].asJava
               operationOut.put("responses", responsesOut)
+
+
+
+
+
 
               //Do response codes
               operationIn.responses.foreach(
@@ -236,6 +411,21 @@ class OpenapiGenerator extends CodeGenerator {
                     contentTypeOut.put("schema", schemaOut)
                     responseOut.put("content", contentOut)
                   }
+                  else if (JavaPojoUtil.isListOfModeslType(service, responseIn.`type`)) {
+                    //                    val contentOut = new mutable.LinkedHashMap[String, Object].asJava
+                    //                    val contentTypeOut = new mutable.LinkedHashMap[String, Object].asJava
+                    //                    contentOut.put("application/json", contentTypeOut)
+                    //                    val schemaOut = new mutable.LinkedHashMap[String, Object].asJava
+                    //                    val oneOfOut = new mutable.LinkedHashMap[String, Object].asJava
+                    //
+                    //                    oneOfOut.put("$ref", toRef(JavaPojoUtil.getArrayType(responseIn.`type`)))
+                    //                    schemaOut.put("type", "array")
+                    //                    schemaOut.put("items", oneOfOut)
+                    //                    contentTypeOut.put("schema", schemaOut)
+                    //                    responseOut.put("content", contentOut)
+
+                  }
+
                   responsesOut.put(responseIn.code.asInstanceOf[ResponseCodeInt].value.toString, responseOut)
                 }
               )
@@ -243,6 +433,7 @@ class OpenapiGenerator extends CodeGenerator {
 
               def toParamSchema(typeIn: String): ParamSchema = {
                 val paramSchemaOut = ParamSchema.builder()
+
 
                 def buildRef(): Ref = {
                   Ref.builder()
@@ -253,32 +444,64 @@ class OpenapiGenerator extends CodeGenerator {
                 }
                 //If Model with package
                 if (isModelNameWithPackage(typeIn)) {
-                  paramSchemaOut.oneOf(buildRef())
-                  //If Model with package
-                } else if (isModelType(service, typeIn)) {
-                  paramSchemaOut.oneOf(buildRef())
-                  logger.info(s"")
-                  if (JavaPojoUtil.isParameterArray(typeIn)) {
-                    paramSchemaOut.`type`(Type.array.name())
+                  paramSchemaOut.ref(toRef(typeIn))
+                  //                  paramSchemaOut.oneOf(buildRef())
+                  //If Model
+                } else if (JavaPojoUtil.isEnumType(service, typeIn)) {
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // BEGIN ref to enumeration type in operation param
+                  //                  paramSchemaOut.oneOf(buildRef())
+                  //paramSchemaOut.(buildRef())
+                  paramSchemaOut.ref(toRef(typeIn))
 
-                    val itemType = typeIn.toCharArray.drop(1).dropRight(1).mkString("")
+                  // END ref to enumeration type in operation param
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+                  //If Parameter array
+                } else if (isModelType(service, typeIn)) {
+                  //                  paramSchemaOut.oneOf(buildRef())
+                  paramSchemaOut.ref(toRef(typeIn))
+                  //If Parameter array
+                } else if (JavaPojoUtil.isParameterArray(typeIn)) {
+                  logger.info(s"PARAMETER TYPE ${typeIn}")
+                  paramSchemaOut.`type`(Type.array.name())
+                  //                  val itemType = typeIn.toCharArray.drop(1).dropRight(1).mkString("")
+                  val itemType = JavaPojoUtil.getArrayType(typeIn)
+
+                  if (itemType.equals("uuid")) {
+                    logger.info(s"PARAMETER TYPE ${itemType}")
+                    paramSchemaOut.items(
+                      Items.builder()
+                        .`type`(itemType)
+                        .build()
+                    )
+
+                  } else {
                     paramSchemaOut.items(
                       Items.builder()
                         .ref(toRef(itemType))
                         .build()
                     )
-
                   }
+
+
                 } else {
-                  paramSchemaOut.`type`(Type.`object`.name())
-                  if (typeIn == "uuid") {
-                    paramSchemaOut.`type`("string")
-                      .format("uuid")
-                  } else if (typeIn == "date-iso8601") {
-                    paramSchemaOut.`type`("string")
-                      .format("date-time")
-                  } else if (typeIn == "string") {
-                    paramSchemaOut.`type`("string")
+
+                  //val typeIn = fieldIn.`type`
+                  if (isPrimitive(typeIn)) {
+                    val typeOut = toPrimitive(typeIn)
+                    if (typeOut.isDefined) {
+                      paramSchemaOut.`type`(typeOut.get)
+                    }
+                    if (hasFormat(typeIn)) {
+                      val formatOut = getFormat(typeIn)
+                      if (formatOut.isDefined) {
+                        paramSchemaOut.format(formatOut.get)
+                      }
+                    }
                   }
                 }
 
@@ -298,8 +521,33 @@ class OpenapiGenerator extends CodeGenerator {
                     parameterOut.deprecated(true)
                   }
 
+
+                  if (parameterIn.description.isDefined) {
+                    parameterOut.description(parameterIn.description.get)
+                  }
+
+                  parameterOut.required(
+                    if (parameterIn.default.isDefined) {
+                      false
+                    } else {
+                      parameterIn.required
+                    }
+                  )
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+                  // Handle defaults
+                  if (parameterIn.default.isDefined) {
+                    parameterOut.defaultValue(parameterIn.default.get)
+                  }
+                  //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                  if (parameterIn.location.equals(ParameterLocation.Header))
+                    parameterOut.in(In.header)
+                  if (parameterIn.location.equals(ParameterLocation.Path))
+                    parameterOut.in(In.path)
+
                   //////////////////////////////////////////////////////////////////////////////////////////////////////
                   //Make sure this converts
+
                   parameterOut.schema(
                     toParamSchema(parameterIn.`type`)
                   )
@@ -308,7 +556,21 @@ class OpenapiGenerator extends CodeGenerator {
                   parameters.add(parameterOut.build())
                 }
               )
-              paths.put(operationIn.path, pathOut)
+
+
+              def toPath(operation: Operation): String = {
+                "/v" + service.version.split("\\.").head + operation.path.split('/').map(
+                  pathElement =>
+                    if (pathElement.startsWith(":")) {
+                      "{" + pathElement.stripPrefix(":") + "}"
+                    } else {
+                      pathElement
+                    }
+                ).mkString("/")
+              }
+
+
+              paths.put(toPath(operationIn), pathOut)
             }
 
           )
@@ -318,8 +580,33 @@ class OpenapiGenerator extends CodeGenerator {
 
       val openapi = OpenApi.builder().components(components.build())
         .paths(paths)
+
+      //Handle top level tags
+      val tags = Tags.fromAttributes(service.attributes)
+      if (tags.isDefined) {
+        tags.get.tags.foreach(
+          tagName =>
+            openapi.tag(Tag.builder().name(tagName).build())
+        )
+      }
+      //Handle top level servers
+      val servers = Servers.fromAttributes(service.attributes)
+      if (servers.isDefined) {
+        servers.get.uris.foreach(uri => {
+          openapi.server(
+            Server.builder().url(uri).build()
+          )
+        }
+        )
+      }
+
+
+      val openAPISecuritySchemes = OpenAPISecuritySchemes.fromAttributes(service.attributes);
+
+
       openapi.info(
         Info.builder()
+          .title(service.name)
           .contact(Info.Contact.builder().build())
           .license(License.builder().name("").build())
           .termsOfService("foo.com")
@@ -328,11 +615,12 @@ class OpenapiGenerator extends CodeGenerator {
           .build()
       )
       val mapper = new ObjectMapper(new YAMLFactory()).disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+      //      val mapper = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 
 
       val name = JavaPojoUtil.toClassName(service.name);
       Seq(
-        File(name = s"${name}.yaml", contents = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(openapi.build()))
+        File(name = s"${name}.yml", contents = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(openapi.build()))
       )
     }
 

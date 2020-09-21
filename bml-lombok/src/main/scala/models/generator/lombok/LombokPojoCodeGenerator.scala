@@ -1,19 +1,20 @@
 package models.generator.lombok
 
 import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
-import bml.util.AnotationUtil.{JacksonAnno, singular}
+import bml.util.AnotationUtil.{JacksonAnno, LombokAnno, singular}
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.attribute.Hibernate
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{builder, _}
-import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
+import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation}
+import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation, java}
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
 import javax.lang.model.element.Modifier._
+import javax.persistence.{EnumType, Enumerated}
 import lib.generator.CodeGenerator
 import lombok.experimental.Accessors
 //import org.checkerframework.checker.units.qual.min
@@ -90,7 +91,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       val className = toClassName(enum.name)
       val builder = JavaEnums.standardEnumBuilder(enum, apiDocComments)
       enum.values.foreach(value => {
-        val enumValBuilder = TypeSpec.anonymousClassBuilder("$S", value.name)
+        val enumValBuilder = TypeSpec.anonymousClassBuilder("$S,$S", value.name, value.description.getOrElse(""))
         if (value.description.isDefined) enumValBuilder.addJavadoc(value.description.get)
         builder.addEnumConstant(toEnumName(value.name), enumValBuilder.build())
       })
@@ -103,6 +104,27 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addModifiers(PUBLIC)
         .addJavadoc(apiDocComments)
       union.description.map(builder.addJavadoc(_))
+
+
+      union.types.foreach(
+        `type` => {
+          var foo = service.models.find(
+            model => model.name == `type`.`type`
+          )
+          if (foo.isDefined) {
+            val model = foo.get
+
+            //          model.fields.foreach(
+            //          field =>
+            //field
+
+            //            )
+
+
+          }
+
+        }
+      )
       makeFile(className, nameSpaces.model, builder)
     }
 
@@ -118,17 +140,19 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addJavadoc(apiDocComments)
         .addJavadoc("\n")
         .addJavadoc(model.description.getOrElse(""))
+
         .addAnnotation(AnnotationSpec.builder(classOf[Accessors])
           .addMember("fluent", CodeBlock.builder().add("true").build).build())
         .addAnnotations(
-          Seq(builder, allArgsConstructor, noArgsConstructor, fieldNameConstants)
+          Seq(allArgsConstructor, noArgsConstructor, fieldNameConstants, LombokTypes.EqualsAndHashCode, LombokTypes.Data)
             .map(AnnotationSpec.builder(_).build()).asJava
         )
+        .addAnnotation(LombokAnno.Builder)
         .addAnnotation(
           AnnotationSpec.builder(classOf[JsonIgnoreProperties])
             .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
         )
-        .addAnnotation(JacksonAnno.JsonIncludeNON_NULL)
+        .addAnnotation(JacksonAnno.JsonIncludeNON_EMPTY)
         //private static final long serialVersionUID = 1L;
         .addField(
           FieldSpec.builder(
@@ -137,8 +161,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             .build()
         )
         .addField(JavaPojos.makeRequiredFieldsField(model))
-        .addField(JavaPojos.getApiPathElement(service, model))
-
+      //.addField(JavaPojos.getApiPathElement(service, model))
 
 
       // Add in static booleans for each field to tell if the field is required.
@@ -167,15 +190,31 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       }
 
       model.fields.foreach(field => {
-        val javaDataType = dataTypeFromField(service,field, modelsNameSpace)
+        val javaDataType = dataTypeFromFieldArraySupport(service, field, modelsNameSpace)
 
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
           .addModifiers(PROTECTED)
-          .addAnnotation(getter)
+          .addAnnotation(LombokAnno.Getter)
+
+        if (useHibernate) {
+          if (JavaPojoUtil.isEnumType(service, field)) {
+            fieldBuilder.addAnnotation(
+              AnnotationSpec.builder(classOf[Enumerated])
+                .addMember("value", "$T.STRING", classOf[EnumType])
+                .build()
+            )
+          }
+        }
 
 
+        if (field.`type` == "integer" && field.default.isDefined) {
 
+          fieldBuilder.addAnnotation(LombokTypes.BuilderDefault)
+            .initializer("$L", field.default.get)
+
+
+        }
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
           fieldBuilder.addAnnotation(singular)
@@ -200,10 +239,23 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           JavaPojos.handlePersisitanceAnnontations(service, className, field).foreach(fieldBuilder.addAnnotation(_))
         }
         fieldBuilder.addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
-        if(field.required){
+        if (field.required) {
           fieldBuilder.addAnnotation(JacksonAnno.JsonIncludeALLWAYS)
         }
 
+        if (
+          field.`type`.equals("boolean")
+            &&
+            field.default.isDefined
+        ) {
+
+          val default = field.default.get
+          if (default.equals("true") || default.equals("false"))
+            fieldBuilder.addAnnotation(LombokTypes.BuilderDefault)
+          fieldBuilder.initializer("$L", default)
+
+
+        }
 
 
         ///////////////////////////////////////

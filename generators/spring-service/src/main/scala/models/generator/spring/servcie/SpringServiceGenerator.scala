@@ -2,7 +2,7 @@ package models.generator.spring.service
 
 import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
-import bml.util.spring.{MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices, StringToEnumConverters}
+import bml.util.spring.{ApiImplementationException, MethodArgumentNotValidExceptionHandler, SpringBootApps, SpringControllers, SpringServices, StringToEnumConverters, SwaggerUiConfig}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Enum, Service}
 import lib.generator.{CodeGenerator, GeneratorUtil}
@@ -34,8 +34,10 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
     def generateSourceFiles(): Seq[File] = {
       generateServices(service) ++
         generateControllers(service) ++
+        ApiImplementationException.getFile(nameSpaces) ++
         MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
-        SpringBootApps.foo(nameSpaces, service) ++
+        SwaggerUiConfig.generate(nameSpaces,service) ++
+        //        SpringBootApps.foo(nameSpaces, service) ++
         StringToEnumConverters.enumConverters(service, nameSpaces, service.enums) ++
         generateBaseConfigration(service) ++
         generateServiceOperationResponseContainer(service)

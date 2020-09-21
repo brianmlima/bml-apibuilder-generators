@@ -1,5 +1,8 @@
 package bml.util.java.testing
 
+import java.lang.reflect.Field
+import java.util
+
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
 import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes, JunitTypes, LombokTypes}
@@ -23,8 +26,9 @@ object ExercisePojos {
     val className = ClassName.get(nameSpaces.base.nameSpace, "ExercisePojosTests")
 
     val staticImports = Seq[StaticImport](
-      ClassNames.assertThat.staticImport,
-      ClassNames.notNullValue.staticImport
+      HamcrestTypes.assertThat.staticImport,
+      HamcrestTypes.notNullValue.staticImport,
+      HamcrestTypes.is.staticImport
     )
 
 
@@ -50,36 +54,38 @@ object ExercisePojos {
 
         service
           .models
-          .map(_.name)
-          .map(JavaPojoUtil.toClassName)
           .map(
-            name =>
-              MethodSpec.methodBuilder(s"exercise${name}Pojo").addAnnotation(JunitTypes.Test)
-                .addAnnotation(ClassNames.displayName(s"Exercising ${name} Pojo, Checking mock factory,default builders, and checking required fields"))
-                .addException(ClassName.get("", "Exception"))
-                .addCode(
-                  CodeBlock.of(
-                    "excersizePojo($T.class,$T.class);",
-                    ClassName.get(nameSpaces.model.nameSpace, name)
-                    , JavaPojoTestFixtures.mockFactoryClassName(nameSpaces, name)
-                  )
-                )
-                .build()
+            modelIn => {
+              val modelClassName = JavaPojoUtil.toClassName(modelIn.name)
+              val modelClass = JavaPojoUtil.toClassName(nameSpaces.model, modelIn)
+              val modelFactoryClass = JavaPojoTestFixtures.mockFactoryClassName(nameSpaces, modelClassName)
+              val exceptionClass = ClassName.get("", "Exception")
+              val methodName = s"exercise${modelClassName}Pojo"
+
+              MethodSpec.methodBuilder(methodName)
+                .addAnnotation(JunitTypes.Test)
+                .addAnnotation(ClassNames.displayName(s"Exercising ${modelClassName} Pojo, Checking mock factory,default builders, and checking required fields"))
+                .addException(exceptionClass)
+                .addCode("excersizePojo($T.class,$T.class,$L);", modelClass, modelFactoryClass, modelIn.fields.size.toString).build()
+
+            }
           ).asJava
       )
       .addMethod(
-        MethodSpec.methodBuilder("excersizePojo").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+        MethodSpec.methodBuilder("excersizePojo")
+          .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
           .addException(ClassName.get("", "Exception"))
           .addParameter(ParameterSpec.builder(JavaTypes.`Class`, "objectClass", Modifier.FINAL).build())
           .addParameter(ParameterSpec.builder(JavaTypes.`Class`, "factoryClass", Modifier.FINAL).build())
-          .addStatement("final Object factoryBuilder = factoryClass.getDeclaredMethod(\"builder\", null).invoke(null, null)")
-          .addStatement("final Object factory = factoryBuilder.getClass().getDeclaredMethod(\"build\", null).invoke(factoryBuilder, null)")
+          .addParameter(ParameterSpec.builder(JavaTypes.Integer, "numFields", Modifier.FINAL).build())
+          .addStatement("final Object factoryBuilder = factoryClass.getDeclaredMethod(\"builder\").invoke(null)")
+          .addStatement("final Object factory = factoryBuilder.getClass().getDeclaredMethod(\"build\").invoke(factoryBuilder)")
 
           .addCode(
             CodeBlock.builder()
               .addStatement("$T $L = null", JavaTypes.Method, generateMethodName)
               .beginControlFlow("try")
-              .addStatement("$L = factory.getClass().getDeclaredMethod(\"$L\", null)", generateMethodName, generateMethodName)
+              .addStatement("$L = factory.getClass().getDeclaredMethod(\"$L\")", generateMethodName, generateMethodName)
               .endControlFlow()
               .beginControlFlow("catch ($T e)", JavaTypes.Exception)
               .addStatement("log.error(\"{} caught msg={}\",e.getClass().getSimpleName(),e.getMessage(),e)")
@@ -97,7 +103,7 @@ object ExercisePojos {
             HamcrestTypes.notNullValue.methodName
           )
           .addStatement("log.debug(\"Using {}.{}()\",factory.getClass().getSimpleName(),$S)", generateMethodName)
-          .addStatement("Object anObject = $L.invoke(factory, null)", generateMethodName)
+          .addStatement("Object anObject = $L.invoke(factory)", generateMethodName)
           .addStatement("" +
             "$L($T.format(\"%s should not be null\", anObject.getClass()), anObject, $L())",
             ClassNames.assertThat.methodName,
@@ -118,6 +124,41 @@ object ExercisePojos {
               .endControlFlow()
               .build()
           )
+          .addCode(
+            CodeBlock.builder()
+              .addStatement("final Class fieldsClass = $T.asList(objectClass.getDeclaredClasses()).stream().filter(clazz -> clazz.getSimpleName().equals(\"Fields\")).findFirst().orElse(null)", JavaTypes.Arrays)
+              .addStatement("assertThat(fieldsClass,notNullValue())")
+              .addStatement("$T[] declaredFields = Test.class.getDeclaredFields()", classOf[Field])
+              .addStatement("$T staticFields = new $T()", JavaTypes.List(JavaTypes.Field), JavaTypes.ArrayList(JavaTypes.Field))
+              .beginControlFlow("for ($T field : declaredFields)", classOf[Field])
+              .beginControlFlow("if ($T.isStatic(field.getModifiers()))", JavaTypes.Modifier)
+              .addStatement("staticFields.add(field)")
+              .endControlFlow()
+              .endControlFlow()
+              //              .addStatement("assertThat(staticFields.size(), is(numFields))")
+              .build()
+          ).addCode(
+          CodeBlock.builder()
+            .addStatement("Method toBuilder = anObject.getClass().getDeclaredMethod(\"toBuilder\")")
+            .addStatement("assertThat(String.format(\"{}.{}\", get.getClass().getSimpleName(), toBuilder.getName()), toBuilder, notNullValue())")
+            .addStatement("Object builder = toBuilder.invoke(anObject)")
+            .addStatement("assertThat(builder, notNullValue())")
+            .addStatement("assertThat(builder.toString(), notNullValue())")
+            .addStatement("assertThat(builder.equals(builder), is(true))")
+            .addStatement("Method build = builder.getClass().getDeclaredMethod(\"build\")")
+            .addStatement("assertThat(String.format(\"{}.{}\", get.getClass().getSimpleName(), build.getName()), build, notNullValue())")
+            .addStatement("Object aDuplicateObject = build.invoke(builder)")
+            .addStatement("assertThat(aDuplicateObject, notNullValue())")
+            .addStatement("assertThat(anObject.equals(aDuplicateObject), is(true))")
+            .addStatement("assertThat(anObject.hashCode(), is(aDuplicateObject.hashCode()))")
+            .addStatement("assertThat(anObject.equals(new Object()), is(false))")
+            .addStatement("assertThat(anObject.toString(), notNullValue())")
+            .addStatement("Object anotherObject = get.invoke(factory)")
+            .addStatement("assertThat(anObject.equals(anotherObject), is(false))")
+            .build()
+        )
+
+
           .build()
       )
     makeFile(className.simpleName(), nameSpaces.model, typeBuilder, staticImports: _*)

@@ -1,7 +1,8 @@
 package bml.util.java
 
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.{AnotationUtil, NameSpaces}
-import bml.util.java.ClassNames.{JacksonTypes, JavaTypes}
+import bml.util.java.ClassNames.{JacksonTypes, JavaTypes, LombokTypes}
 import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.spec.v0.models.Enum
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC, STATIC}
@@ -11,6 +12,8 @@ import lombok.Getter
 object JavaEnums {
 
   def stringValueParam = "apiValue"
+
+  def descriptionParam = "description"
 
   def stringMapFieldName = toEnumName(stringValueParam + "_Map")
 
@@ -29,7 +32,16 @@ object JavaEnums {
    * @return input value translated in to a valid java enum name
    */
   def toEnumName(input: String): String = {
-    Text.safeName(input.replaceAll("\\.", "_").replaceAll("-", "_")).toUpperCase
+    var safe = Text.safeName(input.replaceAll("\\.", "_")
+      .replaceAll("-", " ")
+    )
+
+    if (safe.equals(safe.toUpperCase)) {
+      return safe
+    }
+
+    safe = "[A-Z\\d]".r.replaceAllIn(safe, m => "_" + m.group(0).toLowerCase())
+    safe.toUpperCase().stripPrefix("_")
   }
 
   def toEnumName(enum: Enum): String = {
@@ -77,21 +89,30 @@ object JavaEnums {
           .build()
       )
       .addField(
-        FieldSpec.builder(classOf[String], stringValueParam, PRIVATE, FINAL)
-          .addAnnotation(classOf[Getter])
+        FieldSpec.builder(JavaTypes.String, stringValueParam, PRIVATE, FINAL)
+          .addAnnotation(LombokAnno.Getter(LombokTypes.JsonValue)
+          )
           .addJavadoc("Holder for defined value for lookup and toString support\n")
+          .build()
+      )
+      .addField(
+        FieldSpec.builder(JavaTypes.String, descriptionParam, PRIVATE, FINAL)
+          .addAnnotation(LombokTypes.Getter)
+          .addJavadoc("Holder for defined enum field description\n")
           .build()
       )
       .addMethod(
         MethodSpec.constructorBuilder()
-          .addParameter(classOf[String], stringValueParam, FINAL)
+          .addParameter(JavaTypes.String, stringValueParam, FINAL)
+          .addParameter(JavaTypes.String, descriptionParam, FINAL)
           .addStatement(CodeBlock.of("this.$L=$L", stringValueParam, stringValueParam))
+          .addStatement(CodeBlock.of("this.$L=$L", descriptionParam, descriptionParam))
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("from" + stringValueParam.capitalize)
           .addModifiers(PUBLIC, STATIC, FINAL)
-          .addParameter(classOf[String], stringValueParam, FINAL)
+          .addParameter(JavaTypes.String, stringValueParam, FINAL)
           .addStatement(CodeBlock.of("return $L.get($L)", stringMapFieldName, stringValueParam))
           .returns(className)
           .build()
@@ -99,8 +120,8 @@ object JavaEnums {
       MethodSpec
         .methodBuilder("toString")
         .addModifiers(PUBLIC, FINAL)
-        .addAnnotation(classOf[Override])
-        .returns(classOf[String])
+        .addAnnotation(JavaTypes.Override)
+        .returns(JavaTypes.String)
         .addStatement(CodeBlock.of("return this.$L", stringValueParam))
         .build()
     ).addJavadoc("\n")
@@ -127,13 +148,19 @@ object JavaEnums {
     val convertersClassName = ClassName.get("", "Converters")
 
     TypeSpec.classBuilder(convertersClassName).addModifiers(PUBLIC, STATIC)
+      .addMethod(
+
+        MethodSpec.constructorBuilder().addModifiers(PRIVATE)
+          .addJavadoc("Hide the public constructor for quality gates.")
+          .build()
+      )
       .addType(
         TypeSpec.classBuilder("ToEnum").addModifiers(PUBLIC, STATIC)
           .addSuperinterface(ParameterizedTypeName.get(JacksonTypes.Converter, JavaTypes.String, enumClassName))
           .addMethod(
             MethodSpec.methodBuilder("convert")
               .addModifiers(PUBLIC)
-              .addAnnotation(JavaTypes.`Override`)
+              .addAnnotation(JavaTypes.Override)
               .returns(enumClassName)
               .addParameter(ParameterSpec.builder(JavaTypes.String, "apiValue", FINAL).build())
               .addStatement("return $T.fromApiValue(apiValue)", enumClassName)
@@ -141,7 +168,7 @@ object JavaEnums {
           ).addMethod(
           MethodSpec.methodBuilder("getInputType")
             .addModifiers(PUBLIC)
-            .addAnnotation(JavaTypes.`Override`)
+            .addAnnotation(JavaTypes.Override)
             .returns(JacksonTypes.JavaType)
             .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
             .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), JavaTypes.String)
@@ -149,7 +176,7 @@ object JavaEnums {
         ).addMethod(
           MethodSpec.methodBuilder("getOutputType")
             .addModifiers(PUBLIC)
-            .addAnnotation(JavaTypes.`Override`)
+            .addAnnotation(JavaTypes.Override)
             .returns(JacksonTypes.JavaType)
             .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
             .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), enumClassName)
@@ -162,7 +189,7 @@ object JavaEnums {
           .addMethod(
             MethodSpec.methodBuilder("convert")
               .addModifiers(PUBLIC)
-              .addAnnotation(JavaTypes.`Override`)
+              .addAnnotation(JavaTypes.Override)
               .returns(JavaTypes.String)
               .addParameter(ParameterSpec.builder(enumClassName, "enumValue", FINAL).build())
               .addStatement("return $L.apiValue()", "enumValue")
@@ -170,7 +197,7 @@ object JavaEnums {
           ).addMethod(
           MethodSpec.methodBuilder("getInputType")
             .addModifiers(PUBLIC)
-            .addAnnotation(JavaTypes.`Override`)
+            .addAnnotation(JavaTypes.Override)
             .returns(JacksonTypes.JavaType)
             .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
             .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), enumClassName)
@@ -178,7 +205,7 @@ object JavaEnums {
         ).addMethod(
           MethodSpec.methodBuilder("getOutputType")
             .addModifiers(PUBLIC)
-            .addAnnotation(JavaTypes.`Override`)
+            .addAnnotation(JavaTypes.Override)
             .returns(JacksonTypes.JavaType)
             .addParameter(ParameterSpec.builder(JacksonTypes.TypeFactory, Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), FINAL).build())
             .addStatement("return $L.constructType($T.class)", Text.initLowerCase(JacksonTypes.TypeFactory.simpleName()), JavaTypes.String)

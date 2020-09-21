@@ -1,16 +1,14 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Singular;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.Map;
 
 @Accessors(fluent = true)
 @Builder
@@ -18,18 +16,12 @@ import java.util.Map;
 @NoArgsConstructor
 @FieldNameConstants
 @JsonIgnoreProperties(ignoreUnknown = true)
-
-public class Components {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Server {
     private static final long serialVersionUID = 0L;
 
-    @JsonProperty(required = true)
+    @JsonProperty(value = "url", required = false)
     @Getter
-    @Singular
-    protected Map<String, Schema> schemas;
-
-    @JsonProperty(required = true)
-    @Getter
-    @Singular
-    protected Map<String, Object> securitySchemes;
+    private String url;
 
 }

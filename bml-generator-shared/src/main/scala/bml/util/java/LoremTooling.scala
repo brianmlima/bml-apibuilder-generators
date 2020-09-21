@@ -167,7 +167,7 @@ object LoremTooling {
       )
       .addParameter(localeParam.parameterSpec)
       .addParameter(INT, "count", FINAL)
-      .returns(classOf[String])
+      .returns(JavaTypes.String)
       .addStatement("return LOREM.$L($L)", name, countParam.name).build()
   }
 

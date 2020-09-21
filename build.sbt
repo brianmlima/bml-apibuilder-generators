@@ -28,8 +28,8 @@ lazy val lib = project
 
 lazy val generator = project
   .in(file("generator"))
-  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient,bmlOpenapi)
-  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient,bmlOpenapi)
+  .dependsOn(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient, bmlOpenapi, javascriptPojos, javaRestTemplateClient)
+  .aggregate(javaGenerator, bmlLombok, gqlschemaGenerator, bmlGeneratorShared, javaPersistanceSql, springServiceGenerator, ebscoServiceTestingGenerator, springCouldContractGenerator, bmlLombokTest, jpaRepository, javaClient, bmlOpenapi, javascriptPojos, javaRestTemplateClient)
   .enablePlugins(PlayScala)
   .settings(commonSettings: _*)
   .settings(
@@ -66,6 +66,18 @@ lazy val bmlOpenapi = project
   .settings(commonSettings: _*)
   .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
+
+lazy val javascriptPojos = project
+  .in(file("generators/javascript-pojos"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
+
+lazy val javaRestTemplateClient = project
+  .in(file("generators/java-rest-template-client"))
+  .dependsOn(lib, lib % "test->test", bmlGeneratorShared)
+  .settings(commonSettings: _*)
+  .settings(Seq(ScoverageKeys.coverageMinimum := 66.98))
 
 
 lazy val springServiceGenerator = project
@@ -140,7 +152,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     "com.github.javaparser" % "javaparser-core" % "3.8.3" % "test",
     "org.scala-lang" % "scala-compiler" % scalaVer % "test",
     "org.scalameta" %% "scalameta" % "4.0.0" % "test",
-    "com.squareup" % "javapoet" % "1.11.1",
+    "com.squareup" % "javapoet" % "1.12.1",
     "com.squareup.retrofit2" % "retrofit" % "2.5.0",
     "io.reactivex.rxjava2" % "rxjava" % "2.2.4",
     "com.graphql-java" % "graphql-java-tools" % "5.2.4",
@@ -156,10 +168,9 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     "org.mockito" % "mockito-junit-jupiter" % "3.1.0",
 
 
-    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" %"2.10.2",
-    "org.yaml" % "snakeyaml" %"1.25",
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.10.2",
+    "org.yaml" % "snakeyaml" % "1.25",
     "javax.validation" % "validation-api" % "2.0.1.Final"
-
 
 
   ),

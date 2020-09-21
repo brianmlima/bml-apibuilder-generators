@@ -39,7 +39,7 @@ object Generators {
       metaData = Generator(
         key = "bml_lombok",
         name = "BML Lombok Models",
-        description = Some("Generate Java models from the API description."),
+        description = Some("ALPHA Generate Java models from the API description."),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
@@ -60,7 +60,7 @@ object Generators {
       metaData = Generator(
         key = "bml_openapi",
         name = "BML Openapi 3.0",
-        description = Some("Generate an openapi yaml 3.0 sepc with refs and a file name so combination works"),
+        description = Some("Generate an openapi json 3.0.2 sepc with refs and a file name so combination works. Has some additional linting requirements in order to better support conversion and example creation"),
         language = Some("openapi")
       ),
       status = lib.generator.Status.InDevelopment,
@@ -133,15 +133,37 @@ object Generators {
 
     CodeGenTarget(
       metaData = Generator(
+        key = "bml_javascript_pojo",
+        name = "Opinionated Javascript pojos ",
+        description = Some("ALPHA. Generate Opinionated javascript pojos from the API description. Currently only generates enumerations"),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.javascript.pojo.JavascriptPojo)
+    ),
+
+
+    CodeGenTarget(
+      metaData = Generator(
         key = "java_client",
-        name = "Java Client Generator",
-        description = Some("Generates a java Client for use in a Spring environment."),
+        name = "Java WebClient Client Generator ",
+        description = Some("BETA Under Development. Generates a java Client for use in a Spring environment based on WebClient."),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
       codeGenerator = Some(models.generator.bml.java.client.JavaClient)
-    )
+    ),
 
+    CodeGenTarget(
+      metaData = Generator(
+        key = "java_client_resttemplate",
+        name = "Java RestTemplate Client Generator",
+        description = Some("ALPHA Under Development. Generates a java Client for use in a Spring environment based on RestTemplate."),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.bml.java.client.resttemplate.JavaRestTemplateClient)
+    )
 
   ).sortBy(_.metaData.key)
 }

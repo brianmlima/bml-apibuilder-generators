@@ -2,7 +2,7 @@ package bml.util
 
 import bml.util.attribute.{FieldRef, Hibernate}
 import bml.util.java.JavaPojoUtil
-import io.apibuilder.spec.v0.models.{Operation, ResponseCodeInt, Service}
+import io.apibuilder.spec.v0.models.{Method, Operation, ResponseCodeInt, Service}
 import lombok.extern.slf4j.Slf4j
 import org.slf4j.LoggerFactory
 import play.api.libs.json.JsNumber
@@ -14,16 +14,17 @@ object SpecValidation {
   def validate(service: Service, header: Option[String]): Option[Seq[String]] = {
     val errors =
       Seq(
-        checkAllPathVarOperationsHave404(service),
-        checkAllFieldsWithMinRequirementHaveAMax(service),
-        checkAllModelsHaveADescription(service),
-        checkAllStringFieldsHaveMinMax(service),
-        checkAllModelsDontHaveUnderscores(service),
-        checkAllModelFieldsDontHaveUnderscores(service),
-        checkAllEnumsDontHaveUnderscores(service),
-        checkAllStringArraysHaveAStringValueLengthAttribute(service),
-        checkAllArraysHaveMaximum(service),
-        checkAllHibernateModelsHaveFieldRefWhereNecessary(service)
+//                checkAllPathVarOperationsHave404(service),
+//                checkAllFieldsWithMinRequirementHaveAMax(service),
+//                checkAllModelsHaveADescription(service),
+//                checkAllStringFieldsHaveMinMax(service),
+//                checkAllModelsDontHaveUnderscores(service),
+//                checkAllModelFieldsDontHaveUnderscores(service),
+//                checkAllEnumsDontHaveUnderscores(service),
+//                checkAllStringArraysHaveAStringValueLengthAttribute(service),
+//                checkAllArraysHaveMaximum(service),
+        checkAllHibernateModelsHaveFieldRefWhereNecessary(service),
+        checkAllPostOperationsHaveBody(service)
       ).flatten
     if (errors.isEmpty) {
       None
@@ -62,7 +63,7 @@ object SpecValidation {
           field => {
             if (JavaPojoUtil.isParameterArray(field)) {
               if (field.maximum.isEmpty) {
-                val msg = s"ERROR: All Fields of array type must have an maximum set for array sizing constraints. Service='${service.name}' Model '${model.name}' Field='${field.name}'"
+                val msg = s"ERROR: All Fields of array type must have an maximum set for array sizing constraints. This eliminates recursion problems in self referential models. Organization='${service.organization.key}' Service='${service.name}' Model '${model.name}' Field='${field.name}'"
                 log.error(msg)
                 out = out ++ Seq(msg)
               }
@@ -90,19 +91,20 @@ object SpecValidation {
             } else {
               val attribute = option.get
               val minimumValue = attribute.value.value.get("minimum")
-              val maximumValue = attribute.value.value.get("minimum")
+              val maximumValue = attribute.value.value.get("maximum")
               if (minimumValue.isEmpty) {
                 out = out ++ Seq(s"ERROR: All ${value} attributes must have a minimum field defined in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}'")
+              } else {
+                if (!minimumValue.get.isInstanceOf[JsNumber]) {
+                  out = out ++ Seq(s"ERROR: All ${value} attributes must have a minimum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${minimumValue.get.toString()}'")
+                }
               }
               if (maximumValue.isEmpty) {
                 out = out ++ Seq(s"ERROR: All ${value} attributes must have a maximum field defined in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}'")
-              }
-
-              if (!minimumValue.get.isInstanceOf[JsNumber]) {
-                out = out ++ Seq(s"ERROR: All ${value} attributes must have a minimum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${minimumValue.get.toString()}'")
-              }
-              if (!maximumValue.get.isInstanceOf[JsNumber]) {
-                out = out ++ Seq(s"ERROR: All ${value} attributes must have a maximum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${maximumValue.get.toString()}'")
+              } else {
+                if (!maximumValue.get.isInstanceOf[JsNumber]) {
+                  out = out ++ Seq(s"ERROR: All ${value} attributes must have a maximum field defined as an Integer in their value object. Service='${service.name}' Model '${model.name}' Field='${field.name}' Attribute='${value}' minimum='${maximumValue.get.toString()}'")
+                }
               }
             }
           }
@@ -218,6 +220,23 @@ object SpecValidation {
     )
     out
   }
+
+  def checkAllPostOperationsHaveBody(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.resources.foreach(
+      resource =>
+        resource.operations.foreach(
+          operation =>
+            if (operation.method == Method.Post) {
+              if (operation.body.isEmpty) {
+                out = out ++ Seq(s"ERROR: Post Resource Operations have to have a body defined. Resource '${resource.`type`}' Operation '${operation.method} ${operation.path}'")
+              }
+            }
+        )
+    )
+    out
+  }
+
 
   def has404AsUnit(operation: Operation) = {
 

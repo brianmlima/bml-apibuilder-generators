@@ -1,4 +1,5 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -11,6 +12,7 @@ import lombok.Singular;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 
+import java.util.List;
 import java.util.Map;
 
 @Accessors(fluent = true)
@@ -19,38 +21,47 @@ import java.util.Map;
 @NoArgsConstructor
 @FieldNameConstants
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Parameter {
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+public class OpenApi {
 
     private static final long serialVersionUID = 0L;
 
     @JsonProperty(required = true)
     @Getter
-    protected String name;
-
-    @JsonProperty(required = true)
-    @Getter
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected String description;
-
-    @JsonProperty(required = true)
-    @Getter
     @Builder.Default
-    protected boolean required = true;
+    protected String openapi = "3.0.2";
+
 
     @JsonProperty(required = true)
     @Getter
-    @Builder.Default
-    protected boolean deprecated = false;
-
-    @JsonProperty(required = true)
-    @Getter
-    @Builder.Default
-    protected In in = In.query;
+    protected Info info;
 
     @JsonProperty(required = false)
     @Getter
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected ParamSchema schema;
+    @Singular
+    protected List<Server> servers;
+
+    @JsonProperty(required = false)
+    @Getter
+    @Singular
+    protected List<Tag> tags;
+
+
+    @JsonProperty(required = true)
+    @Getter
+    protected Components components;
+
+
+    @JsonProperty(required = true)
+    @Getter
+    @Singular
+    protected Map<String, Object> paths;
 
 
 }
+
+
+
+
+
+

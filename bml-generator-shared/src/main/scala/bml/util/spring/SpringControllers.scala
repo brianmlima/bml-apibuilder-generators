@@ -1,11 +1,12 @@
 package bml.util.spring
 
+import akka.http.scaladsl.settings.PoolImplementation.New
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
-import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.java.{ClassNames, JavaDataType, JavaDataTypes, JavaPojoUtil}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Method.{Get, Post}
+import io.apibuilder.spec.v0.models.Method.{Get, Post, Put}
 import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import lib.Text
@@ -35,8 +36,54 @@ object SpringControllers {
   }
 
   def toControllerOperationName(operation: Operation): String = {
-    JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
+    //    JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
+    JavaPojoUtil.toMethodName(toOperationClientClassName(operation))
   }
+
+  def toOperationClientClassName(operation: Operation): String = {
+    val method = operation.method.toString.toLowerCase()
+    val paramterAnds = (
+      operation.path.split("/").filter(_.contains(":"))
+        .map(v => JavaPojoUtil.toClassName(v.drop(1))) ++
+        operation.parameters.filter(_.location != ParameterLocation.Path)
+          .map(v => JavaPojoUtil.toClassName(v.name))
+      ).mkString("And")
+    var name =
+      if (operation.method == Get) {
+        val ok = operation.responses.find(_.code.productElement(0) == 200)
+        if (ok.isDefined) {
+          JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
+            (
+              if (JavaPojoUtil.isParameterArray(ok.get.`type`)) {
+                "s"
+              } else {
+                ""
+              }
+              )
+        } else {
+          "OkNotDefined"
+        }
+      } else if (operation.method == Post || operation.method == Put) {
+        if (operation.body.isDefined) {
+          JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
+        } else {
+          "BodyNotDefined"
+        }
+      } else {
+        "NotHandled"
+      }
+
+    JavaPojoUtil.toMethodName(method + name +
+      (
+        if (paramterAnds.isEmpty()) {
+          ""
+        } else {
+          "By"
+        }
+        ) + paramterAnds
+    )
+  }
+
 
   def undefinedResponseModelExcpetionClassName(nameSpaces: NameSpaces) =
     ClassName.get(nameSpaces.controller.nameSpace, JavaPojoUtil.toClassName("UndefinedResponseModelExcpetion"))
@@ -124,6 +171,18 @@ object SpringControllers {
     val version = nameSpaces.base.nameSpace.split("\\.").last
     val path = operation.path
 
+
+    def operationDescription(): String = {
+      var out = Seq[String]()
+      if (operation.description.isDefined) {
+        out = out ++ Seq(operation.description.get)
+      }
+      out.mkString("  *", "\n  *", "")
+    }
+
+    methodSpec.addComment(operationDescription())
+
+
     def toSpringPath(path: String): String = {
       path.split("/").map(
         element =>
@@ -156,10 +215,24 @@ object SpringControllers {
         // add the response body to the controller method params
         if (operation.body.isDefined) {
           val body = operation.body.get
+          val bodyDataType = JavaPojoUtil.dataTypeFromField(service,body.`type`,nameSpaces.model)
           val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
-
           val paramName = toControllerParamName(bodyClassName.simpleName())
-
+          methodSpec
+            .addParameter(
+              ParameterSpec.builder(bodyDataType, paramName, Modifier.FINAL)
+                .addAnnotation(
+                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
+                ).build()
+            )
+        }
+      case Put =>
+        methodSpec.addAnnotation(AnotationUtil.putMappingJson(toSpringPath(s"/$version$path")))
+        // add the response body to the controller method params
+        if (operation.body.isDefined) {
+          val body = operation.body.get
+          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+          val paramName = toControllerParamName(bodyClassName.simpleName())
           methodSpec
             .addParameter(
               ParameterSpec.builder(bodyClassName, paramName, Modifier.FINAL)
@@ -170,18 +243,24 @@ object SpringControllers {
         }
     }
 
-    def buildControllerRespondCodeBlock(response: Response): CodeBlock = {
-      val paramName = JavaPojoUtil.toParamName(response.`type`, true)
+    val exceptionClassName = ApiImplementationException.getClassName(nameSpaces);
+
+
+    def buildControllerRespondCodeBlock(response: Response, nameSpaces: NameSpaces): CodeBlock = {
+      val paramName = JavaPojoUtil.toParamName(response.`type`, true) + SpringServices.responseCodeToString(response.code)
       val responseClassName = JavaPojoUtil.toClassName(response.`type`)
 
       val responseCode: ResponseCode = response.code
+
+
+      //      val exceptionClassName = ApiImplementationException.getClassName(nameSpaces);
 
       val codeBlock = CodeBlock.builder()
 
         .beginControlFlow("if(responseModel.$L() !=null)", paramName)
         .addStatement("final int code = responseModel.$L().getStatusCode().value()", paramName)
         .beginControlFlow("if(code!=$L)", responseCode.productElement(0).toString)
-        .add("throw new $T( String.format(\"$L ResponseEntity<$L> code must be $L found %s\",code));", classOf[RuntimeException], paramName, responseClassName, responseCode.productElement(0).toString)
+        .add("throw new $T( String.format(\"$L ResponseEntity<$L> code must be $L found %s\",code));", exceptionClassName, paramName, responseClassName, responseCode.productElement(0).toString)
 
         .endControlFlow()
         //.addStatement("if(responseModel.$L().getStatusCode().value()!=$L){/** Throw runtime exception*/}", paramName, responseCode.productElement(0).toString)
@@ -214,14 +293,22 @@ object SpringControllers {
         }
         codeBlock.add(params.mkString(","))
         codeBlock.add(");")
+      case Put =>
+        val body = operation.body
+        var params = operation.parameters.map(toControllerParamName)
+        if (body.isDefined) {
+          params = params ++ Seq(toControllerParamName(body.get.`type`))
+        }
+        codeBlock.add(params.mkString(","))
+        codeBlock.add(");")
 
     }
     methodSpec.addCode(codeBlock.build())
     methodSpec.addCode(
-      CodeBlock.join(operation.responses.map(buildControllerRespondCodeBlock).asJava, "\n")
+      CodeBlock.join(operation.responses.map(buildControllerRespondCodeBlock(_, nameSpaces)).asJava, "\n")
     )
     methodSpec.addCode(
-      CodeBlock.of("throw new $T();", classOf[RuntimeException])
+      CodeBlock.of("throw new $T();", exceptionClassName)
     )
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

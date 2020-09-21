@@ -13,4 +13,5 @@ class Param(val parameterSpec: ParameterSpec, javadocString: String) {
     .build()
 
   def fieldSpecFinal = fieldSpec.toBuilder.addModifiers(FINAL).build()
+
 }

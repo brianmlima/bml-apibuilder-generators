@@ -44,7 +44,7 @@ object StringToEnumConverters {
       .addMethod(
         MethodSpec.methodBuilder("addFormatters")
           .addModifiers(Modifier.PUBLIC)
-          .addAnnotation(JavaTypes.`Override`)
+          .addAnnotation(JavaTypes.Override)
           .addParameter(
             ParameterSpec.builder(SpringTypes.FormatterRegistry, "registry", Modifier.FINAL).build()
           )
@@ -72,7 +72,7 @@ object StringToEnumConverters {
       .addMethod(
         MethodSpec.methodBuilder("convert")
           .addModifiers(Modifier.PUBLIC)
-          .addAnnotation(JavaTypes.`Override`)
+          .addAnnotation(JavaTypes.Override)
           .returns(enumDataType)
           .addParameter(ParameterSpec.builder(JavaTypes.String, "apiValue", Modifier.FINAL).build())
           .addStatement("return $T.fromApiValue($L)", enumDataType, "apiValue")

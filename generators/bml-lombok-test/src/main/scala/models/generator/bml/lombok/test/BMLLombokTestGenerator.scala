@@ -1,7 +1,7 @@
 package models.generator.bml.lombok.test
 
 import bml.util.NameSpaces
-import bml.util.java.testing.{ExcersicePojoSpringValidation, ExercisePojos}
+import bml.util.java.testing.{ExcersicePojoSpringValidation, ExcersizeEnums, ExercisePojos}
 import bml.util.java.{JavaPojoTestFixtures, JavaPojoUtil, LoremTooling, ProbabilityTools, TestSuppliers}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.Service
@@ -39,7 +39,8 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
           JavaPojoTestFixtures.makeLanguages(nameSpaces: NameSpaces),
           ProbabilityTools.probabilityTool(nameSpaces),
           ExercisePojos.excersisePojoTestClass(service, nameSpaces),
-          ExcersicePojoSpringValidation.excersisePojoTestClass(service, nameSpaces)
+          ExcersicePojoSpringValidation.excersisePojoTestClass(service, nameSpaces),
+          ExcersizeEnums.excersiseEnumTestClass(service, nameSpaces)
         )
     }
 

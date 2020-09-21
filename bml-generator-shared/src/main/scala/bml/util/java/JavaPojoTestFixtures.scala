@@ -107,6 +107,10 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 fiedlSpec
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
+              } else if (field.`type` == "object") {
+                fiedlSpec
+                  .addAnnotation(BuilderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
               } else if (JavaPojoUtil.isEnumType(service, field)) {
                 fiedlSpec
                   .addAnnotation(BuilderDefault)
@@ -256,6 +260,11 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       case "uuid" => return Some(stdWithNullable(uuidTypeRequiredReturn))
       case "date-iso8601" => return Some(stdWithNullable(dateIso8601TypeReturn))
       case "string" => return Some(stdWithNullable(stringTypeRequiredReturn))
+      case "object" => return Some(stdWithNullable(
+        CodeBlock.of("() -> new $T()", JavaTypes.LinkedHashMap)
+      ))
+
+
       case _ =>
     }
 
@@ -279,8 +288,11 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         case "uuid" => return Some(stdWithNullable(wrapList(uuidTypeRequiredReturn)))
         case "date-iso8601" => return Some(stdWithNullable(wrapList(dateIso8601TypeReturn)))
         case "string" => return Some(stdWithNullable(wrapList(stringTypeRequiredReturn)))
+
         case _ =>
       }
+
+      if (JavaPojoUtil.isModelNameWithPackage(memberType)) return Some(stdWithNullable(wrapList(modelTypeReturn(memberType))))
       if (JavaPojoUtil.isModelType(service, memberType)) return Some(stdWithNullable(wrapList(modelTypeReturn(memberType))))
       if (JavaPojoUtil.isEnumType(service, memberType)) return Some(
         stdWithNullable(

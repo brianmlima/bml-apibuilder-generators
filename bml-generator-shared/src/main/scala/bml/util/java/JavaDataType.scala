@@ -1,6 +1,7 @@
 package bml.util.java
 
-import com.squareup.javapoet.ClassName
+import bml.util.java
+import com.squareup.javapoet.{ClassName, ParameterizedTypeName}
 
 sealed trait JavaDataType {
 
@@ -8,7 +9,7 @@ sealed trait JavaDataType {
 
   val javaClassName: ClassName
 
-  def setterValueAssignment(paramName: String)={
+  def setterValueAssignment(paramName: String) = {
     paramName
   }
 
@@ -21,22 +22,22 @@ object JavaDataTypes {
 
   case object Boolean extends NativeDatatype {
     override val apiBuilderType = "boolean"
-    override val javaClassName = ClassName.get("java.lang", "Boolean")
+    override val javaClassName = ClassName.get("", "Boolean")
   }
 
   case object Double extends NativeDatatype {
     override val apiBuilderType = "double"
-    override val javaClassName = ClassName.get("java.lang", "Double")
+    override val javaClassName = ClassName.get("", "Double")
   }
 
   case object Integer extends NativeDatatype {
     override val apiBuilderType = "integer"
-    override val javaClassName = ClassName.get("java.lang", "Integer")
+    override val javaClassName = ClassName.get("", "Integer")
   }
 
   case object Long extends NativeDatatype {
     override val apiBuilderType = "long"
-    override val javaClassName = ClassName.get("java.lang", "Long")
+    override val javaClassName = ClassName.get("", "Long")
   }
 
   case object DateIso8601 extends NativeDatatype {
@@ -53,31 +54,39 @@ object JavaDataTypes {
 
   case object Decimal extends NativeDatatype {
     override val apiBuilderType = "decimal"
-    override val javaClassName = ClassName.get("java.math","BigDecimal")
+    override val javaClassName = ClassName.get("java.math", "BigDecimal")
   }
 
   case object Object extends NativeDatatype {
     override val apiBuilderType = "object"
 
-    override val javaClassName = ClassName.get("java.util","Map<java.lang.String, java.lang.Object>")
+    //    override val javaClassName =
+    //      ParameterizedTypeName.get(
+    //        ClassName.get("java.util", "Map"),
+    //        ClassName.get("java.lang", "String"),
+    //        ClassName.get("java.lang", "Object")
+    //      )
+
+
+    override val javaClassName = ClassName.get("java.util", "Map<java.lang.String, java.lang.Object>")
   }
 
   case object JsonValue extends NativeDatatype {
     override val apiBuilderType = "json"
-    override val javaClassName = ClassName.get("java.lang","Object")
+    override val javaClassName = ClassName.get("", "Object")
   }
 
   case object String extends NativeDatatype {
     override val apiBuilderType = "string"
-    override val javaClassName = ClassName.get("java.lang","String")
+    override val javaClassName = ClassName.get("", "String")
   }
 
   case object Uuid extends NativeDatatype {
     override val apiBuilderType = "uuid"
-    override val javaClassName = ClassName.get("java.util","UUID")
+    override val javaClassName = ClassName.get("java.util", "UUID")
   }
 
- }
+}
 
 object JavaDataType {
 

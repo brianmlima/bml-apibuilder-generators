@@ -1,4 +1,4 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
 
 public enum In {
     path,

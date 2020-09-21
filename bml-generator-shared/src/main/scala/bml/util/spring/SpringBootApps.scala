@@ -21,6 +21,7 @@ object SpringBootApps {
   def foo(nameSpaces: NameSpaces, service: Service): Seq[File] = {
     val className = mainClassName(nameSpaces, service)
     val builder = TypeSpec.classBuilder(className).addAnnotation(SpringTypes.SpringBootApplication)
+      .addModifiers(PUBLIC)
       .addMethod(
         MethodSpec
           .methodBuilder("main")

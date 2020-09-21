@@ -31,7 +31,8 @@ object SpringServices {
   def toServiceMockClassName(nameSpaces: NameSpaces, resource: Resource): ClassName = ClassName.get(nameSpaces.service.nameSpace, toServiceMockName(resource))
 
   def toOperationName(operation: Operation) = {
-    JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
+    JavaPojoUtil.toMethodName(SpringControllers.toControllerOperationName(operation))
+    //JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
   }
 
   private def modelDataType(service: Service, nameSpaces: NameSpaces, parameter: Parameter) = JavaPojoUtil.dataTypeFromField(service, parameter.`type`, nameSpaces.model.nameSpace)
@@ -50,6 +51,17 @@ object SpringServices {
     )
   }
 
+
+  def responseCodeToString(responseCode: ResponseCode): String = {
+    responseCode.toString.replace("ResponseCodeInt(", "").replace(")", "")
+  }
+
+  def is4XX(responseCode: ResponseCode): Boolean = {
+    val code = responseCodeToString(responseCode).toInt
+    (code >= 400 && code <= 499)
+  }
+
+
   def generateServiceOperationResponseContainer(service: Service, resource: Resource, operation: Operation, response: Response, nameSpaces: NameSpaces): Seq[File] = {
     val className = toResponseSubTypeCLassName(nameSpaces, operation)
 
@@ -57,7 +69,10 @@ object SpringServices {
       val paramClassName = ParameterizedTypeName.get(SpringTypes.ResponseEntity, JavaPojoUtil.dataTypeFromField(service, response.`type`, nameSpaces.model))
 
 
-      FieldSpec.builder(paramClassName, JavaPojoUtil.toParamName(response.`type`, true))
+      //      val code = response.code.toString.replace("ResponseCodeInt(", "").replace(")", "")
+
+
+      FieldSpec.builder(paramClassName, JavaPojoUtil.toParamName(response.`type`, true) + responseCodeToString(response.code))
         .addAnnotation(LombokAnno.Getter)
         .build()
     }
@@ -73,16 +88,23 @@ object SpringServices {
 
 
   def generateBaseConfiguration(nameSpaces: NameSpaces, service: Service): Seq[File] = {
-    val serviceName = JavaPojoUtil.toClassName(service.name + "-base-confiuration")
+    val configName = JavaPojoUtil.toClassName(service.name + "-base-confiuration")
 
     val mediaTypeYaml = "MEDIA_TYPE_YAML"
     val mediaTypeYml = "MEDIA_TYPE_YML"
 
-    val serviceBuilder = TypeSpec.classBuilder(serviceName)
+    val configBuilder = TypeSpec.classBuilder(configName)
+      .addJavadoc(
+        "Add json or yaml content negotiation for all endpoints.\n" +
+          ""
+      )
+      .addJavadoc("\n")
+      .addJavadoc("Provides two {@link ObjectMapper}s {@link #jsonObjectMapper} & {@link #yamlObjectMapper} \n")
+
       .addModifiers(PUBLIC)
       .addSuperinterface(webMvcConfigurer)
       .addAnnotation(configuration)
-      .addAnnotation(enableWebMvc)
+      //      .addAnnotation(enableWebMvc)
       .addField(FieldSpec.builder(mediaType, mediaTypeYaml, PUBLIC, STATIC, FINAL).initializer(" MediaType.valueOf(\"text/yaml\")").build())
       .addField(FieldSpec.builder(mediaType, mediaTypeYml, PUBLIC, STATIC, FINAL).initializer(" MediaType.valueOf(\"text/yml\")").build())
       .addMethod(
@@ -100,7 +122,7 @@ object SpringServices {
       ).addMethod(
       MethodSpec.methodBuilder("configureContentNegotiation")
         .addModifiers(PUBLIC)
-        .addAnnotation(JavaTypes.`Override`)
+        .addAnnotation(JavaTypes.Override)
         .addParameter(ParameterSpec.builder(contentNegotiationConfigurer, "configurer", FINAL).build())
         .addCode(
           CodeBlock.builder()
@@ -119,7 +141,7 @@ object SpringServices {
 
       MethodSpec.methodBuilder("extendMessageConverters")
         .addModifiers(PUBLIC)
-        .addAnnotation(JavaTypes.`Override`)
+        .addAnnotation(JavaTypes.Override)
         .addParameter(
           ParameterSpec.builder(
             ParameterizedTypeName.get(JavaTypes.List, ParameterizedTypeName.get(httpMessageConverter, ClassName.get("", "?"))),
@@ -163,7 +185,7 @@ object SpringServices {
 
 
     //Return the generated Service interface
-    Seq(GeneratorFSUtil.makeFile(serviceName, nameSpaces.config, serviceBuilder))
+    Seq(GeneratorFSUtil.makeFile(configName, nameSpaces.config, configBuilder))
   }
 
 
@@ -230,6 +252,7 @@ object SpringServices {
 
     operation.method match {
       case Method.Get =>
+      case Method.Put =>
       case Method.Post =>
         var body = operation.body.get
         javadocs = javadocs ++ Seq[String](serviceBodyJavadoc(nameSpaces, body))
@@ -249,13 +272,22 @@ object SpringServices {
       )
       .map(
         operationParamToServiceParam(service, operation, nameSpaces, _))
-
-
       .foreach(methodSpec.addParameter)
 
     operation.method match {
       case Method.Get =>
       case Method.Post =>
+        var body = operation.body.get
+        val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+        val bodyDataType = JavaPojoUtil.dataTypeFromField(service,body.`type`,nameSpaces.model)
+
+        methodSpec.addParameter(
+          ParameterSpec.builder(bodyDataType, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
+            .addAnnotation(JavaxValidationAnnotations.NotNull)
+            .addAnnotation(JavaxValidationAnnotations.Valid)
+            .build()
+        )
+      case Method.Put =>
         var body = operation.body.get
         val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
         methodSpec.addParameter(

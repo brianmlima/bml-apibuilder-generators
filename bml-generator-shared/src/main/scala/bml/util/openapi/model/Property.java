@@ -1,8 +1,9 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,10 +12,7 @@ import lombok.Singular;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 @Accessors(fluent = true)
 @Builder
@@ -23,29 +21,40 @@ import java.util.Map;
 @FieldNameConstants
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Schema {
+@JsonPropertyOrder({"description", "type", "minLength", "maxLength", "format", "oneOf", "items"})
+public class Property {
+
     private static final long serialVersionUID = 0L;
+
     @JsonProperty(value = "description", required = true)
     @Getter
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     protected String description;
 
-    @JsonProperty(value = "type", required = true)
+    @JsonProperty(value = "type", required = false)
     @Getter
-    @Builder.Default
-    protected Type type = Type.object;
+    protected String type;
 
-    @JsonProperty(value = "properties", required = false)
+    @JsonProperty(value = "format", required = false)
     @Getter
-    @Singular
+    protected String format;
+
+    @JsonProperty(value = "oneOf", required = false)
+    @Getter
+    @Singular("oneOf")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected Map<String, Property> properties;
+    protected List<Ref> oneOf;
 
-
-    @JsonProperty(value = "enum", required = false)
+    @JsonProperty(required = false)
     @Getter
-    @Singular
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected List<String> enums = new LinkedList<>();
+    protected Items items;
+
+    @JsonProperty(value = "minLength", required = false)
+    @Getter
+    protected Long minLength;
+    @JsonProperty(value = "maxLength", required = false)
+    @Getter
+    protected Long maxLength;
 
 
 }

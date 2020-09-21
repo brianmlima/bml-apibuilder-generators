@@ -3,11 +3,12 @@ package bml.util.java
 
 import akka.http.scaladsl
 import akka.http.scaladsl.model
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.AnotationUtil.HibernateAnnotations
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.attribute
 import bml.util.attribute.StringValueLength
-import bml.util.java.ClassNames.JavaTypes
+import bml.util.java.ClassNames.{HValidatorTypes, JavaTypes}
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.JavaPojoUtil.toStaticFieldName
 import com.squareup.javapoet.TypeName.BOOLEAN
@@ -46,7 +47,7 @@ object JavaPojos {
     val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name)
     val fieldSpec = FieldSpec.builder(JavaTypes.List(JavaTypes.String), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
     if (fieldNames.isEmpty) {
-      fieldSpec.initializer("$T.emptyList", JavaTypes.Collections)
+      fieldSpec.initializer("$T.emptyList()", JavaTypes.Collections)
     } else {
       fieldSpec.initializer(
         "$T.unmodifiableList(new $T($T.asList($L)))",
@@ -79,9 +80,10 @@ object JavaPojos {
   def getStringValueLengthStaticFields(model: Model): Seq[FieldSpec] = {
     model.fields.filter(JavaPojoUtil.isParameterArray).filter(_.`type` == "[string]").flatMap(
       field => {
-        val optional = attribute.StringValueLength.fromField(field)
+        var optional = attribute.StringValueLength.fromField(field)
         if (optional.isEmpty) {
-          throw new IllegalArgumentException(s"String array fields must have a ${StringValueLength.attributeName} attribute. Model=${model.name} Field=${field.name}")
+          optional = Some(attribute.StringValueLength(0, 1024))
+          //          throw new IllegalArgumentException(s"String array fields must have a ${StringValueLength.attributeName} attribute. Model=${model.name} Field=${field.name}")
         }
         val stringValueLength = optional.get
         val out = Seq[FieldSpec](
@@ -96,7 +98,7 @@ object JavaPojos {
             .initializer("$L", if (field.required) "1" else field.minimum.getOrElse(0).toString)
             .build(),
           FieldSpec.builder(TypeName.INT, toMaxFieldStaticFieldName(field, Some("string")), PUBLIC, STATIC, FINAL)
-            .initializer("$L", field.maximum.get.toString)
+            .initializer("$L", field.maximum.getOrElse(1024).toString)
             .build()
         )
         out
@@ -114,8 +116,8 @@ object JavaPojos {
   }
 
   def getListSizeStaticFields(model: Model): Seq[FieldSpec] = {
-    model.fields.filter(JavaPojoUtil.isParameterArray).filter(
-      field => field.maximum.isDefined || field.minimum.isDefined)
+    model.fields.filter(JavaPojoUtil.isParameterArray)
+      //      .filter(field => field.maximum.isDefined || field.minimum.isDefined)
       .map(
         field => {
           Seq(
@@ -156,7 +158,7 @@ object JavaPojos {
               .addJavadoc("Added By getSizeStaticFields")
               .build(),
             FieldSpec.builder(TypeName.INT, toMaxFieldStaticFieldName(field), PUBLIC, STATIC, FINAL)
-              .initializer("$L", field.maximum.getOrElse(Integer.MAX_VALUE).toString)
+              .initializer("$L", field.maximum.getOrElse(2048).toString)
               .addJavadoc("Added By getSizeStaticFields")
               .build()
           )
@@ -190,12 +192,13 @@ object JavaPojos {
       spec.addMember("min", "$T.$L", className, minStaticParamName)
     }
 
-    if (hasMax) {
-      //LOG.trace("{} field.maximum.isDefined=true",field.name)
-      spec.addMember("max", "$T.$L", className, maxStaticParamName)
-    } else {
-      throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
-    }
+    //    if (hasMax) {
+    //LOG.trace("{} field.maximum.isDefined=true",field.name)
+    spec.addMember("max", "$T.$L", className, maxStaticParamName)
+    //    }
+    //    else {
+    //      throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
+    //    }
     Some(spec.build())
   }
 

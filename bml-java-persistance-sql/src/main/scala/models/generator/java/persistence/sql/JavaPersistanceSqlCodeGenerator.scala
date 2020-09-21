@@ -114,7 +114,7 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
       enum.values.foreach(value => {
         builder.addEnumConstant(toEnumName(value.name))
       })
-      val nameFieldType = classOf[String]
+      //val nameFieldType = classOf[String]
       val constructorWithParams = MethodSpec.constructorBuilder()
       builder.addMethod(constructorWithParams.build())
       makeFile(className, config.modelsDirectoryPath, config.modelsNameSpace, builder)

@@ -4,7 +4,7 @@ import bml.util.attribute.FieldRef
 import bml.util.java.ClassNames.JacksonTypes.JsonInclude
 import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames.SpringTypes.{SpringDataTypes, SpringValidationTypes}
-import bml.util.java.ClassNames.{HibernateTypes, JacksonTypes, JavaTypes, SpringTypes}
+import bml.util.java.ClassNames.{HibernateTypes, JacksonTypes, JavaTypes, LombokTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.jpa.JPA
 import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonInclude}
@@ -21,17 +21,16 @@ object AnotationUtil {
   object JacksonAnno {
 
     val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
-      .addMember("value","$L","JsonInclude.Include.NON_NULL")
+      .addMember("value", "$L", "JsonInclude.Include.NON_NULL")
       .build()
-
+    val JsonIncludeNON_EMPTY = AnnotationSpec.builder(JacksonTypes.JsonInclude)
+      .addMember("value", "$L", "JsonInclude.Include.NON_EMPTY")
+      .build()
 
     val JsonIncludeALLWAYS = AnnotationSpec.builder(JacksonTypes.JsonInclude)
-      .addMember("value","$L","JsonInclude.Include.ALWAYS")
+      .addMember("value", "$L", "JsonInclude.Include.ALWAYS")
       .build()
-
-
   }
-
 
   object SpringAnno {
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
@@ -42,7 +41,13 @@ object AnotationUtil {
 
       def SpringJUnitConfig(className: ClassName) = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringJUnitConfig)
         .addMember("value", "$T.class", className).build()
+
+      def Param(name: String) = AnnotationSpec.builder(SpringDataTypes.Param)
+        .addMember("value", "$s", name).build()
+
+
     }
+
 
   }
 
@@ -72,12 +77,23 @@ object AnotationUtil {
 
     def Getter = AnnotationSpec
       .builder(classOf[Getter])
+      .addMember("onMethod", "@__( @$T )", LombokTypes.JsonIgnore)
       .build()
+
+    def Getter(className: ClassName) :AnnotationSpec = AnnotationSpec
+      .builder(classOf[Getter])
+      .addMember("onMethod", "@__( @$T )", className)
+      .build()
+
 
     def Builder = AnnotationSpec
       .builder(classOf[Builder])
+      .addMember("toBuilder", "$L", "true")
       .build()
 
+    def EqualsAndHashCode = AnnotationSpec
+      .builder(classOf[EqualsAndHashCode])
+      .build()
   }
 
   object JavaxAnnotations {
@@ -202,7 +218,7 @@ object AnotationUtil {
     .builder(classOf[Accessors])
     .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
-  def `override` = JavaTypes.`Override`
+  def `override` = JavaTypes.Override
 
   def autowired = SpringTypes.Autowired
 
@@ -220,6 +236,13 @@ object AnotationUtil {
 
   def postMappingJson(path: String): AnnotationSpec = {
     AnnotationSpec.builder(SpringTypes.PostMapping)
+      .addMember("path", "$S", path)
+      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
+      .build()
+  }
+
+  def putMappingJson(path: String): AnnotationSpec = {
+    AnnotationSpec.builder(SpringTypes.PutMapping)
       .addMember("path", "$S", path)
       //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
       .build()

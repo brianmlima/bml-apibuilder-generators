@@ -1,4 +1,5 @@
-package bml.util.openapi;
+package bml.util.openapi.model;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -16,22 +17,12 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor
 @FieldNameConstants
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Items {
+public class OneOf {
 
-
-    private static final long serialVersionUID = 0L;
-
-    ////////////////////////////////////////////////
-    ////////////////////////////////////////////////
-    @JsonProperty(required = false)
+    @JsonProperty(value="",  required = true)
     @Getter
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected String type;
-
-    @JsonProperty(value = "$ref", required = false)
-    @Getter
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected String ref;
-
+    @Builder.Default
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    protected String name = "";
 
 }

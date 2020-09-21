@@ -53,7 +53,7 @@ object MethodArgumentNotValidExceptionHandler {
           .addCode(".message($S);", "validation error")
           .addStatement("responseBuilder.errors(" +
             "fieldErrors.stream().map(" +
-            "(fieldError)->$T.builder().path(fieldError.getField()).message(fieldError.getDefaultMessage()).build()" +
+            "fieldError->$T.builder().path(fieldError.getField()).message(fieldError.getDefaultMessage()).build()" +
             ").collect($T.toList()))",
             fieldValidationError,
             JavaTypes.Collectors
