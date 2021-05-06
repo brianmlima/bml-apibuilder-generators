@@ -3,6 +3,7 @@ package bml.util.java
 
 import akka.http.scaladsl
 import akka.http.scaladsl.model
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{AnotationUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
@@ -72,7 +73,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     val targetClassBuilderName = toBuilderClassName(targetClassName)
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
       .addAnnotation(LombokTypes.Builder)
-      .addAnnotation(AnotationUtil.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       .addSuperinterface(JavaTypes.supplier(targetClassName))
       .addField(FieldSpec.builder(TypeName.INT, "MAX_GENERATED_LIST_SIZE", PUBLIC, STATIC).initializer("$L", "50").build())
       .addFields(

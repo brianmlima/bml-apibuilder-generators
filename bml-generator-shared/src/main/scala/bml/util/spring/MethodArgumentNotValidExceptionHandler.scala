@@ -1,7 +1,7 @@
 package bml.util.spring
 
 import bml.util.NameSpaces
-import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
+import bml.util.java.ClassNames.{JavaTypes, LombokTypes, SpringTypes}
 import io.apibuilder.generator.v0.models.File
 
 object MethodArgumentNotValidExceptionHandler {
@@ -28,12 +28,14 @@ object MethodArgumentNotValidExceptionHandler {
     val staticImports = Seq(JavaTypes.toList.staticImport)
 
     val builder = TypeSpec.classBuilder(name)
+      .addAnnotation(LombokTypes.Generated)
+      .addJavadoc("An Exception handler used by controllers to marshal $T into $T objects. This ensures that all API's have a consistent response for validation errors.", SpringTypes.MethodArgumentNotValidException, fieldValidationResponse)
       .addAnnotation(AnnotationSpec.builder(SpringTypes.Order).addMember("value", "$T.HIGHEST_PRECEDENCE", SpringTypes.Ordered).build())
       .addAnnotation(SpringTypes.ControllerAdvice)
       .addMethod(
         MethodSpec.methodBuilder("methodArgumentNotValidException")
           .returns(fieldValidationResponse)
-          .addParameter(SpringTypes.MethodArgumentNotValidException, "ex")
+          .addParameter(SpringTypes.MethodArgumentNotValidException, "ex", FINAL)
           .addModifiers(PUBLIC)
           .addAnnotation(responseStatusBadRequest)
           .addAnnotation(SpringTypes.ResponseBody)
@@ -65,11 +67,11 @@ object MethodArgumentNotValidExceptionHandler {
     Seq(makeFile(name, nameSpaces.controller, builder, staticImports: _*))
   }
 
-  private def fieldValidationResponse = ClassName.get("com.ebsco.validation.v0.models", "FieldValidationResponse")
+  private def fieldValidationResponse = ClassName.get("org.bml.validation.v0.models", "FieldValidationResponse")
 
-  private def fieldValidationError = ClassName.get("com.ebsco.validation.v0.models", "FieldValidationError")
+  private def fieldValidationError = ClassName.get("org.bml.validation.v0.models", "FieldValidationError")
 
-  private def fieldValidationResponseBuilder = ClassName.get("com.ebsco.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
+  private def fieldValidationResponseBuilder = ClassName.get("org.bml.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
 
   private def responseStatusBadRequest = AnnotationSpec.builder(SpringTypes.ResponseStatus).addMember("value", "$T.BAD_REQUEST", SpringTypes.HttpStatus).build()
 

@@ -45,7 +45,7 @@ object JavaRestTemplateClients {
     val configType = TypeSpec.classBuilder(configClassName)
       .addModifiers(PUBLIC, STATIC)
       .addAnnotation(LombokTypes.Builder)
-      .addAnnotation(LombokAnno.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       .addFields(
         Seq(
           FieldSpec.builder(SpringTypes.RestTemplate, restTemplateFieldName, PRIVATE, FINAL)
@@ -67,7 +67,7 @@ object JavaRestTemplateClients {
     val responseModelType = TypeSpec.classBuilder("ResponseModel").addTypeVariable(TypeVariableName.get("T"))
       .addModifiers(PUBLIC, STATIC)
       .addAnnotation(LombokTypes.Builder)
-      .addAnnotation(LombokAnno.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       .addField(
         FieldSpec.builder(SpringTypes.HttpStatus, "httpStatus", PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])
@@ -99,7 +99,7 @@ object JavaRestTemplateClients {
       .addModifiers(PUBLIC)
       .addAnnotations(
         Seq(
-          LombokAnno.fluentAccessor,
+          LombokAnno.AccessorFluent,
           LombokAnno.Slf4j
         ).asJava
       )
@@ -146,7 +146,7 @@ object JavaRestTemplateClients {
             TypeSpec.classBuilder(JavaPojoUtil.toClassName(resource.`type`) + "Client")
               .addAnnotations(
                 Seq(
-                  LombokAnno.fluentAccessor,
+                  LombokAnno.AccessorFluent,
                   LombokAnno.Slf4j
                 ).asJava
               )
@@ -294,8 +294,6 @@ object JavaRestTemplateClients {
 
     var name =
       if (operation.method == Get) {
-
-
         val ok = operation.responses.find(_.code.productElement(0) == 200)
         if (ok.isDefined) {
           JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
@@ -740,7 +738,7 @@ object JavaRestTemplateClients {
 
     val spec = TypeSpec.classBuilder(className)
       .addModifiers(PUBLIC, STATIC)
-      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.fluentAccessor).asJava)
+      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.AccessorFluent).asJava)
     spec.addFields(
       operation.responses.map(doResponse(_)).asJava
     )

@@ -3,6 +3,7 @@ package controllers
 import io.apibuilder.generator.v0.models.Generator
 import io.apibuilder.generator.v0.models.json._
 import lib.generator.{CodeGenTarget, CodeGenerator}
+import models.generator.spring.service.test.SpringServicesTestGenerator
 import play.api.libs.json._
 import play.api.mvc._
 
@@ -106,7 +107,7 @@ object Generators {
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
-      codeGenerator = Some(models.generator.ebscoservicetesting.EbscoServicesTesting)
+      codeGenerator = Some(SpringServicesTestGenerator)
     ),
 
     //    CodeGenTarget(

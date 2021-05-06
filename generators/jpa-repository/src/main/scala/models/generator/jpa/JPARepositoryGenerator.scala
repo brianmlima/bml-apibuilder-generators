@@ -7,16 +7,15 @@ import bml.util.java.ClassNames.SpringTypes.SpringDataTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.{GeneratorFSUtil, NameSpaces, SpecValidation, java}
+import bml.util.{GeneratorFSUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ParameterSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Field, Model, Service}
+import io.apibuilder.spec.v0.models.Service
 import javax.lang.model.element.Modifier
 import lib.generator.CodeGenerator
-import org.checkerframework.checker.units.qual.s
 import play.api.Logger
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 class JPARepositoryGenerator extends CodeGenerator {
   val logger: Logger = Logger.apply(this.getClass())
@@ -79,6 +78,24 @@ class JPARepositoryGenerator extends CodeGenerator {
               )
               .build()
           }
+          def saveAndFlushMethod(): MethodSpec = {
+            MethodSpec.methodBuilder("saveAndFlush").returns(entityClassName).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+              .addJavadoc(
+                Seq[String](
+                  s"Saves a given ${entityClassName.simpleName()}. Use the returned instance for further operations as the save operation might have changed the",
+                  s"${entityClassName.simpleName()} instance completely.",
+                  "",
+                  s"@param entity an ${entityClassName.simpleName()} to be saved. Must not be {@literal null}.",
+                  s"@return the saved ${entityClassName.simpleName()}. will never be {@literal null}."
+                ).mkString("\n")
+              )
+              .addParameter(
+                ParameterSpec.builder(entityClassName, "entity")
+                  .addAnnotation(JavaxValidationAnnotations.NotNull)
+                  .build()
+              )
+              .build()
+          }
 
           def saveAll(): MethodSpec = {
             MethodSpec.methodBuilder("saveAll").returns(JavaTypes.List(entityClassName)).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
@@ -97,6 +114,33 @@ class JPARepositoryGenerator extends CodeGenerator {
                   .addAnnotation(JavaxValidationAnnotations.NotEmpty)
                   .build()
               )
+              .build()
+          }
+
+
+          def deleteById(): MethodSpec = {
+            val javaDoc = Seq[String](
+              "Deletes a model by its id.",
+              "",
+              Seq[String](
+                "@param id must not be {@literal null}",
+                if (idField.`type` == "string") s" and must be between ${idField.minimum.get} and ${idField.maximum.get} characters" else "",
+                "."
+              ).mkString,
+              "@return the model deleted with the given id or {@literal Optional#empty()} if none found",
+              "@throws IllegalArgumentException if {@code id} is {@literal null}."
+            ).mkString("\n")
+
+            val parameterSpec = ParameterSpec.builder(idType, "id")
+              .addAnnotation(JavaxValidationAnnotations.NotNull)
+            if (idField.`type` == "string") {
+              val option = JavaPojos.handleSizeAttribute(entityClassName, idField)
+              if (option.isDefined)
+                parameterSpec.addAnnotation(option.get)
+            }
+            MethodSpec.methodBuilder("deleteById").returns(JavaTypes.Optional(entityClassName)).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+              .addJavadoc(javaDoc)
+              .addParameter(parameterSpec.build())
               .build()
           }
 
@@ -286,7 +330,7 @@ class JPARepositoryGenerator extends CodeGenerator {
                       .addJavadoc(
                         //                        JavaPojoUtil.textToComment(
                         (
-                          Seq[String](s"Specified by unique attribute field index = [${fields.map(_.name).mkString(",")}]")
+                          Seq[String](s"Specified by unique attribute field index = [${fields.map(_.name).mkString(",")}] .")
                             ++
                             fields.map(
                               aField => {
@@ -294,7 +338,7 @@ class JPARepositoryGenerator extends CodeGenerator {
                                 s"@param ${JavaPojoUtil.toFieldName(aField)} ${aField.description.getOrElse("")}"
                               }
                             ) ++
-                            Seq[String](s"@returns ${ParameterizedTypeName.get(JavaTypes.Optional, entityClassName)}")
+                            Seq[String](s"@return An Optional of type ${entityClassName}")
                           )
                           .mkString("\n")
                         //                        )
@@ -348,9 +392,11 @@ class JPARepositoryGenerator extends CodeGenerator {
             .addAnnotation(JavaxValidationAnnotations.Validated)
             .addAnnotation(SpringDataTypes.Repository)
             .addMethod(saveMethod())
+            .addMethod(saveAndFlushMethod())
             .addMethod(saveAll())
             .addMethod(findById())
             .addMethod(existsById())
+            .addMethod(deleteById())
             .addMethods(indexFieldFindBys().asJava)
 
           GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.jpa, repoSpec)

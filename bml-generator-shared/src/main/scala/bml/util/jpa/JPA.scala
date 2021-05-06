@@ -1,9 +1,10 @@
 package bml.util.jpa
 
+import bml.util.AnotationUtil.JacksonAnno
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.java.ClassNames.{HibernateTypes, JavaTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
-import bml.util.{AnotationUtil, JavaNameSpace, Text}
+import bml.util.{JavaNameSpace, Text}
 import com.squareup.javapoet.{ClassName, FieldSpec}
 import io.apibuilder.spec.v0.models.{Field, Model}
 import javax.lang.model.element.Modifier
@@ -39,7 +40,7 @@ object JPA {
             "Helps with update ordering and transactions."
           ).mkString("\n")
         )
-        .addAnnotation(AnotationUtil.jsonProperty(versionFieldName, false))
+        .addAnnotation(JacksonAnno.JsonProperty(versionFieldName, false))
         .addAnnotation(JavaxPersistanceAnnotations.Version)
         .addAnnotation(JavaxPersistanceAnnotations.Column(versionFieldName))
         .build(),
@@ -51,7 +52,7 @@ object JPA {
           ).mkString("\n")
         )
         .addAnnotation(HibernateTypes.CreationTimestamp)
-        .addAnnotation(AnotationUtil.jsonProperty(createdAtFieldName, false))
+        .addAnnotation(JacksonAnno.JsonProperty(createdAtFieldName, false))
         .addAnnotation(JavaxPersistanceAnnotations.Column(createdAtFieldName))
         .build(),
 
@@ -62,7 +63,7 @@ object JPA {
           ).mkString("\n")
         )
         .addAnnotation(HibernateTypes.UpdateTimestamp)
-        .addAnnotation(AnotationUtil.jsonProperty(updatedAtFieldName, false))
+        .addAnnotation(JacksonAnno.JsonProperty(updatedAtFieldName, false))
         .addAnnotation(JavaxPersistanceAnnotations.Column(updatedAtFieldName))
         .build()
     )

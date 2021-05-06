@@ -1,13 +1,13 @@
-package models.generator.ebscoservicetesting
+package models.generator.spring.service.test
 
 import bml.util.NameSpaces
 import bml.util.java.JavaPojoUtil
-import bml.util.spring.SpringServices
+import bml.util.spring.{SpringControllerTests, SpringServices}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Resource, Service}
 import lib.generator.{CodeGenerator, GeneratorUtil}
 
-class EbcosServicesTestingGenerator extends CodeGenerator with JavaPojoUtil {
+class SpringServiceTestGenerator extends CodeGenerator with JavaPojoUtil {
 
   def getJavaDocFileHeader() = "WARNING: not all features (notably unions) and data types work with the java generator yet. \nplease contact brianmlima@gmail.com"
 
@@ -29,13 +29,17 @@ class EbcosServicesTestingGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Run Generation
     def generateSourceFiles(): Seq[File] = {
-      generateServiceMocks(service.resources)
+
+      SpringControllerTests.generate(nameSpaces, service)
+
+
+//      generateServiceMocks(service.resources)
     }
 
-    //Generates Services from Resources
-    def generateServiceMocks(resources: Seq[Resource]): Seq[File] = {
-      resources.flatMap(SpringServices.generateServiceMockTests(nameSpaces, _))
-    }
+//    //Generates Services from Resources
+//    def generateServiceMocks(resources: Seq[Resource]): Seq[File] = {
+//      resources.flatMap(SpringServices.generateServiceMockTests(nameSpaces, _))
+//    }
 
   }
 

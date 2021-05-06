@@ -1,30 +1,27 @@
 package models.generator.lombok
 
 import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
-import bml.util.AnotationUtil.{JacksonAnno, LombokAnno, singular}
+import bml.util.AnotationUtil.{JacksonAnno, LombokAnno}
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.attribute.Hibernate
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
-import bml.util.java.ClassNames.{builder, _}
-import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil, JavaPojos}
+import bml.util.java.ClassNames._
+import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.{AnotationUtil, FieldUtil, NameSpaces, SpecValidation, java}
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import bml.util.{FieldUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
 import javax.lang.model.element.Modifier._
 import javax.persistence.{EnumType, Enumerated}
 import lib.generator.CodeGenerator
-import lombok.experimental.Accessors
-//import org.checkerframework.checker.units.qual.min
 import play.api.Logger
-//import org.apache.commons.lang3.StringUtils
-//import views.html.defaultpages
-//import views.html.defaultpages.error
 
 import scala.collection.JavaConverters._
 
+/**
+ * Generator for Lombok based pojos for models.
+ */
 trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
   val logger: Logger = Logger.apply(this.getClass())
@@ -42,23 +39,14 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
     new Generator(form.service, header).generateSourceFiles()
   }
 
-
   class Generator(service: Service, header: Option[String]) {
 
     private val nameSpaces = new NameSpaces(service)
-
-    private val nameSpace = makeNameSpace(service.namespace)
-    private val modelsNameSpace = nameSpace + ".models"
-    private val modelsDirectoryPath = createDirectoryPath(modelsNameSpace)
 
     private val apiDocComments = {
       val s = getJavaDocFileHeader + "\n"
       header.fold(s)(_ + "\n" + s)
     }
-
-    val T = "$T" //this is a hack for substituting types, as "$" is used by scala to do string substitution, and $T is used by javapoet to handle types
-
-    def createDirectoryPath(namespace: String) = namespace.replace('.', '/')
 
     def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
       val errors = SpecValidation.validate(service: Service, header: Option[String])
@@ -105,26 +93,25 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addJavadoc(apiDocComments)
       union.description.map(builder.addJavadoc(_))
 
-
-      union.types.foreach(
-        `type` => {
-          var foo = service.models.find(
-            model => model.name == `type`.`type`
-          )
-          if (foo.isDefined) {
-            val model = foo.get
-
-            //          model.fields.foreach(
-            //          field =>
-            //field
-
-            //            )
-
-
-          }
-
-        }
-      )
+      //      union.types.foreach(
+      //        `type` => {
+      //          var foo = service.models.find(
+      //            model => model.name == `type`.`type`
+      //          )
+      //          if (foo.isDefined) {
+      //            val model = foo.get
+      //
+      //            //          model.fields.foreach(
+      //            //          field =>
+      //            //field
+      //
+      //            //            )
+      //
+      //
+      //          }
+      //
+      //        }
+      //      )
       makeFile(className, nameSpaces.model, builder)
     }
 
@@ -135,43 +122,32 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       val className = toClassName(nameSpaces.model, model)
       //logger.info(s"Generating Model Class ${className}")
 
+
+      val baseAnnotations = Seq(
+        LombokAnno.Data,
+        LombokAnno.Builder,
+        LombokAnno.AccessorFluent,
+        LombokAnno.EqualsAndHashCode,
+        LombokAnno.AllArgsConstructor,
+        LombokAnno.NoArgsConstructor,
+        LombokAnno.FieldNameConstants,
+        JacksonAnno.JsonIncludeNON_EMPTY,
+        JacksonAnno.JsonIgnoreProperties_Ignore_unknown
+      ).asJava
+
+
+      val classJavadoc = Seq(apiDocComments, model.description).mkString("\n")
+
+
       val classBuilder = TypeSpec.classBuilder(className)
         .addModifiers(PUBLIC)
-        .addJavadoc(apiDocComments)
-        .addJavadoc("\n")
-        .addJavadoc(model.description.getOrElse(""))
-
-        .addAnnotation(AnnotationSpec.builder(classOf[Accessors])
-          .addMember("fluent", CodeBlock.builder().add("true").build).build())
-        .addAnnotations(
-          Seq(allArgsConstructor, noArgsConstructor, fieldNameConstants, LombokTypes.EqualsAndHashCode, LombokTypes.Data)
-            .map(AnnotationSpec.builder(_).build()).asJava
-        )
-        .addAnnotation(LombokAnno.Builder)
-        .addAnnotation(
-          AnnotationSpec.builder(classOf[JsonIgnoreProperties])
-            .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
-        )
-        .addAnnotation(JacksonAnno.JsonIncludeNON_EMPTY)
-        //private static final long serialVersionUID = 1L;
-        .addField(
-          FieldSpec.builder(
-            TypeName.LONG, "serialVersionUID", PRIVATE, STATIC, FINAL)
-            .initializer("$LL", service.version.split("\\.")(0))
-            .build()
-        )
+        .addJavadoc(classJavadoc)
+        .addAnnotations(baseAnnotations)
+        .addField(FieldUtil.serialVersionUID(service))
         .addField(JavaPojos.makeRequiredFieldsField(model))
-      //.addField(JavaPojos.getApiPathElement(service, model))
 
-
-      // Add in static booleans for each field to tell if the field is required.
-      //model.fields.foreach(JavaPojos.handleRequiredFieldAddition(classBuilder, _))
-
-      val constructorWithParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
-      val constructorWithoutParams = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
-      val unionClassTypeNames = relatedUnions.map { u => ClassName.get(modelsNameSpace, toClassName(u.name)) }
+      val unionClassTypeNames = relatedUnions.map { u => ClassName.get(nameSpaces.model.nameSpace, toClassName(u.name)) }
       classBuilder.addSuperinterfaces(unionClassTypeNames.asJava)
-      //      val shouldAnnotateAsDyanmoDb = isDynamoDbModel(model)
 
       JavaPojos.getStringValueLengthStaticFields(model)
         .foreach(classBuilder.addField(_))
@@ -190,7 +166,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       }
 
       model.fields.foreach(field => {
-        val javaDataType = dataTypeFromFieldArraySupport(service, field, modelsNameSpace)
+        val javaDataType = dataTypeFromFieldArraySupport(service, field, nameSpaces.model.nameSpace)
 
 
         val fieldBuilder = FieldSpec.builder(javaDataType, toParamName(field.name, true))
@@ -217,7 +193,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
-          fieldBuilder.addAnnotation(singular)
+          fieldBuilder.addAnnotation(LombokAnno.Singular)
 
         }
         if (field.required) {
@@ -238,7 +214,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         if (useHibernate) {
           JavaPojos.handlePersisitanceAnnontations(service, className, field).foreach(fieldBuilder.addAnnotation(_))
         }
-        fieldBuilder.addAnnotation(AnotationUtil.jsonProperty(field.name, field.required))
+        fieldBuilder.addAnnotation(JacksonAnno.JsonProperty(field.name, field.required))
         if (field.required) {
           fieldBuilder.addAnnotation(JacksonAnno.JsonIncludeALLWAYS)
         }
@@ -270,7 +246,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           //logger.info(s"Working on Attribute ${attribute.name}")
           attribute.name match {
             case "pattern" => {
-              fieldBuilder.addAnnotation(AnotationUtil.pattern(attribute))
+              fieldBuilder.addAnnotation(JavaxValidationAnnotations.Pattern(attribute))
             }
             case "email" => {
               fieldBuilder.addAnnotation(JavaxValidationTypes.Email)
@@ -284,33 +260,8 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       if (useHibernate) {
         JPA.addJPAStandardFields(model).foreach(classBuilder.addField)
       }
-
       makeFile(className.simpleName(), nameSpaces.model, classBuilder)
     }
-
-
-    private def toMap(cc: AnyRef): Map[String, Any] =
-      (Map[String, Any]() /: cc.getClass.getDeclaredFields) { (a, f) =>
-        f.setAccessible(true)
-        a + (f.getName -> f.get(cc))
-      }
-
-    private def commentFromOpt(opt: Option[String]) = {
-      opt.fold("") { s => textToComment(s) + "\n" }
-    }
-
-    def camelToUnderscores(name: String): String = "[A-Z\\d]".r.replaceAllIn(name, { m =>
-      "_" + m.group(0).toLowerCase()
-    })
-
-
-    def underscoreToCamel(name: String): String = "_([a-z\\d])".r.replaceAllIn(name, { m =>
-      m.group(1).toUpperCase()
-    })
-
-    //def makeFile(name: String, builder: TypeSpec.Builder): File = {
-    //      makeFile(name, nameSpaces.model, builder)
-    //}
 
   }
 

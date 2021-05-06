@@ -1,4 +1,4 @@
-package models.generator.ebscoservicetesting
+package models.generator.spring.service.test
 
 import lib.Constants
 

@@ -56,7 +56,7 @@ object SwaggerUiConfig {
       .addMethod(
         MethodSpec.methodBuilder("api").addModifiers(PUBLIC).returns(Docket)
           .addAnnotation(Bean)
-          .addJavadoc("Sets up the base Doclet for SpringFox Swagger-ui.")
+          .addJavadoc("Sets up the base Doclet for SpringFox Swagger-ui.\n @return The SpringFox Docket.")
           .addCode(
             CodeBlock.builder()
               .addStatement(
@@ -75,6 +75,7 @@ object SwaggerUiConfig {
       )
       .addMethod(
         MethodSpec.methodBuilder("swaggerResourcesProvider")
+          .addJavadoc("Provides a bean for directing SpringFox to use generated openapi files as opposed to trying to use reflection to guess the api.\n @return A SwaggerResourcesProvider object that refrences generated openapi files. ")
           .addModifiers(PUBLIC)
           .addAnnotation(Bean)
           .addAnnotation(Primary)

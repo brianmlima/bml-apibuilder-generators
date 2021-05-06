@@ -1,23 +1,26 @@
 package bml.util
 
 import bml.util.attribute.FieldRef
-import bml.util.java.ClassNames.JacksonTypes.JsonInclude
 import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames.SpringTypes.{SpringDataTypes, SpringValidationTypes}
-import bml.util.java.ClassNames.{HibernateTypes, JacksonTypes, JavaTypes, LombokTypes, SpringTypes}
-import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.java.ClassNames._
+import bml.util.java.{ClassNames, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonInclude}
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
-import javax.persistence.Table
 import lombok._
 import lombok.experimental.Accessors
-//import org.springframework.validation.annotation.Validated
 
+/**
+ * An object tree for static common Annotations and Annotation construction methods used in Java code
+ * generation.
+ */
 object AnotationUtil {
 
   import com.squareup.javapoet._
 
+  /**
+   * Jackson Annotations.
+   */
   object JacksonAnno {
 
     val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
@@ -30,11 +33,52 @@ object AnotationUtil {
     val JsonIncludeALLWAYS = AnnotationSpec.builder(JacksonTypes.JsonInclude)
       .addMember("value", "$L", "JsonInclude.Include.ALWAYS")
       .build()
+
+    def JsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
+      .addMember("value", "$S", name)
+      .addMember("required", "$L", required.toString)
+      .build()
+
+    val JsonIgnoreProperties_Ignore_unknown = AnnotationSpec.builder(JacksonTypes.JsonIgnoreProperties)
+      .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
+
   }
 
+  /**
+   * Spring Annotations.
+   */
   object SpringAnno {
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
+    val Autowired = AnnotationSpec.builder(SpringTypes.Autowired).build()
 
+    def GetMappingJson(path: String): AnnotationSpec = {
+      AnnotationSpec.builder(SpringTypes.GetMapping)
+        .addMember("path", "$S", path)
+        .build()
+    }
+
+    def PostMappingJson(path: String): AnnotationSpec = {
+      AnnotationSpec.builder(SpringTypes.PostMapping)
+        .addMember("path", "$S", path)
+        .build()
+    }
+
+    def PutMappingJson(path: String): AnnotationSpec = {
+      AnnotationSpec.builder(SpringTypes.PutMapping)
+        .addMember("path", "$S", path)
+        .build()
+    }
+
+    def DeleteMappingJson(path: String): AnnotationSpec = {
+      AnnotationSpec.builder(SpringTypes.DeleteMapping)
+        .addMember("path", "$S", path)
+        .build()
+    }
+
+
+    /**
+     * Spring Test Annotations.
+     */
     object SpringTestAnno {
       val runnWithSpringRunner = JunitAnno.ExtendWith(ClassNames.SpringTypes.SpringTestTypes.SpringExtension)
       val SpringBootTest = AnnotationSpec.builder(ClassNames.SpringTypes.SpringTestTypes.SpringBootTest).build()
@@ -44,19 +88,22 @@ object AnotationUtil {
 
       def Param(name: String) = AnnotationSpec.builder(SpringDataTypes.Param)
         .addMember("value", "$s", name).build()
-
-
     }
-
 
   }
 
+  /**
+   * Spring Data Annotations.
+   */
   object SpringDataAnno {
 
     def Query(query: String) = AnnotationSpec.builder(SpringDataTypes.Query).addMember("value", "$S", query).build()
 
   }
 
+  /**
+   * Junit Annotations.
+   */
   object JunitAnno {
     def ExtendWith(className: ClassName) = AnnotationSpec.builder(ClassNames.JunitTypes.ExtendWith)
       .addMember("value", "$T.class", className).build()
@@ -68,21 +115,30 @@ object AnotationUtil {
       .build()
   }
 
+  /**
+   * Lombok Annotations.
+   */
   object LombokAnno {
     val Slf4j = AnnotationSpec.builder(ClassNames.LombokTypes.Slf4j).build()
 
-    def fluentAccessor = AnnotationSpec
+    val Data = AnnotationSpec.builder(LombokTypes.Data).build()
+
+    val AllArgsConstructor = AnnotationSpec.builder(LombokTypes.AllArgsConstructor).build()
+    val NoArgsConstructor = AnnotationSpec.builder(LombokTypes.NoArgsConstructor).build()
+    val FieldNameConstants = AnnotationSpec.builder(LombokTypes.FieldNameConstants).build()
+
+    def AccessorFluent = AnnotationSpec
       .builder(classOf[Accessors])
       .addMember("fluent", CodeBlock.builder().add("true").build).build()
 
     def Getter = AnnotationSpec
       .builder(classOf[Getter])
-      .addMember("onMethod", "@__( @$T )", LombokTypes.JsonIgnore)
+      .addMember("onMethod", "@__( { @$T } )", LombokTypes.JsonIgnore)
       .build()
 
-    def Getter(className: ClassName) :AnnotationSpec = AnnotationSpec
+    def Getter(className: ClassName): AnnotationSpec = AnnotationSpec
       .builder(classOf[Getter])
-      .addMember("onMethod", "@__( @$T )", className)
+      .addMember("onMethod", "@__( { @$T } )", className)
       .build()
 
 
@@ -94,8 +150,14 @@ object AnotationUtil {
     def EqualsAndHashCode = AnnotationSpec
       .builder(classOf[EqualsAndHashCode])
       .build()
+
+    def Singular = AnnotationSpec.builder(LombokTypes.Singular).build()
+
   }
 
+  /**
+   * Javax Annotations.
+   */
   object JavaxAnnotations {
 
     object JavaxValidationAnnotations {
@@ -106,9 +168,41 @@ object AnotationUtil {
       def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
 
       val Validated = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
+
       val Valid = AnnotationSpec.builder(JavaxValidationTypes.Valid).build()
+
+      def Size(min: Int, max: Int): AnnotationSpec = {
+        AnnotationSpec.builder(JavaxValidationTypes.Size)
+          .addMember("min", "$L", new Integer(min))
+          .addMember("max", "$L", new Integer(max))
+          .build()
+      }
+
+      def Size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
+        val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
+        if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
+        if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
+        spec.build()
+      }
+
+      def Size(attribute: Attribute): AnnotationSpec = {
+        JavaxValidationAnnotations.Size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
+      }
+
+      def Pattern(regexp: String): AnnotationSpec = {
+        AnnotationSpec.builder(JavaxValidationTypes.Pattern)
+          .addMember("regexp", "$S", regexp)
+          .build()
+      }
+
+      def Pattern(attribute: Attribute): AnnotationSpec = {
+        Pattern((attribute.value \ "regexp").as[String])
+      }
     }
 
+    /**
+     * Javax Persistence Annotations.
+     */
     object JavaxPersistanceAnnotations {
       def JoinColumn(field: Field) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
         .addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
@@ -117,26 +211,17 @@ object AnotationUtil {
       def JoinColumn(service: Service, field: Field) = {
         val isModel = JavaPojoUtil.isModelType(service, field)
         val isList = JavaPojoUtil.isListOfModeslType(service, field)
-
         val spec = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
-
         if (isModel) {
           spec.addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
         }
-
         if (isList) {
-
           val fieldRef = FieldRef.fromField(field)
-
-          //spec.addMember("name", "$S", Text.camelToSnakeCase(field.`type`.replaceAll("[\\[\\]]", "")))
-
-
           spec.addMember("name", "$S", Text.camelToSnakeCase(if (fieldRef.isDefined) fieldRef.get.field else ""))
         }
         spec.build()
       }
 
-      //@JoinColumn(name="store", referencedColumnName= "store_id")
 
       val ManyToOne = AnnotationSpec.builder(JavaxPersistanceTypes.ManyToOne).build()
 
@@ -147,8 +232,6 @@ object AnotationUtil {
         .build()
 
       val Id = AnnotationSpec.builder(JavaxPersistanceTypes.Id).build()
-
-      //@GeneratedValue(strategy = GenerationType.IDENTITY)
 
       def GeneratedValue(strategy: CodeBlock) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
         .addMember("strategy", strategy).build()
@@ -164,24 +247,20 @@ object AnotationUtil {
         val isUUID = (field.`type` == "uuid")
         val isString = (field.`type` == "string")
 
-
         val spec = AnnotationSpec.builder(JavaxPersistanceTypes.Column)
           .addMember("name", "$S", JPA.toColumnName(field))
           .addMember("nullable", "$L", (!field.required).toString)
           .addMember("unique", "$L", (isId || field.annotations.find(_ == "unique").isDefined).toString)
 
         if (isString && field.maximum.isDefined) {
-          spec.addMember("length", "$L", field.maximum.get.toString)
+          spec.addMember("length", "$L", JavaPojos.toMaxFieldStaticFieldName(field))
         }
 
         if (isUUID && isId) {
           spec.addMember("updatable", "$L", false.toString)
             .addMember("insertable", "$L", true.toString)
         }
-
-
         spec.build()
-
       }
 
       def Table(model: Model): AnnotationSpec = {
@@ -200,6 +279,9 @@ object AnotationUtil {
 
   }
 
+  /**
+   * Hibernate Annotations.
+   */
   object HibernateAnnotations {
     val GeneratedInserted = AnnotationSpec.builder(HibernateTypes.Generated)
       .addMember("value", "$T.INSERT", HibernateTypes.GenerationTime)
@@ -209,100 +291,6 @@ object AnotationUtil {
       .addMember("name", "$S", name)
       .addMember("strategy", "$S", strategy)
       .build()
-
-
   }
-
-
-  def fluentAccessor = AnnotationSpec
-    .builder(classOf[Accessors])
-    .addMember("fluent", CodeBlock.builder().add("true").build).build()
-
-  def `override` = JavaTypes.Override
-
-  def autowired = SpringTypes.Autowired
-
-  def jsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
-    .addMember("value", "$S", name)
-    .addMember("required", "$L", required.toString)
-    .build()
-
-  def getMappingJson(path: String): AnnotationSpec = {
-    AnnotationSpec.builder(SpringTypes.GetMapping)
-      .addMember("path", "$S", path)
-      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
-      .build()
-  }
-
-  def postMappingJson(path: String): AnnotationSpec = {
-    AnnotationSpec.builder(SpringTypes.PostMapping)
-      .addMember("path", "$S", path)
-      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
-      .build()
-  }
-
-  def putMappingJson(path: String): AnnotationSpec = {
-    AnnotationSpec.builder(SpringTypes.PutMapping)
-      .addMember("path", "$S", path)
-      //.addMember("produces", "$T.$L", ClassNames.mediaType, "APPLICATION_JSON_VALUE")
-      .build()
-  }
-
-
-  def size(min: Int, max: Int): AnnotationSpec = {
-    AnnotationSpec.builder(JavaxValidationTypes.Size)
-      .addMember("min", "$L", new Integer(min))
-      .addMember("max", "$L", new Integer(max))
-      .build()
-  }
-
-  def size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
-    val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
-    if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
-    if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
-    spec.build()
-  }
-
-  def size(attribute: Attribute): AnnotationSpec = {
-    size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
-  }
-
-  def pattern(regexp: String): AnnotationSpec = {
-    AnnotationSpec.builder(JavaxValidationTypes.Pattern)
-      .addMember("regexp", "$S", regexp)
-      .build()
-  }
-
-  def pattern(attribute: Attribute): AnnotationSpec = {
-    pattern((attribute.value \ "regexp").as[String])
-  }
-
-  def table(tableName: String): AnnotationSpec = {
-    AnnotationSpec.builder(classOf[Table])
-      .addMember("name", "$S", tableName)
-      .build()
-  }
-
-  def validated(): AnnotationSpec = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
-
-  def equalsAndHashCode(onlyExplicitlyIncluded: Boolean): AnnotationSpec = {
-    AnnotationSpec.builder(classOf[EqualsAndHashCode]).addMember("onlyExplicitlyIncluded", "$L", onlyExplicitlyIncluded.toString).build()
-  }
-
-
-  def addDataClassAnnotations(builder: TypeSpec.Builder) {
-    builder.addAnnotation(AnnotationSpec.builder(classOf[Accessors])
-      .addMember("fluent", CodeBlock.builder().add("true").build).build())
-      .addAnnotation(classOf[Builder])
-      .addAnnotation(classOf[AllArgsConstructor])
-      .addAnnotation(classOf[NoArgsConstructor])
-      .addAnnotation(
-        AnnotationSpec.builder(classOf[JsonIgnoreProperties])
-          .addMember("ignoreUnknown", CodeBlock.builder().add("true").build).build()
-      )
-  }
-
-  def singular = AnnotationSpec.builder(classOf[Singular]).build()
-
 
 }

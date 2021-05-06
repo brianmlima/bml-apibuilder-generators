@@ -1,5 +1,6 @@
 package bml.util.java.testing
 
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
 import bml.util.java.{ClassNames, JavaPojoTestFixtures}
@@ -20,7 +21,7 @@ object MockEnums {
         val targetClassBuilderName = toBuilderClassName(targetClassName)
         val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
           .addAnnotation(LombokTypes.Builder)
-          .addAnnotation(AnotationUtil.fluentAccessor)
+          .addAnnotation(LombokAnno.AccessorFluent)
           .addSuperinterface(JavaTypes.supplier(targetClassName))
         (className, typeBuilder)
       }

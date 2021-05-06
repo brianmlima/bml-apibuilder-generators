@@ -1,6 +1,5 @@
 package bml.util.java
 
-import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.java.ClassNames.HValidatorTypes
 import bml.util.{GeneratorFSUtil, JavaNameSpace, NameSpaces}
 import com.squareup.javapoet._
@@ -68,6 +67,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
 
   def toClassName(modelName: String): String = {
+//    println(s"toClassName('${modelName}')")
     // We don't support upper case class names so if a word is upper case then make it lower case
     def checkForUpperCase(word: String): String =
       if (word == word.toUpperCase) word.toLowerCase
@@ -84,10 +84,6 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
       }.mkString)
     }
   }
-
-
-
-
 
 
   def toStaticFieldName(fieldName: String): String = {
@@ -143,6 +139,14 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
   def isParameterArray(field: Field): Boolean = {
     isParameterArray(field.`type`)
+  }
+
+  /**
+   * Gets the subtype of an array as a ClassName.
+   */
+  def getListType(`type`: String, nameSpace: JavaNameSpace): ClassName = {
+    val listSubType = getArrayType(`type`);
+    JavaPojoUtil.toClassName(nameSpace, listSubType)
   }
 
   def getArrayType(modelName: String): String = {

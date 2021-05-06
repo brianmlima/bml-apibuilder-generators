@@ -1,12 +1,9 @@
 package bml.util.spring
 
-import java.util.Locale
-
-import akka.http.scaladsl.model.headers.CacheDirectives.public
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
-import bml.util.java.{ClassNames, JavaEnums, JavaPojoUtil}
+import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.{GeneratorFSUtil, NameSpaces}
-import com.squareup.javapoet.{ClassName, CodeBlock, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeSpec}
+import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Enum, Service}
 import javax.lang.model.element.Modifier
@@ -37,10 +34,17 @@ object StringToEnumConverters {
   }
 
   def makeConvertersConfigClass(nameSpaces: NameSpaces, enums: Seq[Enum]): Seq[File] = {
+    if (enums.isEmpty) {
+      return Seq[File]()
+    }
+
+
     val className = ClassName.get(nameSpaces.converter.nameSpace, "ConfigureConverters");
     val builder = TypeSpec.classBuilder(className)
       .addAnnotation(SpringTypes.Configuration)
       .addSuperinterface(ClassNames.webMvcConfigurer)
+
+
       .addMethod(
         MethodSpec.methodBuilder("addFormatters")
           .addModifiers(Modifier.PUBLIC)

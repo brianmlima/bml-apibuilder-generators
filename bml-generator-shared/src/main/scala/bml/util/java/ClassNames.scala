@@ -5,17 +5,14 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
-import akka.http.javadsl.model.RequestEntity
 import bml.util.JavaNameSpace
-import bml.util.java.ClassNames.JacksonTypes.JsonInclude
-import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes.ConstraintViolation
 import bml.util.java.poet.StaticImportMethod
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonInclude, JsonValue}
 import com.squareup.javapoet._
 import lombok.Builder.Default
+import lombok._
 import lombok.experimental.{FieldNameConstants, UtilityClass}
 import lombok.extern.slf4j.Slf4j
-import lombok.{AllArgsConstructor, Builder, Data, EqualsAndHashCode, Getter, NoArgsConstructor}
 
 
 object ClassNames {
@@ -52,6 +49,9 @@ object ClassNames {
   object JavaTypes {
     val Override = ClassName.get("", "Override")
     val String = ClassName.get("", "String")
+    val SuppressWarnings = ClassName.get("", "SuppressWarnings")
+
+
     val Collections = ClassName.bestGuess("java.util.Collections")
 
     val StandardCharsets = ClassName.bestGuess("java.nio.charset.StandardCharsets")
@@ -257,10 +257,17 @@ object ClassNames {
     val SpringBootTest = ClassName.get("org.springframework.boot.test.context", "SpringBootTest")
     val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
     val GetMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.GetMapping")
+
+    val DeleteMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.DeleteMapping")
+
+
     val PostMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
     val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
     val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
     val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+
+    val I_AM_A_TEAPOT = StaticImportMethod.apply(HttpStatus, "I_AM_A_TEAPOT")
+
     val HttpMethod = ClassName.bestGuess("org.springframework.http.HttpMethod")
 
     val MethodArgumentNotValidException = ClassName.bestGuess("org.springframework.web.bind.MethodArgumentNotValidException")
@@ -306,6 +313,17 @@ object ClassNames {
       val SpringJUnitConfig = ClassName.get("org.springframework.test.context.junit.jupiter", "SpringJUnitConfig")
     }
 
+    object MockitoTypes {
+      val Mockito = ClassName.get("org.mockito", "Mockito")
+      val spy = StaticImportMethod.apply(Mockito, "spy")
+      val mock = StaticImportMethod.apply(Mockito, "mock")
+      val when = StaticImportMethod.apply(Mockito, "when")
+      val ArgumentMatchers = ClassName.get("org.mockito", "ArgumentMatchers")
+      val any = StaticImportMethod.apply(ArgumentMatchers, "any")
+      val anyString = StaticImportMethod.apply(ArgumentMatchers, "anyString")
+    }
+
+
     object SpringDataTypes {
 
       val Repository = ClassName.get("org.springframework.stereotype", "Repository")
@@ -342,11 +360,11 @@ object ClassNames {
 
   //####################################################################################################################
   // BEGIN Lombok ######################################################################################################
-  val fieldNameConstants = ClassName.get(classOf[FieldNameConstants])
+  val FieldNameConstants = ClassName.get(classOf[FieldNameConstants])
   val slf4j = ClassName.get(classOf[Slf4j])
   val builder = ClassName.get(classOf[Builder])
-  val allArgsConstructor = ClassName.get(classOf[AllArgsConstructor])
-  val noArgsConstructor = ClassName.get(classOf[NoArgsConstructor])
+  val AllArgsConstructor = ClassName.get(classOf[AllArgsConstructor])
+  val NoArgsConstructor = ClassName.get(classOf[NoArgsConstructor])
   val utilityClass = ClassName.get(classOf[UtilityClass])
   val getter = ClassName.get(classOf[Getter])
   val builderDefault = ClassName.get(classOf[Default])
@@ -362,7 +380,8 @@ object ClassNames {
     val BuilderDefault = ClassName.get(classOf[Default])
     val JsonIgnore = ClassName.get(classOf[JsonIgnore])
     val JsonValue = ClassName.get(classOf[JsonValue])
-
+    val Singular = ClassName.get(classOf[Singular])
+    val Generated = ClassName.get(classOf[Generated])
 
     val EqualsAndHashCode = ClassName.get(classOf[EqualsAndHashCode])
     val Data = ClassName.get(classOf[Data])
@@ -384,6 +403,8 @@ object ClassNames {
     val Test = ClassName.get("org.junit.jupiter.api", "Test")
     val ExtendWith = ClassName.get("org.junit.jupiter.api.extension", "ExtendWith")
     val DisplayName: ClassName = ClassName.get("org.junit.jupiter.api", "DisplayName")
+    val Assertions = ClassName.get("org.junit.jupiter.api", "Assertions")
+    val assertThrows = StaticImportMethod(Assertions, "assertThrows")
   }
 
 
@@ -520,6 +541,7 @@ object ClassNames {
     val YAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLFactory")
     val YAMLGenerator = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLGenerator")
 
+    val JsonIgnoreProperties = ClassName.get("com.fasterxml.jackson.annotation", "JsonIgnoreProperties")
 
     val DeserializationFeature = ClassName.get("com.fasterxml.jackson.databind", "DeserializationFeature")
     val SerializationFeature = ClassName.get("com.fasterxml.jackson.databind", "SerializationFeature")

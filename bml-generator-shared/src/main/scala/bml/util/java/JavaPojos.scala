@@ -1,14 +1,10 @@
 package bml.util.java
 
 
-import akka.http.scaladsl
-import akka.http.scaladsl.model
-import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.AnotationUtil.HibernateAnnotations
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.attribute
-import bml.util.attribute.StringValueLength
-import bml.util.java.ClassNames.{HValidatorTypes, JavaTypes}
+import bml.util.java.ClassNames.JavaTypes
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.JavaPojoUtil.toStaticFieldName
 import com.squareup.javapoet.TypeName.BOOLEAN
@@ -46,6 +42,7 @@ object JavaPojos {
   def makeRequiredFieldsField(model: Model): FieldSpec = {
     val fieldNames: Seq[String] = model.fields.filter(_.required).map(_.name)
     val fieldSpec = FieldSpec.builder(JavaTypes.List(JavaTypes.String), requiredFieldsFieldName, PUBLIC, STATIC, FINAL)
+      .addJavadoc("$L is a generated field of fields that should never be null. This is handy for use in reflection based error logging and validation.", requiredFieldsFieldName)
     if (fieldNames.isEmpty) {
       fieldSpec.initializer("$T.emptyList()", JavaTypes.Collections)
     } else {
@@ -125,11 +122,11 @@ object JavaPojos {
               .initializer("$L",
                 field.minimum.getOrElse("0").toString
               )
-              .addJavadoc("Added By getListSizeStaticFields")
+              .addJavadoc("Generated, provides a static refrence to the minimum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
               .build(),
             FieldSpec.builder(TypeName.INT, toMaxListSizeStaticFieldName(field), PUBLIC, STATIC, FINAL)
               .initializer("$L", field.maximum.getOrElse(Integer.MAX_VALUE).toString)
-              .addJavadoc("Added By getListSizeStaticFields")
+              .addJavadoc("Generated, provides a static refrence to the maximum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
               .build()
           )
         }
@@ -155,11 +152,11 @@ object JavaPojos {
               .initializer("$L",
                 field.minimum.getOrElse(if (field.required) "1" else "0").toString
               )
-              .addJavadoc("Added By getSizeStaticFields")
+              .addJavadoc("Generated, provides a static refrence to the minimum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
               .build(),
             FieldSpec.builder(TypeName.INT, toMaxFieldStaticFieldName(field), PUBLIC, STATIC, FINAL)
               .initializer("$L", field.maximum.getOrElse(2048).toString)
-              .addJavadoc("Added By getSizeStaticFields")
+              .addJavadoc("Generated, provides a static refrence to the maximum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
               .build()
           )
         }
@@ -219,9 +216,6 @@ object JavaPojos {
       LOG.info(s"Found id field in class=${className.toString}")
       out = out ++ Seq(JavaxPersistanceAnnotations.Id)
     }
-    //    if (isUUID) {
-    //      out = out ++ Seq(JavaxPersistanceAnnotations.GeneratedValue(CodeBlock.of("$T.IDENTITY", JavaxPersistanceTypes.GenerationType)))
-    //    }
     if (isModel) {
       out = out ++ Seq(JavaxPersistanceAnnotations.ManyToOne, JavaxPersistanceAnnotations.JoinColumn(service, field))
     } else if (JavaPojoUtil.isListOfModeslType(service, field)) {
@@ -229,17 +223,13 @@ object JavaPojos {
     } else {
       out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
     }
-
     if (isId && isUUID) {
       out = out ++ Seq(
         JavaxPersistanceAnnotations.GeneratedValue("UUID"),
         HibernateAnnotations.GenericGenerator("UUID", "org.hibernate.id.UUIDGenerator")
       )
     }
-
     out
-
   }
-
 
 }

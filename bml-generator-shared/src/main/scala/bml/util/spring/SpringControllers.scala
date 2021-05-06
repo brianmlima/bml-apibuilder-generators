@@ -1,12 +1,13 @@
 package bml.util.spring
 
-import akka.http.scaladsl.settings.PoolImplementation.New
+import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
+import bml.util.AnotationUtil.SpringAnno
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
-import bml.util.java.{ClassNames, JavaDataType, JavaDataTypes, JavaPojoUtil}
-import bml.util.{AnotationUtil, GeneratorFSUtil, NameSpaces}
+import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.{GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Method.{Get, Post, Put}
+import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
 import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import lib.Text
@@ -16,16 +17,26 @@ class SpringControllers {
 
 }
 
+/**
+ * Generates a Spring Controller for every resource in a service.
+ */
+
 object SpringControllers {
 
   import com.squareup.javapoet._
   import io.apibuilder.spec.v0.models.ParameterLocation._
   import javax.lang.model.element.Modifier._
+
   import collection.JavaConverters._
 
   def toControllerName(resource: Resource): String = {
     JavaPojoUtil.toClassName(resource.`type` + "Controller")
   }
+
+  def toControllerName(nameSpaces: NameSpaces, resource: Resource): ClassName = {
+    ClassName.get(nameSpaces.controller.nameSpace, toControllerName(resource))
+  }
+
 
   def toControllerParamName(parameter: Parameter): String = {
     JavaPojoUtil.toParamName((parameter.name + "_In"), true)
@@ -40,38 +51,94 @@ object SpringControllers {
     JavaPojoUtil.toMethodName(toOperationClientClassName(operation))
   }
 
-  def toOperationClientClassName(operation: Operation): String = {
+
+
+//  def toOperationClientClassName(resource: Resource, operation: Operation): String = {
+//    val method = operation.method.toString.toLowerCase
+//    val resourcePath = resource.path.getOrElse(resource.plural)
+//  }
+
+
+  def toOperationClientClassName( operation: Operation): String = {
     val method = operation.method.toString.toLowerCase()
-    val paramterAnds = (
-      operation.path.split("/").filter(_.contains(":"))
-        .map(v => JavaPojoUtil.toClassName(v.drop(1))) ++
-        operation.parameters.filter(_.location != ParameterLocation.Path)
-          .map(v => JavaPojoUtil.toClassName(v.name))
-      ).mkString("And")
+
+    //resource: Resource,
+
+    //    val paramterAnds = operation.path.split("/").map(
+    //      pathElement =>
+    //        if(pathElement.contains(":")){
+    //          s"By${JavaPojoUtil.toClassName(pathElement.drop(1))}"
+    //        }else{
+    //          s"By${JavaPojoUtil.toClassName(pathElement.drop(1))}"
+    //          JavaPojoUtil.toClassName(pathElement.drop(1))
+    //        }
+    //    )
+
+//    val paramterAnds = (
+//      operation.path.split("/").filter(_.contains(":")).filter(_.isEmpty)
+//        .map(v => "By" + JavaPojoUtil.toClassName(v.drop(1))) ++
+//        operation.path.split("/").filter(!_.contains(":")).filter(_.isEmpty)
+//          .map(v => "With" + JavaPojoUtil.toClassName(v))
+//      ).mkString("")
+
+//    println(operation.path);
+//
+//    val paramterAnds = operation.path.split("/").filter(_.isEmpty).map(
+//      v => {
+//        println("Pathe Element = "+v.toString);
+//        if(v.contains(":")){
+//          println("By".concat(JavaPojoUtil.toClassName(v.drop(1))))
+//          "By" + JavaPojoUtil.toClassName(v.drop(1))
+//        }else{
+//          println("With".concat(JavaPojoUtil.toClassName(v)))
+//          "With" + JavaPojoUtil.toClassName(v)
+//        }
+//      }
+//    ).mkString
+
+
+
+
+        val paramterAnds = (
+          operation.path.split("/").filter(_.contains(":"))
+            .map(v => JavaPojoUtil.toClassName(v.drop(1)))
+//            ++
+//            operation.parameters.filter(_.location != ParameterLocation.Path)
+//              .map(v => JavaPojoUtil.toClassName(v.name))
+          ).mkString("And")
     var name =
-      if (operation.method == Get) {
-        val ok = operation.responses.find(_.code.productElement(0) == 200)
-        if (ok.isDefined) {
-          JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
-            (
-              if (JavaPojoUtil.isParameterArray(ok.get.`type`)) {
-                "s"
-              } else {
-                ""
-              }
-              )
-        } else {
-          "OkNotDefined"
-        }
-      } else if (operation.method == Post || operation.method == Put) {
-        if (operation.body.isDefined) {
-          JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
-        } else {
-          "BodyNotDefined"
-        }
+    if (operation.method == Get) {
+      val ok = operation.responses.find(_.code.productElement(0) == 200)
+      if (ok.isDefined) {
+        JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
+          (
+            if (JavaPojoUtil.isParameterArray(ok.get.`type`)) {
+              "s"
+            } else {
+              ""
+            }
+            )
       } else {
-        "NotHandled"
+        "OkNotDefined"
       }
+    } else if (operation.method == Post || operation.method == Put) {
+      if (operation.body.isDefined) {
+        JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
+      } else {
+        "BodyNotDefined"
+      }
+    } else if (operation.method == Delete) {
+      if (operation.body.isDefined) {
+        JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
+      } else {
+        ""
+      }
+    }
+
+
+    else {
+      "NotHandled"
+    }
 
     JavaPojoUtil.toMethodName(method + name +
       (
@@ -103,10 +170,12 @@ object SpringControllers {
         .initializer("$S",
           String.format("v%s", service.version.split("\\.")(0))
         )
+        .addJavadoc("The version of the api specification that was used to generate this controller. This can directly be mapped back to the specification org=$S app=$S version=$S.", service.organization.key, service.name, service.version)
         .build(),
 
       FieldSpec.builder(JavaTypes.String, "RESOURCE_PATH", PUBLIC, STATIC, FINAL)
         .initializer("$S", s"/v${service.version.split("\\.")(0)}${resource.path.get}")
+        .addJavadoc("The base path of the $S resource this controller is responsible for. org=$S app=$S version=$S.", resource.`type`, service.organization.key, service.name, service.version)
         .build(),
     )
   }
@@ -118,6 +187,7 @@ object SpringControllers {
     val serviceFieldName = Text.initLowerCase(SpringServices.toServiceName(resource))
 
     val builder = TypeSpec.classBuilder(name)
+      .addJavadoc("Holds all the operations for the {@link $L} resource. org=$S app=$S version=$S. ", JavaPojoUtil.toClassName(nameSpaces.model, resource.`type`), service.organization.key, service.name, service.version)
       .addModifiers(PUBLIC)
       .addAnnotation(SpringTypes.Controller)
       .addAnnotation(ClassNames.slf4j)
@@ -125,6 +195,7 @@ object SpringControllers {
       .addField(
         FieldSpec.builder(serviceClassName, serviceFieldName, PRIVATE)
           //.addAnnotation(AnotationUtil.autowired)
+          .addJavadoc("The injected service that provides all buisness logic functionality for this controller.")
           .build()
       )
       .addMethod(
@@ -132,7 +203,7 @@ object SpringControllers {
           .addModifiers(PUBLIC)
           .addParameter(
             ParameterSpec.builder(serviceClassName, serviceFieldName, FINAL)
-              .addAnnotation(AnotationUtil.autowired)
+              .addAnnotation(SpringAnno.Autowired)
               .build()
           )
           .addStatement("this.$L = $L", serviceFieldName, serviceFieldName)
@@ -167,6 +238,11 @@ object SpringControllers {
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
       .returns(SpringTypes.ResponseEntity)
+      .addAnnotation(
+        AnnotationSpec.builder(JavaTypes.SuppressWarnings)
+          .addMember("value", "$S", "checkstyle:MagicNumber")
+          .build()
+      )
 
     val version = nameSpaces.base.nameSpace.split("\\.").last
     val path = operation.path
@@ -195,10 +271,30 @@ object SpringControllers {
     }
 
 
-    //    def buildController
+
+
+    //Add The right Spring controller annotation
+
+    val pathValue = toSpringPath(s"/$version$path")
+    //    var annotation: AnnotationSpec ;
+
+    operation.method match {
+      case Get =>
+        methodSpec
+          .addAnnotation(SpringAnno.GetMappingJson(pathValue))
+      case Put =>
+        methodSpec
+          .addAnnotation(SpringAnno.PutMappingJson(pathValue))
+      case Post =>
+        methodSpec
+          .addAnnotation(SpringAnno.PostMappingJson(pathValue))
+      case Delete =>
+        methodSpec
+          .addAnnotation(SpringAnno.DeleteMappingJson(pathValue))
+    }
+
 
     val bodyTypes = operation.body.map(_.`type`)
-
     operation.parameters
       .filter(
         param =>
@@ -206,41 +302,57 @@ object SpringControllers {
       )
       .map(SpringControllers.operationParamToControllerParam(service, nameSpaces, _)).foreach(methodSpec.addParameter)
 
-    operation.method match {
-      case Get =>
-        methodSpec
-          .addAnnotation(AnotationUtil.getMappingJson(toSpringPath(s"/$version$path")))
-      case Post =>
-        methodSpec.addAnnotation(AnotationUtil.postMappingJson(toSpringPath(s"/$version$path")))
-        // add the response body to the controller method params
-        if (operation.body.isDefined) {
-          val body = operation.body.get
-          val bodyDataType = JavaPojoUtil.dataTypeFromField(service,body.`type`,nameSpaces.model)
-          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
-          val paramName = toControllerParamName(bodyClassName.simpleName())
-          methodSpec
-            .addParameter(
-              ParameterSpec.builder(bodyDataType, paramName, Modifier.FINAL)
-                .addAnnotation(
-                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
-                ).build()
+    //Handle Body params if present.
+
+    if (operation.body.isDefined) {
+
+      val body = operation.body.get
+      val bodyDataType = JavaPojoUtil.dataTypeFromField(service, body.`type`, nameSpaces.model)
+      val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+      val paramName = toControllerParamName(bodyClassName.simpleName())
+      methodSpec
+        .addParameter(
+          ParameterSpec.builder(bodyDataType, paramName, Modifier.FINAL)
+            .addAnnotation(
+              AnnotationSpec.builder(SpringTypes.RequestBody).build()
             )
-        }
-      case Put =>
-        methodSpec.addAnnotation(AnotationUtil.putMappingJson(toSpringPath(s"/$version$path")))
-        // add the response body to the controller method params
-        if (operation.body.isDefined) {
-          val body = operation.body.get
-          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
-          val paramName = toControllerParamName(bodyClassName.simpleName())
-          methodSpec
-            .addParameter(
-              ParameterSpec.builder(bodyClassName, paramName, Modifier.FINAL)
-                .addAnnotation(
-                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
-                ).build()
+            .addAnnotation(
+              JavaxValidationTypes.Valid
             )
-        }
+            .build()
+        )
+
+      //      operation.method match {
+      //        case Get =>
+      //        case Post =>
+      //          val body = operation.body.get
+      //          val bodyDataType = JavaPojoUtil.dataTypeFromField(service, body.`type`, nameSpaces.model)
+      //          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+      //          val paramName = toControllerParamName(bodyClassName.simpleName())
+      //          methodSpec
+      //            .addParameter(
+      //              ParameterSpec.builder(bodyDataType, paramName, Modifier.FINAL)
+      //                .addAnnotation(
+      //                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
+      //                )
+      //                .addAnnotation(
+      //                  JavaxValidationTypes.Valid
+      //                )
+      //                .build()
+      //            )
+      //        case Put =>
+      //          // add the response body to the controller method params
+      //          val body = operation.body.get
+      //          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
+      //          val paramName = toControllerParamName(bodyClassName.simpleName())
+      //          methodSpec
+      //            .addParameter(
+      //              ParameterSpec.builder(bodyClassName, paramName, Modifier.FINAL)
+      //                .addAnnotation(
+      //                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
+      //                ).build()
+      //            )
+      //      }
     }
 
     val exceptionClassName = ApiImplementationException.getClassName(nameSpaces);
@@ -281,28 +393,17 @@ object SpringControllers {
         methodName
       )
 
-    operation.method match {
-      case Get =>
-        codeBlock.add(operation.parameters.map(toControllerParamName).mkString(",\n"))
-          .add(");").build()
-      case Post =>
-        val body = operation.body
-        var params = operation.parameters.map(toControllerParamName)
-        if (body.isDefined) {
-          params = params ++ Seq(toControllerParamName(body.get.`type`))
-        }
-        codeBlock.add(params.mkString(","))
-        codeBlock.add(");")
-      case Put =>
-        val body = operation.body
-        var params = operation.parameters.map(toControllerParamName)
-        if (body.isDefined) {
-          params = params ++ Seq(toControllerParamName(body.get.`type`))
-        }
-        codeBlock.add(params.mkString(","))
-        codeBlock.add(");")
-
+    //Build params sequence with body param if it is defined
+    var params = operation.parameters.map(toControllerParamName)
+    if (operation.body.isDefined) {
+      params = params ++ Seq(toControllerParamName(operation.body.get.`type`))
     }
+    //Finish the call with params if they exist.
+    if (!params.isEmpty) {
+      codeBlock.add(params.mkString(",\n"))
+    }
+    codeBlock.add(");").build()
+
     methodSpec.addCode(codeBlock.build())
     methodSpec.addCode(
       CodeBlock.join(operation.responses.map(buildControllerRespondCodeBlock(_, nameSpaces)).asJava, "\n")
@@ -339,6 +440,9 @@ object SpringControllers {
     //val javaDataType = JavaPojoUtil.dataTypeFromField(parameter.`type`, nameSpaces.model.nameSpace)
     val builder = ParameterSpec.builder(paramInType, paramName, FINAL)
 
+
+    val isModel = JavaPojoUtil.isModelNameWithPackage(parameter.`type`) || JavaPojoUtil.isModelType(service, parameter.`type`)
+
     val paramAnnotation = getParamAnnotation(parameter.location)
     if (paramAnnotation.isDefined) {
       //Build anno
@@ -362,8 +466,12 @@ object SpringControllers {
 
 
     if (parameter.minimum.isDefined || parameter.maximum.isDefined) {
-      builder.addAnnotation(AnotationUtil.size(parameter.minimum, parameter.maximum))
+      builder.addAnnotation(JavaxValidationAnnotations.Size(parameter.minimum, parameter.maximum))
     }
+    //if (isModel) {
+    //      builder.addAnnotation(JavaxValidationTypes.Valid)
+    //}
+
 
     builder.build()
   }

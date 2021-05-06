@@ -17,12 +17,16 @@ import io.apibuilder.spec.v0.models.{Operation, ParameterLocation, Resource, Res
 import javax.lang.model.element.Modifier
 import javax.validation.constraints.NotNull
 import lombok.Getter
+import org.slf4j.LoggerFactory
 
 object JavaClients {
 
   import javax.lang.model.element.Modifier._
   import collection.JavaConverters._
   import bml.util.GeneratorFSUtil.makeFile
+
+
+  val log = LoggerFactory.getLogger(this.getClass)
 
 
   def toClientClassName(service: Service, nameSpaces: NameSpaces): ClassName = {
@@ -46,7 +50,7 @@ object JavaClients {
     val configType = TypeSpec.classBuilder(configClassName)
       .addModifiers(PUBLIC, STATIC)
       .addAnnotation(LombokTypes.Builder)
-      .addAnnotation(LombokAnno.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       .addFields(
         Seq(
           FieldSpec.builder(SpringTypes.WebClient, webClientFieldName, PRIVATE, FINAL)
@@ -68,7 +72,7 @@ object JavaClients {
     val responseModelType = TypeSpec.classBuilder("ResponseModel").addTypeVariable(TypeVariableName.get("T"))
       .addModifiers(PUBLIC, STATIC)
       .addAnnotation(LombokTypes.Builder)
-      .addAnnotation(LombokAnno.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       .addField(
         FieldSpec.builder(SpringTypes.HttpStatus, "httpStatus", PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])
@@ -100,7 +104,7 @@ object JavaClients {
       .addModifiers(PUBLIC)
       .addAnnotations(
         Seq(
-          LombokAnno.fluentAccessor,
+          LombokAnno.AccessorFluent,
           LombokAnno.Slf4j
         ).asJava
       )
@@ -147,7 +151,7 @@ object JavaClients {
             TypeSpec.classBuilder(JavaPojoUtil.toClassName(resource.`type`) + "Client")
               .addAnnotations(
                 Seq(
-                  LombokAnno.fluentAccessor,
+                  LombokAnno.AccessorFluent,
                   LombokAnno.Slf4j
                 ).asJava
               )
@@ -312,7 +316,7 @@ object JavaClients {
           "BodyNotDefined"
         }
       } else {
-        "NotHandled"
+        ""
       }
 
     JavaPojoUtil.toMethodName(method + name +
@@ -454,6 +458,7 @@ object JavaClients {
         ParameterSpec.builder(paramType, paramName, FINAL).build()
       }
     )
+
     //Handle query params when we have some to test with
     //    ++ operation.parameters
     //      .filter(_.location == ParameterLocation.Query)
@@ -478,6 +483,24 @@ object JavaClients {
       webClientBlock.add(".contentType($T.APPLICATION_JSON)", SpringTypes.MediaType)
         .add(".body($T.fromValue($L))", SpringTypes.BodyInserters, JavaPojoUtil.toParamName(operation.body.get.`type`, true))
     }
+
+
+    operation.parameters.foreach(
+      p =>
+        log.info("Service {} Operation {} Parameter {} Location {}", service.name, operation.path, p.name, p.location)
+
+    )
+
+    val headers = operation.parameters.filter(p => p.location.equals(ParameterLocation.Header))
+
+    headers.foreach(
+      p => {
+
+        webClientBlock.add(".header($S,$L)", p.name, JavaPojoUtil.toParamName(p.name, true))
+      }
+    )
+
+
     webClientBlock
       .addStatement(".exchange()")
       .add("return exchange.flatMap(")
@@ -570,7 +593,7 @@ object JavaClients {
 
     val spec = TypeSpec.classBuilder(className)
       .addModifiers(PUBLIC, STATIC)
-      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.fluentAccessor).asJava)
+      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.AccessorFluent).asJava)
     spec.addFields(
       operation.responses.map(doResponse(_)).asJava
     )

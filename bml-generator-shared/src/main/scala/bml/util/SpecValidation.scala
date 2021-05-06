@@ -1,7 +1,10 @@
 package bml.util
 
+import akka.http.scaladsl
+import akka.http.scaladsl.model
 import bml.util.attribute.{FieldRef, Hibernate}
 import bml.util.java.JavaPojoUtil
+import bml.util.spring.SpringServices
 import io.apibuilder.spec.v0.models.{Method, Operation, ResponseCodeInt, Service}
 import lombok.extern.slf4j.Slf4j
 import org.slf4j.LoggerFactory
@@ -14,17 +17,18 @@ object SpecValidation {
   def validate(service: Service, header: Option[String]): Option[Seq[String]] = {
     val errors =
       Seq(
-//                checkAllPathVarOperationsHave404(service),
-//                checkAllFieldsWithMinRequirementHaveAMax(service),
-//                checkAllModelsHaveADescription(service),
-//                checkAllStringFieldsHaveMinMax(service),
-//                checkAllModelsDontHaveUnderscores(service),
-//                checkAllModelFieldsDontHaveUnderscores(service),
-//                checkAllEnumsDontHaveUnderscores(service),
-//                checkAllStringArraysHaveAStringValueLengthAttribute(service),
-//                checkAllArraysHaveMaximum(service),
+        checkAllPathVarOperationsHave404(service),
+        checkAllFieldsWithMinRequirementHaveAMax(service),
+        checkAllModelsHaveADescription(service),
+        checkAllStringFieldsHaveMinMax(service),
+        checkAllModelsDontHaveUnderscores(service),
+        checkAllModelFieldsDontHaveUnderscores(service),
+        //                checkAllEnumsDontHaveUnderscores(service),
+        checkAllStringArraysHaveAStringValueLengthAttribute(service),
+        checkAllArraysHaveMaximum(service),
         checkAllHibernateModelsHaveFieldRefWhereNecessary(service),
-        checkAllPostOperationsHaveBody(service)
+        checkAllPostOperationsHaveBody(service),
+        checkAllReponsesHaveADescription(service)
       ).flatten
     if (errors.isEmpty) {
       None
@@ -114,12 +118,34 @@ object SpecValidation {
   }
 
 
+  def checkAllReponsesHaveADescription(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.resources.foreach(
+      resource =>
+        resource.operations.foreach(
+          operation =>
+            operation.responses.foreach(
+              response =>
+                if (response.description.isEmpty) {
+                  out = out ++ Seq(s"ERROR: All Responses must have a description. Service='${service.name}' Resource '${resource.`type`}' Operation '${operation.path}' Method '${operation.method.toString}' Response '${SpringServices.responseCodeToString(response.code)}'")
+                }
+            )
+        )
+    )
+    out
+  }
+
+
   def checkAllModelsHaveADescription(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()
     service.models.foreach(
       model =>
         if (model.description.isEmpty) {
           out = out ++ Seq(s"ERROR: All Models must have a description. Service='${service.name}' Model '${model.name}'")
+        } else {
+          if (!model.description.get.endsWith(".")) {
+            out = out ++ Seq(s"ERROR: All Model descriptions must be full sentences and end in a period. Service='${service.name}' Model '${model.name}'")
+          }
         }
     )
     out

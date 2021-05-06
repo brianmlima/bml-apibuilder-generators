@@ -1,10 +1,9 @@
 package bml.util.java
 
-import java.util
-
+import bml.util.AnotationUtil.LombokAnno.AccessorFluent
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
 import bml.util.{NameSpaces, Param}
-import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeName, TypeSpec, TypeVariableName}
+import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
 
 
@@ -13,14 +12,15 @@ import io.apibuilder.generator.v0.models.File
  */
 object TestSuppliers {
 
-  import bml.util.AnotationUtil.fluentAccessor
   //import bml.util.java.ClassNames.{supplier}
-  import bml.util.java.ProbabilityTools.{probParam, probabilityToolClassName, shouldNullMethodName}
+
   import bml.util.GeneratorFSUtil.makeFile
+  import bml.util.java.ProbabilityTools.{probParam, probabilityToolClassName, shouldNullMethodName}
   import com.squareup.javapoet.MethodSpec.methodBuilder
   import com.squareup.javapoet.TypeSpec.classBuilder
   import javax.lang.model.element.Modifier._
-  import lib.Text.{initLowerCase}
+  import lib.Text.initLowerCase
+
   import collection.JavaConverters._
 
   //####################################################################################################################
@@ -221,7 +221,7 @@ object TestSuppliers {
   private def recallSupplier(nameSpaces: NameSpaces): TypeSpec = {
     classBuilder(templates.recallSupplier.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
       .addTypeVariable(t)
-      .addAnnotation(fluentAccessor)
+      .addAnnotation(AccessorFluent)
       .addSuperinterface(ParameterizedTypeName.get(JavaTypes.Supplier, t))
       .addFields(Seq(supplierParam.fieldSpecFinal, lastValueParam.fieldSpec).asJava)
       .addMethod(
@@ -242,7 +242,7 @@ object TestSuppliers {
   private def probNullSupplier(nameSpaces: NameSpaces): TypeSpec = {
     classBuilder(templates.probNull.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
       .addTypeVariable(t)
-      .addAnnotation(fluentAccessor)
+      .addAnnotation(AccessorFluent)
       .addSuperinterface(templates.probNull.supplierParameterizedType)
       .addFields(Seq(supplierParam, probParam).map(_.fieldSpecFinal).asJava)
       .addMethod(
@@ -288,7 +288,7 @@ object TestSuppliers {
           .addStatement("final int randStringLength = $T.nextInt(min, max)", ClassNames.randomUtils)
           .addStatement("final $T buff = new $T()", JavaTypes.StringBuilder, JavaTypes.StringBuilder)
           .beginControlFlow("for ($T word : words)", JavaTypes.String)
-          .add("if (buff.length() <= randStringLength) { buff.append(' ').append(word); } else { break; }")
+          .add("if (buff.length() <= randStringLength) { if(buff.length()!=0){buff.append(' ');}buff.append(word); } else { break; }")
           .endControlFlow()
           .addStatement("$T returnValue = (buff.length() > randStringLength) ? buff.toString().substring(0, randStringLength).trim() : buff.toString().trim()", JavaTypes.String)
           .addStatement("log.trace(\"Returning Lorem String length={} text=\\\"{}\\\"\", returnValue.length(),returnValue)")

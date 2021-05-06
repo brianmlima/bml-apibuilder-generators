@@ -1,13 +1,11 @@
 package bml.util.java
 
 import bml.util.AnotationUtil.LombokAnno
-import bml.util.{AnotationUtil, NameSpaces}
 import bml.util.java.ClassNames.{JacksonTypes, JavaTypes, LombokTypes}
 import com.squareup.javapoet.{AnnotationSpec, _}
 import io.apibuilder.spec.v0.models.Enum
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC, STATIC}
 import lib.Text
-import lombok.Getter
 
 object JavaEnums {
 
@@ -15,7 +13,7 @@ object JavaEnums {
 
   def descriptionParam = "description"
 
-  def stringMapFieldName = toEnumName(stringValueParam + "_Map")
+  def stringMapFieldName = toEnumName(stringValueParam + "Map")
 
   def genericDoc = List(
     "This enum has the ability to map string values to enum instances.",
@@ -63,12 +61,12 @@ object JavaEnums {
     TypeSpec.enumBuilder(className)
       .addModifiers(PUBLIC)
       .addJavadoc(apiDocComments)
-      .addAnnotation(AnotationUtil.fluentAccessor)
+      .addAnnotation(LombokAnno.AccessorFluent)
       //Add the api value field
       .addField(
         FieldSpec.builder(
           JavaMaps.mapStringTo(className), stringMapFieldName, PRIVATE, STATIC, FINAL)
-          .addJavadoc("Maps the values used to generate this enum to specific enum instances")
+          .addJavadoc("Maps the values used to generate this enum to specific enum instances.")
           .build()
       )
       //Add in the lookup map ofr api values
@@ -92,13 +90,13 @@ object JavaEnums {
         FieldSpec.builder(JavaTypes.String, stringValueParam, PRIVATE, FINAL)
           .addAnnotation(LombokAnno.Getter(LombokTypes.JsonValue)
           )
-          .addJavadoc("Holder for defined value for lookup and toString support\n")
+          .addJavadoc("Holder for defined value for lookup and toString support.\n")
           .build()
       )
       .addField(
         FieldSpec.builder(JavaTypes.String, descriptionParam, PRIVATE, FINAL)
           .addAnnotation(LombokTypes.Getter)
-          .addJavadoc("Holder for defined enum field description\n")
+          .addJavadoc("Holder for defined enum field description.\n")
           .build()
       )
       .addMethod(
@@ -111,7 +109,7 @@ object JavaEnums {
       )
       .addMethod(
         MethodSpec.methodBuilder("from" + stringValueParam.capitalize)
-          .addModifiers(PUBLIC, STATIC, FINAL)
+          .addModifiers(PUBLIC, STATIC)
           .addParameter(JavaTypes.String, stringValueParam, FINAL)
           .addStatement(CodeBlock.of("return $L.get($L)", stringMapFieldName, stringValueParam))
           .returns(className)
@@ -148,14 +146,11 @@ object JavaEnums {
     val convertersClassName = ClassName.get("", "Converters")
 
     TypeSpec.classBuilder(convertersClassName).addModifiers(PUBLIC, STATIC)
-      .addMethod(
-
-        MethodSpec.constructorBuilder().addModifiers(PRIVATE)
-          .addJavadoc("Hide the public constructor for quality gates.")
-          .build()
-      )
+      .addAnnotation(LombokTypes.UtilityClass)
+      .addAnnotation(LombokTypes.Generated)
       .addType(
         TypeSpec.classBuilder("ToEnum").addModifiers(PUBLIC, STATIC)
+          .addAnnotation(LombokTypes.Generated)
           .addSuperinterface(ParameterizedTypeName.get(JacksonTypes.Converter, JavaTypes.String, enumClassName))
           .addMethod(
             MethodSpec.methodBuilder("convert")
@@ -185,6 +180,7 @@ object JavaEnums {
       )
       .addType(
         TypeSpec.classBuilder("ToString").addModifiers(PUBLIC, STATIC)
+          .addAnnotation(LombokTypes.Generated)
           .addSuperinterface(ParameterizedTypeName.get(JacksonTypes.Converter, enumClassName, JavaTypes.String))
           .addMethod(
             MethodSpec.methodBuilder("convert")
