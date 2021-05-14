@@ -1,7 +1,10 @@
 package bml.util.java
 
+import java.util.Locale
+import java.util.regex.Pattern
+
 import bml.util.AnotationUtil.LombokAnno.AccessorFluent
-import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
+import bml.util.java.ClassNames.{FakerTypes, JavaTypes, LombokTypes}
 import bml.util.{NameSpaces, Param}
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
@@ -50,6 +53,8 @@ object TestSuppliers {
     val stringRangeSupplier = "stringRangeSupplier"
     val integerSupplier = templates.integer.methodName
     val listSupplier = templates.list.methodName
+    val patternedStringSupplier = patternedStringSupplierMethodName
+
   }
 
   // END java class method names for use in java classes that need to refrence them ####################################
@@ -99,6 +104,8 @@ object TestSuppliers {
 
     val typeBuilder = classBuilder(theClassName).addModifiers(PUBLIC)
       .addAnnotation(LombokTypes.Slf4j)
+      .addField(fakerServiceStaticField())
+      .addMethod(patternedStringSupplierMethod)
       .addMethods(
         (Seq(
           wrapRecallMethod,
@@ -124,6 +131,32 @@ object TestSuppliers {
     makeFile(theClassName.simpleName(), nameSpaces.tool, typeBuilder)
   }
 
+
+  val fakerServiceFieldName = "FAKER_SERVICE"
+
+  def fakerServiceStaticField(): FieldSpec = {
+    FieldSpec.builder(
+      FakerTypes.FakeValuesService,
+      fakerServiceFieldName,
+      PUBLIC, STATIC, FINAL
+    )
+      .initializer(
+        CodeBlock.of("new $T(new $T(\"en-US\"), new $T())", FakerTypes.FakeValuesService, classOf[Locale], FakerTypes.RandomService)
+      ).build()
+  }
+
+  val patternedStringSupplierMethodName = "patternedStringSupplier"
+
+  def patternedStringSupplierMethod(): MethodSpec = {
+    MethodSpec.methodBuilder(patternedStringSupplierMethodName)
+      .addModifiers(PUBLIC, STATIC, FINAL)
+      .addParameter(ParameterSpec.builder(classOf[Pattern], "pattern", FINAL).build())
+      .addCode(
+        CodeBlock.of("return () -> $L.regexify(pattern.pattern());", fakerServiceFieldName)
+      )
+      .returns(JavaTypes.Supplier(ClassName.get(classOf[java.lang.String])))
+      .build()
+  }
 
   /**
    * Just a container util for keeping track of methods,classes,paths n such.
@@ -169,7 +202,6 @@ object TestSuppliers {
   private val lastValueParam = new Param(ParameterSpec.builder(t, "lastValue").build(), "")
 
   private val randomField = FieldSpec.builder(JavaTypes.Random, "random").initializer("new $T()", JavaTypes.Random).build()
-
 
   private def booleanSupplier(nameSpaces: NameSpaces): TypeSpec = {
     classBuilder(templates.`boolean`.className(nameSpaces)).addModifiers(PUBLIC, STATIC)

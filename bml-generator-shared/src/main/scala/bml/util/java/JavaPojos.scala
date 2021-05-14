@@ -122,11 +122,11 @@ object JavaPojos {
               .initializer("$L",
                 field.minimum.getOrElse("0").toString
               )
-              .addJavadoc("Generated, provides a static refrence to the minimum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
+              .addJavadoc("Generated, provides a static reference to the minimum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
               .build(),
             FieldSpec.builder(TypeName.INT, toMaxListSizeStaticFieldName(field), PUBLIC, STATIC, FINAL)
               .initializer("$L", field.maximum.getOrElse(Integer.MAX_VALUE).toString)
-              .addJavadoc("Generated, provides a static refrence to the maximum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
+              .addJavadoc("Generated, provides a static reference to the maximum size of the list field $L.", JavaPojoUtil.toFieldName(field.name))
               .build()
           )
         }

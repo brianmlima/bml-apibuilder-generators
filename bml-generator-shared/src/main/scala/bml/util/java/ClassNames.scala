@@ -71,7 +71,21 @@ object ClassNames {
     }
 
     val Supplier = ClassName.get("java.util.function", "Supplier")
+
+
+    def Supplier(className: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Supplier, className)
+    }
+
+    def Supplier(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Supplier, typeName)
+    }
+
+
     val Stream = ClassName.get("java.util.stream", "Stream")
+
+
+
 
     def Stream(className: ClassName): ParameterizedTypeName = {
       ParameterizedTypeName.get(Stream, className)
@@ -389,6 +403,14 @@ object ClassNames {
 
 
   }
+
+  object FakerTypes {
+    val FakeValuesService = ClassName.get("com.github.javafaker.service","FakeValuesService")
+    val RandomService = ClassName.get("com.github.javafaker.service","RandomService")
+  }
+
+
+
 
 
   // END Lombok ########################################################################################################

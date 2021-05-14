@@ -1,11 +1,11 @@
 package bml.util.java
 
 
-import akka.http.scaladsl
-import akka.http.scaladsl.model
+import java.util.regex.Pattern
+
 import bml.util.AnotationUtil.LombokAnno
+import bml.util.NameSpaces
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes}
-import bml.util.{AnotationUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import org.slf4j.{Logger, LoggerFactory}
@@ -13,12 +13,13 @@ import org.slf4j.{Logger, LoggerFactory}
 
 object JavaPojoTestFixtures extends JavaPojoUtil {
 
-  import javax.lang.model.element.Modifier._
   import bml.util.GeneratorFSUtil.makeFile
-  import collection.JavaConverters._
-  import com.squareup.javapoet._
   import bml.util.java.ClassNames.JavaTypes.{Locale, Random, supplier}
   import bml.util.java.ClassNames.LombokTypes.BuilderDefault
+  import com.squareup.javapoet._
+  import javax.lang.model.element.Modifier._
+
+  import collection.JavaConverters._
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -189,6 +190,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
     val dateIso8601TypeReturn = CodeBlock.of("$T.$L()", testSuppliers, TestSuppliers.methods.localDateSupplier)
 
+    def patternedStringTypeRequiredReturn(pattern: String) = CodeBlock.of("$T.$L($T.compile($S))", TestSuppliers.className(nameSpaces), TestSuppliers.methods.patternedStringSupplier, classOf[Pattern],pattern)
+
+
     val stringTypeRequiredReturn = CodeBlock.of(
       "$T.$L($T.ENGLISH,$T.$L,$T.$L)",
       TestSuppliers.className(nameSpaces),
@@ -260,7 +264,18 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       case "integer" => return Some(stdWithNullable(integerTypeReturn))
       case "uuid" => return Some(stdWithNullable(uuidTypeRequiredReturn))
       case "date-iso8601" => return Some(stdWithNullable(dateIso8601TypeReturn))
-      case "string" => return Some(stdWithNullable(stringTypeRequiredReturn))
+      case "string" => {
+        val regex = field.attributes.find(_.name == "pattern").map(a => (a.value \ "regexp").as[String])
+
+        if (regex.isDefined) {
+          return Some(stdWithNullable(patternedStringTypeRequiredReturn(regex.get)))
+        }
+
+
+        return Some(stdWithNullable(stringTypeRequiredReturn))
+
+
+      }
       case "object" => return Some(stdWithNullable(
         CodeBlock.of("() -> new $T()", JavaTypes.LinkedHashMap)
       ))
