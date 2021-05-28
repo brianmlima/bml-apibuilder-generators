@@ -17,11 +17,10 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Build Service
-        context: .
         run: sbt compile
-      - name: Build Service
-        context: .
-        run: docker build -t brianmlima/apibuilder-generators .
+#      - name: Build Service
+#        context: .
+#        run: docker build -t brianmlima/apibuilder-generators .
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -30,7 +29,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
           push: false
           tags: brianmlima/apibuilder-generators:latest
 
