@@ -1,10 +1,5 @@
 import scoverage.ScoverageKeys
 
-
-
-
-
-
 name := "bml-generator"
 organization := "bml"
 
