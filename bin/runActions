@@ -22,13 +22,28 @@ source ${PROJECT_HOME}/bin/Functions.sh
 source ${PROJECT_HOME}/bin/conf.sh
 ################################################################################
 
+SECRETS_FILE="${HOME}/.github-actions"
+
+
+function initActionEnv() {
+  if [ ! -f ${SECRETS_FILE} ]; then
+      error "Can not find actions environemnt file at ${SECRETS_FILE}."
+      error "This file is used to set up the environemnt variables to use when running actions locally"
+      exit 2;
+  fi
+  source ${SECRETS_FILE}
+}
+
+
 GLOBAL_TIMER=$(timer)
 ################################################################################
 printHeader
 ################################################################################
 
+initActionEnv
+
 pushd ${PROJECT_HOME} &>/dev/null
-  act -s GITHUB_TOKEN=$(cat ~/.github-api-token)
+  act --secret-file ${SECRETS_FILE}
 popd &>/dev/null
 
 ################################################################################

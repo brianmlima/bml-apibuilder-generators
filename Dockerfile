@@ -5,6 +5,10 @@ RUN groupadd -r swuser -g 433 && \
     chown -R swuser:swuser /home/swuser
 
 USER swuser
+#RUN echo "#######################"
+#RUN echo "Listing $(pwd)"
+#RUN ls -lha
+#RUN echo "#######################"
 ADD generator/target/universal/bml-generator-generator-*.zip /home/swuser
 RUN cd /home/swuser && unzip bml-generator-generator-*.zip && rm bml-generator-generator-*.zip && \
     cd bml-generator-generator-*/bin
