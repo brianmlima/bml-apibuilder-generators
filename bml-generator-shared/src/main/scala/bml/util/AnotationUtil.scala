@@ -7,6 +7,7 @@ import bml.util.java.ClassNames._
 import bml.util.java.{ClassNames, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
+import lombok.Builder.Default
 import lombok._
 import lombok.experimental.Accessors
 
@@ -145,6 +146,10 @@ object AnotationUtil {
     def Builder = AnnotationSpec
       .builder(classOf[Builder])
       .addMember("toBuilder", "$L", "true")
+      .build()
+
+    def BuilderDefault = AnnotationSpec
+      .builder(classOf[Default])
       .build()
 
     def EqualsAndHashCode = AnnotationSpec

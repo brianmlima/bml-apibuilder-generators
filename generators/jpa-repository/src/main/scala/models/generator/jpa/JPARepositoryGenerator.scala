@@ -223,8 +223,6 @@ class JPARepositoryGenerator extends CodeGenerator {
                         )
                         .mkString("\n")
                     )
-
-
                     .addAnnotation(SpringDataAnno.Query(query))
                     .addParameter(`type`, fieldName)
                     .returns(JavaTypes.Stream(entityClassName))
@@ -324,9 +322,7 @@ class JPARepositoryGenerator extends CodeGenerator {
 
                     val spec = MethodSpec.methodBuilder(s"findBy${methodName}")
                       .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                      .addAnnotation(SpringDataAnno.Query(query))
-
-
+//                      .addAnnotation(SpringDataAnno.Query(query))
                       .addJavadoc(
                         //                        JavaPojoUtil.textToComment(
                         (

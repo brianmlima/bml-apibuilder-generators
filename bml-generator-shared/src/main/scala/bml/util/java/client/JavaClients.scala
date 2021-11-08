@@ -587,6 +587,7 @@ object JavaClients {
           ParameterizedTypeName.get(JavaTypes.Optional, JavaTypes.`Boolean`)
       FieldSpec.builder(paramClassName, responseToContainerName(response))
         .addAnnotation(LombokAnno.Getter)
+        .addAnnotation(LombokAnno.BuilderDefault)
         .initializer("$T.empty()", JavaTypes.Optional)
         .build()
     }
@@ -601,6 +602,7 @@ object JavaClients {
         FieldSpec.builder(
           ParameterizedTypeName.get(JavaTypes.Optional, JavaTypes.String), "unexpected")
           .addAnnotation(LombokAnno.Getter)
+          .addAnnotation(LombokAnno.BuilderDefault)
           .initializer("$T.empty()", JavaTypes.Optional)
           .build()
       )

@@ -111,6 +111,12 @@ object SpringServices {
     val mediaTypeYaml = "MEDIA_TYPE_YAML"
     val mediaTypeYml = "MEDIA_TYPE_YML"
 
+    val objectMapperBeanNameJson = "jsonObjectMapper"
+    val objectMapperBeanNameYml = "yamlObjectMapper"
+
+    val objectMapperBeanNameFieldJson = "JSON_OBJECT_MAPPER_BEAN_NAME"
+    val objectMapperBeanNameFieldYml = "YAML_OBJECT_MAPPER_BEAN_NAME"
+
     val configBuilder = TypeSpec.classBuilder(configName)
       .addJavadoc(
         "Add json or yaml content negotiation for all endpoints.\n" +
@@ -135,18 +141,30 @@ object SpringServices {
           .initializer(" MediaType.valueOf(\"text/yml\")")
           .build()
       )
+      .addField(
+        FieldSpec.builder(classOf[String], objectMapperBeanNameFieldJson, PUBLIC, STATIC, FINAL)
+          .addJavadoc("Bean name for Json ObjectMapper.")
+          .initializer("$S",objectMapperBeanNameJson)
+          .build()
+      )
+      .addField(
+        FieldSpec.builder(classOf[String], objectMapperBeanNameFieldYml, PUBLIC, STATIC, FINAL)
+          .addJavadoc("Bean name for Json ObjectMapper.")
+          .initializer("$S",objectMapperBeanNameYml)
+          .build()
+      )
       .addMethod(
         MethodSpec.methodBuilder("jsonObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
           .addJavadoc("Provides an ObjectMapper for JSON.\n @return An ObjectMapper that uses the JSON format for serde.")
           .addAnnotation(primary)
-          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "jsonObjectMapper").build())
+          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$L", objectMapperBeanNameFieldJson).build())
           .addStatement("return new $T().registerModule(new $T())", objectMapper, JacksonTypes.JavaTimeModule)
           .build()
       )
       .addMethod(
         MethodSpec.methodBuilder("yamlObjectMapper").addModifiers(PUBLIC).returns(objectMapper)
           .addJavadoc("Provides an ObjectMapper for YAML.\n @return An ObjectMapper that uses the YAML format for serde.")
-          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$S", "yamlObjectMapper").build())
+          .addAnnotation(AnnotationSpec.builder(bean).addMember("name", "$L", objectMapperBeanNameFieldYml).build())
           .addStatement(CodeBlock.of("return new $T(new $T()).registerModule(new $T())", objectMapper, yAMLFactory, JacksonTypes.JavaTimeModule))
           .build()
       ).addMethod(
