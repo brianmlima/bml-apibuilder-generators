@@ -75,6 +75,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
       .addAnnotation(LombokTypes.Builder)
       .addAnnotation(LombokAnno.AccessorFluent)
+      .addAnnotation(LombokAnno.Generated)
       .addSuperinterface(JavaTypes.supplier(targetClassName))
       .addField(FieldSpec.builder(TypeName.INT, "MAX_GENERATED_LIST_SIZE", PUBLIC, STATIC).initializer("$L", "50").build())
       .addFields(
@@ -106,6 +107,10 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               } else if (field.`type` == "integer") {
+                fiedlSpec
+                  .addAnnotation(BuilderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              } else if (field.`type` == "long") {
                 fiedlSpec
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
@@ -152,7 +157,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
           ).asJava
       )
       .addField(
-        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, PUBLIC, STATIC)
+        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, PUBLIC, STATIC,FINAL)
           .initializer("builder().build()")
           .build()
       )
@@ -185,12 +190,13 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
     val booleanTypeReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.booleanSupplier)
     val integerTypeReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.integerSupplier)
+    val longTypeReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.longSupplier)
 
     val uuidTypeRequiredReturn = CodeBlock.of("$T.$L()", TestSuppliers.className(nameSpaces), TestSuppliers.methods.uuidSupplier)
 
     val dateIso8601TypeReturn = CodeBlock.of("$T.$L()", testSuppliers, TestSuppliers.methods.localDateSupplier)
 
-    def patternedStringTypeRequiredReturn(pattern: String) = CodeBlock.of("$T.$L($T.compile($S))", TestSuppliers.className(nameSpaces), TestSuppliers.methods.patternedStringSupplier, classOf[Pattern],pattern)
+    def patternedStringTypeRequiredReturn(pattern: String) = CodeBlock.of("$T.$L($T.compile($S))", TestSuppliers.className(nameSpaces), TestSuppliers.methods.patternedStringSupplier, classOf[Pattern], pattern)
 
 
     val stringTypeRequiredReturn = CodeBlock.of(
@@ -262,6 +268,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     field.`type` match {
       case "boolean" => return Some(stdWithNullable(booleanTypeReturn))
       case "integer" => return Some(stdWithNullable(integerTypeReturn))
+      case "long" => return Some(stdWithNullable(longTypeReturn))
       case "uuid" => return Some(stdWithNullable(uuidTypeRequiredReturn))
       case "date-iso8601" => return Some(stdWithNullable(dateIso8601TypeReturn))
       case "string" => {

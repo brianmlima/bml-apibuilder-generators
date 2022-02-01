@@ -115,6 +115,7 @@ object ExcersicePojoSpringValidation {
     }
 
     val typeSpec = classBuilder(theClassName).addModifiers(PUBLIC)
+      .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokAnno.Slf4j)
       .addField(
         FieldSpec.builder(JavaxValidationTypes.Validator, fields.validator, PRIVATE, FINAL)

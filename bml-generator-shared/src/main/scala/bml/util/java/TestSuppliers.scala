@@ -52,6 +52,7 @@ object TestSuppliers {
     val localDateSupplier = templates.localDate.methodName
     val stringRangeSupplier = "stringRangeSupplier"
     val integerSupplier = templates.integer.methodName
+    val longSupplier = templates.long.methodName
     val listSupplier = templates.list.methodName
     val patternedStringSupplier = patternedStringSupplierMethodName
 
@@ -85,7 +86,7 @@ object TestSuppliers {
 
 
     //generate the common ones with a template
-    val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.integer).map(
+    val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.integer,templates.long).map(
       testSupplierInfo =>
         methodBuilder(testSupplierInfo.methodName).addModifiers(PUBLIC, STATIC)
           .returns(testSupplierInfo.supplierParameterizedType)
@@ -121,6 +122,7 @@ object TestSuppliers {
           probNullSupplier(nameSpaces),
           localDateSupplier(nameSpaces),
           integerSupplier(nameSpaces),
+          longSupplier(nameSpaces),
           uuidSupplier(nameSpaces),
           listSupplier(nameSpaces)
         ).asJava
@@ -189,6 +191,7 @@ object TestSuppliers {
     val `boolean` = new TestSupplierInfo("BooleanSupplier", JavaTypes.`Boolean`)
     val localDate = new TestSupplierInfo("LocalDateSupplier", JavaTypes.LocalDate)
     val integer = new TestSupplierInfo("IntegerSupplier", JavaTypes.Integer)
+    val long = new TestSupplierInfo("LongSupplier", JavaTypes.Long)
     val uuid = new TestSupplierInfo("UUIDSupplier", JavaTypes.UUID, Some("UUIDSupplier"))
     val list = new TestSupplierInfo("ListSupplier", JavaTypes.List(t))
 
@@ -236,10 +239,20 @@ object TestSuppliers {
       ).build()
   }
 
+  private def longSupplier(nameSpaces: NameSpaces): TypeSpec = {
+    classBuilder(templates.long.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
+      .addSuperinterface(templates.long.supplierParameterizedType)
+      .addField(randomField)
+      .addMethod(
+        methodBuilder("get").addModifiers(PUBLIC).returns(templates.long.suppliedType)
+          .addStatement("return random.nextLong()")
+          .build()
+      ).build()
+  }
+
   private def localDateSupplier(nameSpaces: NameSpaces): TypeSpec =
     classBuilder(templates.localDate.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
       .addSuperinterface(templates.localDate.supplierParameterizedType)
-      .addField(randomField)
       .addMethod(
         methodBuilder("get").addModifiers(PUBLIC).returns(templates.localDate.suppliedType)
           .addStatement("long minDay = $T.of(1970, 1, 1).toEpochDay()", templates.localDate.suppliedType)

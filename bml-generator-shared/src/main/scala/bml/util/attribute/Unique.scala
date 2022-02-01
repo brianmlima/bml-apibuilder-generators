@@ -5,8 +5,6 @@ import akka.http.scaladsl.model
 import io.apibuilder.spec.v0.models.{Field, Model}
 
 class Unique(val indices: Seq[Seq[String]]) {
-
-
   def indicesToFields(model: Model): Seq[Seq[Field]] = {
     indices.map(
       index =>
@@ -16,7 +14,6 @@ class Unique(val indices: Seq[Seq[String]]) {
         )
     )
   }
-
 }
 
 object Unique {

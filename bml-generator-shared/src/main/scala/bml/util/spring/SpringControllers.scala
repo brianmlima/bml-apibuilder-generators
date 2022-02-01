@@ -275,7 +275,7 @@ object SpringControllers {
 
     //Add The right Spring controller annotation
 
-    val pathValue = toSpringPath(s"/$version$path")
+    val pathValue = toSpringPath(s"/$version/$path")
     //    var annotation: AnnotationSpec ;
 
     operation.method match {

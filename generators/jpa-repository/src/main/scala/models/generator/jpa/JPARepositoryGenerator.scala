@@ -46,7 +46,19 @@ class JPARepositoryGenerator extends CodeGenerator {
 
       Right(
         generateJPARepositories(service)
+          ++
+          generateRepositoryConfig(service)
       )
+    }
+
+    def generateRepositoryConfig(service: Service): Seq[File] = {
+      if (service.models.filter(Hibernate.fromModel(_).use).isEmpty) return Seq[File]()
+      val className = ClassName.get(nameSpaces.jpa.nameSpace, "RepositoryConfig")
+      val repoConfigSpec = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+        .addAnnotation(SpringTypes.Configuration)
+        .addAnnotation(SpringDataAnno.EntityScan(nameSpaces.model.nameSpace))
+        .addAnnotation(SpringDataAnno.EnableJpaRepositories)
+      Seq(GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.jpa, repoConfigSpec))
     }
 
     def generateJPARepositories(service: Service): Seq[File] = {
@@ -78,6 +90,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               )
               .build()
           }
+
           def saveAndFlushMethod(): MethodSpec = {
             MethodSpec.methodBuilder("saveAndFlush").returns(entityClassName).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
               .addJavadoc(
@@ -275,6 +288,7 @@ class JPARepositoryGenerator extends CodeGenerator {
             if (uniqueIndexesOption.isDefined) {
               val uniqueIndexes = uniqueIndexesOption.get
 
+
               val indices = uniqueIndexes.indices
               val fieldSets = uniqueIndexes.indicesToFields(model)
 
@@ -319,10 +333,9 @@ class JPARepositoryGenerator extends CodeGenerator {
                       }
                     ).mkString(" AND ")
 
-
                     val spec = MethodSpec.methodBuilder(s"findBy${methodName}")
                       .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-//                      .addAnnotation(SpringDataAnno.Query(query))
+                      //                      .addAnnotation(SpringDataAnno.Query(query))
                       .addJavadoc(
                         //                        JavaPojoUtil.textToComment(
                         (

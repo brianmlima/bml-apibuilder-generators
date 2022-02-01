@@ -85,8 +85,6 @@ object ClassNames {
     val Stream = ClassName.get("java.util.stream", "Stream")
 
 
-
-
     def Stream(className: ClassName): ParameterizedTypeName = {
       ParameterizedTypeName.get(Stream, className)
     }
@@ -360,6 +358,8 @@ object ClassNames {
         ParameterizedTypeName.get(Slice, typeName)
       }
 
+      val EntityScan = ClassName.bestGuess("org.springframework.boot.autoconfigure.domain.EntityScan")
+      val EnableJpaRepositories = ClassName.bestGuess("org.springframework.data.jpa.repository.config.EnableJpaRepositories")
 
     }
 
@@ -405,12 +405,9 @@ object ClassNames {
   }
 
   object FakerTypes {
-    val FakeValuesService = ClassName.get("com.github.javafaker.service","FakeValuesService")
-    val RandomService = ClassName.get("com.github.javafaker.service","RandomService")
+    val FakeValuesService = ClassName.get("com.github.javafaker.service", "FakeValuesService")
+    val RandomService = ClassName.get("com.github.javafaker.service", "RandomService")
   }
-
-
-
 
 
   // END Lombok ########################################################################################################

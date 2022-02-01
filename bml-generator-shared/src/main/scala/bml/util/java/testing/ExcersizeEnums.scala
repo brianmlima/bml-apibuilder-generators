@@ -1,5 +1,6 @@
 package bml.util.java.testing
 
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
 import bml.util.java.{ClassNames, JavaPojoTestFixtures, JavaPojoUtil}
@@ -27,6 +28,7 @@ object ExcersizeEnums extends JavaPojoUtil {
 
 
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+      .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokTypes.Slf4j)
       .addMethods(
         service

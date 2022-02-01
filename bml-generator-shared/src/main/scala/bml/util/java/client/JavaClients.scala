@@ -4,6 +4,7 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 
 import bml.util.AnotationUtil.LombokAnno
+import bml.util.attribute.Version
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.ClassNames.{JacksonTypes, JavaTypes, LombokTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaPojoUtil}
@@ -47,8 +48,21 @@ object JavaClients {
     val clientClassName = toClientClassName(service, nameSpaces);
     val configClassName = ClassName.get(clientClassName.packageName() + "." + clientClassName.simpleName(), "Config")
 
+    service.baseUrl
+
+
+    val baseUriField = FieldSpec.builder(JavaTypes.URI, baseUriFieldName, PRIVATE, FINAL)
+      .addAnnotation(LombokTypes.Getter)
+      .addAnnotation(classOf[NotNull])
+
+    if (service.baseUrl.isDefined) {
+      baseUriField.addAnnotation(LombokAnno.BuilderDefault)
+        .initializer("$S", service.baseUrl.get)
+    }
+
     val configType = TypeSpec.classBuilder(configClassName)
       .addModifiers(PUBLIC, STATIC)
+      .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokTypes.Builder)
       .addAnnotation(LombokAnno.AccessorFluent)
       .addFields(
@@ -57,10 +71,7 @@ object JavaClients {
             .addAnnotation(LombokTypes.Getter)
             .addAnnotation(classOf[NotNull])
             .build(),
-          FieldSpec.builder(JavaTypes.URI, baseUriFieldName, PRIVATE, FINAL)
-            .addAnnotation(LombokTypes.Getter)
-            .addAnnotation(classOf[NotNull])
-            .build(),
+          baseUriField.build(),
           FieldSpec.builder(JacksonTypes.ObjectMapper, objectMapperFieldName, PRIVATE, FINAL)
             .addAnnotation(LombokTypes.Getter)
             .addAnnotation(classOf[NotNull])
@@ -71,6 +82,7 @@ object JavaClients {
 
     val responseModelType = TypeSpec.classBuilder("ResponseModel").addTypeVariable(TypeVariableName.get("T"))
       .addModifiers(PUBLIC, STATIC)
+      .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokTypes.Builder)
       .addAnnotation(LombokAnno.AccessorFluent)
       .addField(
@@ -104,6 +116,7 @@ object JavaClients {
       .addModifiers(PUBLIC)
       .addAnnotations(
         Seq(
+          LombokAnno.Generated,
           LombokAnno.AccessorFluent,
           LombokAnno.Slf4j
         ).asJava
@@ -140,17 +153,16 @@ object JavaClients {
               .build()
           }
         ).asJava
-
       )
       .addType(configType)
       .addType(responseModelType)
-
       .addTypes(
         service.resources.map(
           resource =>
             TypeSpec.classBuilder(JavaPojoUtil.toClassName(resource.`type`) + "Client")
               .addAnnotations(
                 Seq(
+                  LombokAnno.Generated,
                   LombokAnno.AccessorFluent,
                   LombokAnno.Slf4j
                 ).asJava
@@ -196,9 +208,8 @@ object JavaClients {
                   operation => {
                     //                    TypeSpec.classBuilder(JavaPojoUtil.toClassName(SpringControllers.toControllerOperationName(operation) + "Client"))
                     TypeSpec.classBuilder(JavaPojoUtil.toClassName(toOperationClientClassName(operation)))
-
-
                       .addModifiers(PUBLIC, STATIC)
+                      .addAnnotation(LombokAnno.Generated)
                       .addFields(stdClientFields.asJava)
                       .addMethod(
                         MethodSpec.constructorBuilder()
@@ -386,6 +397,8 @@ object JavaClients {
   def generateStaticAccessAsync(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
 
 
+    val version = Version.fromResource(resource)
+
     val configClass = ClassName.get(
       nameSpaces.client.nameSpace + "." + toClientClassName(service, nameSpaces).simpleName(),
       "Config"
@@ -400,9 +413,14 @@ object JavaClients {
       )
     )
 
+
+    val defaultVersionPath = "/v" + service.version.split("\\.").head
+
+    val versionPath = if (version.isEmpty) defaultVersionPath else if (version.get.drop) "" else defaultVersionPath
+
     val uriBlock =
       if (operation.path.contains(":")) {
-        val path = "/v" + service.version.split("\\.").head + operation.path.split("/").map(
+        val path = versionPath + "/" + operation.path.split("/").map(
           part => if (part.startsWith(":")) {
             "%s"
           } else {
@@ -439,7 +457,7 @@ object JavaClients {
       }
 
       else {
-        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, "/v" + service.version.split("\\.").head + operation.path)
+        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + "/" + operation.path)
           .addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
           .build();
       }
@@ -594,7 +612,7 @@ object JavaClients {
 
     val spec = TypeSpec.classBuilder(className)
       .addModifiers(PUBLIC, STATIC)
-      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.AccessorFluent).asJava)
+      .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.AccessorFluent, LombokAnno.Generated).asJava)
     spec.addFields(
       operation.responses.map(doResponse(_)).asJava
     )

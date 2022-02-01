@@ -1,5 +1,7 @@
 package bml.util.spring
 
+import java.util.UUID
+
 import bml.util.java.ClassNames.JunitTypes.assertThrows
 import bml.util.java.ClassNames.LombokTypes.`val`
 import bml.util.java.ClassNames.SpringTypes.MockitoTypes._
@@ -98,6 +100,7 @@ object SpringControllerTests {
         .build()
     }
 
+
     //Mock the content accessor method in the service method return class.
     def mockResponseTypeContent(response: Response): CodeBlock = {
       val returnBlock = CodeBlock.builder()
@@ -105,6 +108,8 @@ object SpringControllerTests {
       //Handle responses that have no body
       if (response.`type` == "unit") {
         returnBlock.add(".build()")
+      } else if (response.`type` == "uuid") {
+        returnBlock.add(".body($T.randomUUID())", JavaTypes.UUID)
       } else {
         //Handle responses that have a body
         if (JavaPojoUtil.isListOfModeslType(service, response.`type`)) {

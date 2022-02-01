@@ -3,6 +3,7 @@ package bml.util.java.testing
 import java.lang.reflect.Field
 import java.util
 
+import bml.util.AnotationUtil.LombokAnno
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.NameSpaces
 import bml.util.java.ClassNames.{HamcrestTypes, JavaTypes, JunitTypes, LombokTypes}
@@ -49,6 +50,7 @@ object ExercisePojos {
 
 
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+      .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokTypes.Slf4j)
       .addMethods(
 
@@ -128,13 +130,13 @@ object ExercisePojos {
             CodeBlock.builder()
               .addStatement("final Class fieldsClass = $T.asList(objectClass.getDeclaredClasses()).stream().filter(clazz -> clazz.getSimpleName().equals(\"Fields\")).findFirst().orElse(null)", JavaTypes.Arrays)
               .addStatement("assertThat(fieldsClass,notNullValue())")
-              .addStatement("$T[] declaredFields = Test.class.getDeclaredFields()", classOf[Field])
-              .addStatement("$T staticFields = new $T()", JavaTypes.List(JavaTypes.Field), JavaTypes.ArrayList(JavaTypes.Field))
-              .beginControlFlow("for ($T field : declaredFields)", classOf[Field])
-              .beginControlFlow("if ($T.isStatic(field.getModifiers()))", JavaTypes.Modifier)
-              .addStatement("staticFields.add(field)")
-              .endControlFlow()
-              .endControlFlow()
+//              .addStatement("$T[] declaredFields = Test.class.getDeclaredFields()", classOf[Field])
+//              .addStatement("$T staticFields = new $T()", JavaTypes.List(JavaTypes.Field), JavaTypes.ArrayList(JavaTypes.Field))
+//              .beginControlFlow("for ($T field : declaredFields)", classOf[Field])
+//              .beginControlFlow("if ($T.isStatic(field.getModifiers()))", JavaTypes.Modifier)
+//              .addStatement("staticFields.add(field)")
+//              .endControlFlow()
+//              .endControlFlow()
               //              .addStatement("assertThat(staticFields.size(), is(numFields))")
               .build()
           ).addCode(

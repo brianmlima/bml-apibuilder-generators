@@ -100,6 +100,11 @@ object AnotationUtil {
 
     def Query(query: String) = AnnotationSpec.builder(SpringDataTypes.Query).addMember("value", "$S", query).build()
 
+    val EntityScan = ClassName.bestGuess("org.springframework.boot.autoconfigure.domain.EntityScan")
+    val EnableJpaRepositories = ClassName.bestGuess("org.springframework.data.jpa.repository.config.EnableJpaRepositories")
+
+    def EntityScan(packageString: String) = AnnotationSpec.builder(SpringDataTypes.EntityScan).addMember("value", "$S", packageString).build()
+
   }
 
   /**
@@ -127,6 +132,7 @@ object AnotationUtil {
     val AllArgsConstructor = AnnotationSpec.builder(LombokTypes.AllArgsConstructor).build()
     val NoArgsConstructor = AnnotationSpec.builder(LombokTypes.NoArgsConstructor).build()
     val FieldNameConstants = AnnotationSpec.builder(LombokTypes.FieldNameConstants).build()
+    val Generated = AnnotationSpec.builder(LombokTypes.Generated).build()
 
     def AccessorFluent = AnnotationSpec
       .builder(classOf[Accessors])
