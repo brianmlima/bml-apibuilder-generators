@@ -3,8 +3,9 @@ package bml.util.java
 import java.util.Locale
 import java.util.regex.Pattern
 
+import akka.http.scaladsl.model.headers.CacheDirectives.public
 import bml.util.AnotationUtil.LombokAnno.AccessorFluent
-import bml.util.java.ClassNames.{FakerTypes, JavaTypes, LombokTypes}
+import bml.util.java.ClassNames.{CommonsLangTypes, FakerTypes, JavaTypes, LombokTypes}
 import bml.util.{NameSpaces, Param}
 import com.squareup.javapoet._
 import io.apibuilder.generator.v0.models.File
@@ -50,6 +51,7 @@ object TestSuppliers {
     val wrapRecall = templates.recallSupplier.methodName
     val booleanSupplier = templates.`boolean`.methodName
     val localDateSupplier = templates.localDate.methodName
+    val localDateTimeSupplier = templates.localDateTime.methodName
     val stringRangeSupplier = "stringRangeSupplier"
     val integerSupplier = templates.integer.methodName
     val longSupplier = templates.long.methodName
@@ -86,7 +88,7 @@ object TestSuppliers {
 
 
     //generate the common ones with a template
-    val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.integer,templates.long).map(
+    val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.localDateTime, templates.integer, templates.long).map(
       testSupplierInfo =>
         methodBuilder(testSupplierInfo.methodName).addModifiers(PUBLIC, STATIC)
           .returns(testSupplierInfo.supplierParameterizedType)
@@ -112,6 +114,7 @@ object TestSuppliers {
           wrapRecallMethod,
           wrapProbNullMethod,
           listSupplierlMethod,
+
           generateRangeStringSupplier(nameSpaces)
         ) ++ stdGetMethods).asJava
       )
@@ -121,6 +124,7 @@ object TestSuppliers {
           recallSupplier(nameSpaces),
           probNullSupplier(nameSpaces),
           localDateSupplier(nameSpaces),
+          localDateTimeSupplier(nameSpaces),
           integerSupplier(nameSpaces),
           longSupplier(nameSpaces),
           uuidSupplier(nameSpaces),
@@ -190,6 +194,7 @@ object TestSuppliers {
 
     val `boolean` = new TestSupplierInfo("BooleanSupplier", JavaTypes.`Boolean`)
     val localDate = new TestSupplierInfo("LocalDateSupplier", JavaTypes.LocalDate)
+    val localDateTime = new TestSupplierInfo("LocalDateTimeSupplier", JavaTypes.LocalDateTime)
     val integer = new TestSupplierInfo("IntegerSupplier", JavaTypes.Integer)
     val long = new TestSupplierInfo("LongSupplier", JavaTypes.Long)
     val uuid = new TestSupplierInfo("UUIDSupplier", JavaTypes.UUID, Some("UUIDSupplier"))
@@ -261,6 +266,29 @@ object TestSuppliers {
           .addStatement("return $T.ofEpochDay(randomDay)", templates.localDate.suppliedType)
           .build()
       ).build()
+
+  private def localDateTimeSupplier(nameSpaces: NameSpaces): TypeSpec =
+    classBuilder(templates.localDateTime.className(nameSpaces)).addModifiers(PUBLIC, STATIC)
+      .addSuperinterface(templates.localDateTime.supplierParameterizedType)
+      .addMethod(
+        methodBuilder("get").addModifiers(PUBLIC).returns(templates.localDateTime.suppliedType)
+          .addStatement("$T zone = $T.UTC", JavaTypes.ZoneOffset, JavaTypes.ZoneOffset)
+          .addStatement("long minTime = 0")
+          .addStatement("long maxTime = $T.now().toEpochSecond(zone)", templates.localDateTime.suppliedType)
+          .addStatement("long epochSecond = $T.nextLong(minTime, maxTime)", CommonsLangTypes.RandomUtils)
+          .addStatement("return $T.ofEpochSecond(epochSecond, 0, zone)", templates.localDateTime.suppliedType)
+          .build()
+      ).build()
+
+  //  public static class LocalDateTimeSupplier implements Supplier<LocalDateTime> {
+  //    public LocalDateTime get() {
+  //      var zone = ZoneOffset.UTC;
+  //      long minTime = LocalDateTime.MIN.toEpochSecond(zone);
+  //      long maxTime = LocalDateTime.now().toEpochSecond(zone);
+  //      var epochSecond = RandomUtils.nextLong(minTime, maxTime);
+  //      return LocalDateTime.ofEpochSecond(epochSecond, 0, zone);
+  //    }
+  //  }
 
 
   private def recallSupplier(nameSpaces: NameSpaces): TypeSpec = {

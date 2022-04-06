@@ -102,7 +102,15 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                 fiedlSpec
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
-              } else if (field.`type` == "string") {
+              } else if (field.`type` == "date-time-iso8601") {
+                fiedlSpec
+                  .addAnnotation(BuilderDefault)
+                  .initializer("$L()", defaultSupplierMethodName(field))
+              }
+
+
+
+              else if (field.`type` == "string") {
                 fiedlSpec
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
@@ -196,6 +204,9 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
 
     val dateIso8601TypeReturn = CodeBlock.of("$T.$L()", testSuppliers, TestSuppliers.methods.localDateSupplier)
 
+    val dateTimeiso8601TypeReturn = CodeBlock.of("$T.$L()", testSuppliers, TestSuppliers.methods.localDateTimeSupplier)
+
+
     def patternedStringTypeRequiredReturn(pattern: String) = CodeBlock.of("$T.$L($T.compile($S))", TestSuppliers.className(nameSpaces), TestSuppliers.methods.patternedStringSupplier, classOf[Pattern], pattern)
 
 
@@ -271,6 +282,8 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
       case "long" => return Some(stdWithNullable(longTypeReturn))
       case "uuid" => return Some(stdWithNullable(uuidTypeRequiredReturn))
       case "date-iso8601" => return Some(stdWithNullable(dateIso8601TypeReturn))
+      case "date-time-iso8601" => return Some(stdWithNullable(dateTimeiso8601TypeReturn))
+
       case "string" => {
         val regex = field.attributes.find(_.name == "pattern").map(a => (a.value \ "regexp").as[String])
 
@@ -310,6 +323,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
         case "integer" => return Some(stdWithNullable(wrapList(integerTypeReturn)))
         case "uuid" => return Some(stdWithNullable(wrapList(uuidTypeRequiredReturn)))
         case "date-iso8601" => return Some(stdWithNullable(wrapList(dateIso8601TypeReturn)))
+        case "date-time-iso8601" => return Some(stdWithNullable(wrapList(dateTimeiso8601TypeReturn)))
         case "string" => return Some(stdWithNullable(wrapList(stringTypeRequiredReturn)))
 
         case _ =>

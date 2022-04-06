@@ -1,7 +1,7 @@
 package bml.util.java
 
 import java.io.IOException
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
@@ -91,6 +91,7 @@ object ClassNames {
 
     val Integer = ClassName.get(classOf[Integer])
     val LocalDate = ClassName.get(classOf[LocalDate])
+    val ZoneOffset = ClassName.get(classOf[ZoneOffset])
     val LocalDateTime = ClassName.get(classOf[LocalDateTime])
     val Random = ClassName.get(classOf[Random])
     val ThreadLocalRandom = ClassName.get(classOf[ThreadLocalRandom])
@@ -204,6 +205,7 @@ object ClassNames {
   object CommonsLangTypes {
 
     val StringUtils = ClassName.bestGuess("org.apache.commons.lang3.StringUtils")
+    val RandomUtils = ClassName.get("org.apache.commons.lang3", "RandomUtils")
 
 
   }
