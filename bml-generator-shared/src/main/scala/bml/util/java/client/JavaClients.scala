@@ -420,7 +420,8 @@ object JavaClients {
 
     val uriBlock =
       if (operation.path.contains(":")) {
-        val path = versionPath + "/" + operation.path.split("/").map(
+//        val path = versionPath + "/" + operation.path.split("/").map(
+        val path = versionPath  + operation.path.split("/").map(
           part => if (part.startsWith(":")) {
             "%s"
           } else {
@@ -457,7 +458,8 @@ object JavaClients {
       }
 
       else {
-        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + "/" + operation.path)
+//        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + "/" + operation.path)
+        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + operation.path)
           .addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
           .build();
       }
