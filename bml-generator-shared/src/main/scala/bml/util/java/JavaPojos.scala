@@ -3,10 +3,12 @@ package bml.util.java
 
 import bml.util.AnotationUtil.HibernateAnnotations
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
-import bml.util.attribute
+import bml.util.attribute.FieldRef
+import bml.util.{NameSpaces, attribute}
 import bml.util.java.ClassNames.JavaTypes
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.JavaPojoUtil.toStaticFieldName
+import bml.util.persist.UUIDIfNullGenerator
 import com.squareup.javapoet.TypeName.BOOLEAN
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
@@ -152,11 +154,11 @@ object JavaPojos {
               .initializer("$L",
                 field.minimum.getOrElse(if (field.required) "1" else "0").toString
               )
-              .addJavadoc("Generated, provides a static refrence to the minimum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
+              .addJavadoc("Generated, provides a static reference to the minimum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
               .build(),
             FieldSpec.builder(TypeName.INT, toMaxFieldStaticFieldName(field), PUBLIC, STATIC, FINAL)
               .initializer("$L", field.maximum.getOrElse(2048).toString)
-              .addJavadoc("Generated, provides a static refrence to the maximum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
+              .addJavadoc("Generated, provides a static reference to the maximum size of the field $L.", JavaPojoUtil.toFieldName(field.name))
               .build()
           )
         }
@@ -219,14 +221,25 @@ object JavaPojos {
     if (isModel) {
       out = out ++ Seq(JavaxPersistanceAnnotations.ManyToOne, JavaxPersistanceAnnotations.JoinColumn(service, field))
     } else if (JavaPojoUtil.isListOfModeslType(service, field)) {
-      out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinColumn(service, field))
+
+
+      if(FieldRef.fromField(field).isDefined){
+        out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinColumn(service, field))
+      }else{
+        out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinTable(service, className, field))
+      }
+
+
+
+
     } else {
       out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
     }
     if (isId && isUUID) {
+      val nameSpaces = new NameSpaces(service)
       out = out ++ Seq(
         JavaxPersistanceAnnotations.GeneratedValue("UUID"),
-        HibernateAnnotations.GenericGenerator("UUID", "org.hibernate.id.UUIDGenerator")
+        HibernateAnnotations.GenericGenerator("UUID", UUIDIfNullGenerator.className(nameSpaces).canonicalName())
       )
     }
     out

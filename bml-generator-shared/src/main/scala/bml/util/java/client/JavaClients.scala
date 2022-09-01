@@ -132,9 +132,9 @@ object JavaClients {
             CodeBlock.join(
               service.resources.map(
                 resource => {
-                  val className = ClassName.get("", JavaPojoUtil.toClassName(resource.`type`) + "Client")
+                  val className = ClassName.get("", JavaPojoUtil.toClassName(resource.`type`) + "ResourceClient")
                   val fieldName = JavaPojoUtil.toFieldName(resource.`type`)
-                  CodeBlock.of("this.$L= new $T($L);", fieldName, className, configFieldName)
+                  CodeBlock.of("this.$L= new $L.$T($L);", fieldName, clientClassName.canonicalName(), className, configFieldName)
                 }
               ).asJava, ""
             )
@@ -146,7 +146,7 @@ object JavaClients {
       .addFields(
         service.resources.map(
           resource => {
-            val className = ClassName.get("", JavaPojoUtil.toClassName(resource.`type`) + "Client")
+            val className = ClassName.get("", JavaPojoUtil.toClassName(resource.`type`) + "ResourceClient")
             FieldSpec.builder(className, JavaPojoUtil.toFieldName(resource.`type`), PRIVATE)
               .addAnnotation(LombokTypes.Getter)
               .addJavadoc(resource.description.getOrElse(""))
@@ -159,7 +159,7 @@ object JavaClients {
       .addTypes(
         service.resources.map(
           resource =>
-            TypeSpec.classBuilder(JavaPojoUtil.toClassName(resource.`type`) + "Client")
+            TypeSpec.classBuilder(JavaPojoUtil.toClassName(resource.`type`) + "ResourceClient")
               .addAnnotations(
                 Seq(
                   LombokAnno.Generated,
@@ -488,11 +488,12 @@ object JavaClients {
 
 
     val webClientBlock = CodeBlock.builder()
-      .add("final $T exchange =  $L.$L().$L()",
+      .add("final $T exchange =  $L.$L().method($T.$L)",
         ParameterizedTypeName.get(SpringTypes.Mono, SpringTypes.ClientResponse),
         configFieldName,
         webClientFieldName,
-        operation.method.toString().toLowerCase
+        ClassNames.HttpMethod,
+        operation.method.toString().toUpperCase
       )
       .add(".uri(uri)")
       .add(".acceptCharset($T.UTF_8)", classOf[StandardCharsets])

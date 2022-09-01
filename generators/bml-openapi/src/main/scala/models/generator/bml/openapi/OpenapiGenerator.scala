@@ -1,6 +1,7 @@
 package models.generator.bml.openapi
 
 import java.util
+import java.util.concurrent.atomic.LongAdder
 
 import akka.http.scaladsl.model.headers.LinkParams
 import akka.http.scaladsl.model.headers.LinkParams.`type`
@@ -19,7 +20,7 @@ import bml.util.{NameSpaces, SpecValidation}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Operation, ParameterLocation, ResponseCodeInt, Service}
+import io.apibuilder.spec.v0.models.{Field, Operation, ParameterLocation, ResponseCodeInt, Service}
 import lib.generator.CodeGenerator
 import play.api.Logger
 
@@ -90,11 +91,11 @@ class OpenapiGenerator extends CodeGenerator {
     def toRef(typeIn: String): String = {
       //Handle model names with packages
       if (isModelNameWithPackage(typeIn)) {
-        val modelName = JavaPojoUtil.replaceEnumsPrefixWithModels(typeIn)
+        val modelName = toModelName(JavaPojoUtil.replaceEnumsPrefixWithModels(typeIn))
         val fileName = typeIn.split("\\.").drop(2).dropRight(3).map(_.capitalize).mkString("") + ".yml"
         return s"${fileName}#/components/schemas/${modelName}"
       }
-      s"#/components/schemas/${nameSpaces.model.nameSpace}.${typeIn}"
+      s"#/components/schemas/${nameSpaces.model.nameSpace}.${typeIn.capitalize}"
     }
 
     val DESCRIPTION = "description"
@@ -188,6 +189,15 @@ class OpenapiGenerator extends CodeGenerator {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+    def toModelName(typeName: String): String = {
+      if (isModelNameWithPackage(typeName) || isModelType(service, typeName)) {
+        val ary = typeName.split('.')
+        ary.updated(ary.size - 1, ary.last.capitalize).mkString(".")
+      } else {
+        typeName
+      }
+    }
+
     def generate(): Seq[File] = {
       val schemas = service.models.map(
         modelIn => {
@@ -198,10 +208,13 @@ class OpenapiGenerator extends CodeGenerator {
           modelIn.fields.foreach(
             fieldIn => {
               if (fieldIn.required) {
-                schemaOut.requiredField(fieldIn.name)
+                schemaOut.requiredField(toModelName(fieldIn.name))
               }
             }
           )
+
+
+
 
 
 
@@ -241,9 +254,6 @@ class OpenapiGenerator extends CodeGenerator {
                     Ref.builder()
                       .ref(toRef(fieldIn.`type`))
                       .build())
-
-
-
                 //Add OneOf if we are a local model
               } else if (isListOfModeslType(service, fieldIn) || isListOfEnumlType(service, fieldIn)) {
                 //I am a list of models or enums
@@ -290,7 +300,7 @@ class OpenapiGenerator extends CodeGenerator {
               schemaOut.property(fieldIn.name, propertyOut.build())
             }
           )
-          nameSpaces.model.nameSpace + "." + modelIn.name -> schemaOut.build()
+          nameSpaces.model.nameSpace + "." + modelIn.name.capitalize -> schemaOut.build()
         }
 
       ).toMap ++ service.enums.map(
@@ -300,7 +310,7 @@ class OpenapiGenerator extends CodeGenerator {
           schemaOut.enums(
             enumIn.values.map(_.name).asJava
           )
-          nameSpaces.model.nameSpace + "." + enumIn.name -> schemaOut.build()
+          nameSpaces.model.nameSpace + "." + enumIn.name.capitalize -> schemaOut.build()
         }
       )
 
@@ -329,7 +339,7 @@ class OpenapiGenerator extends CodeGenerator {
           )
       }
 
-      val paths = new mutable.LinkedHashMap[String, Object].asJava
+      val paths = new mutable.LinkedHashMap[String, util.LinkedHashMap[String,Object]].asJava
       service.resources.foreach(
         resourceIn => {
           resourceIn.operations.foreach(
@@ -337,9 +347,7 @@ class OpenapiGenerator extends CodeGenerator {
 
               val method = operationIn.method.toString.toLowerCase()
 
-              val pathOut = new mutable.LinkedHashMap[String, Object].asJava
               val operationOut = new mutable.LinkedHashMap[String, Object].asJava
-              pathOut.put(operationIn.method.toString.toLowerCase(), operationOut)
 
               if (operationIn.description.isDefined) {
                 operationOut.put(DESCRIPTION, operationIn.description.get)
@@ -349,7 +357,7 @@ class OpenapiGenerator extends CodeGenerator {
               //////////////////////////////////////////////////////////////////////////////////////////////////////////
               //////////////////////////////////////////////////////////////////////////////////////////////////////////
               // BEGIN Post Request body
-              if (method == "post") {
+              if (method == "post" || method == "put") {
                 if (operationIn.body.isDefined) {
                   val bodyIn = operationIn.body.get
                   val requestBody = new mutable.LinkedHashMap[String, Object].asJava
@@ -371,6 +379,14 @@ class OpenapiGenerator extends CodeGenerator {
                     schema.put("items", Items.builder().ref(toRef(JavaPojoUtil.getArrayType(bodyIn.`type`))).build())
                     applicationJson.put("schema", schema)
                   }
+
+                  if(isModelType(service,bodyIn.`type`)){
+                    val schemaOut = new mutable.LinkedHashMap[String, Object].asJava
+                    schemaOut.put("$ref", toRef(bodyIn.`type`))
+                    applicationJson.put("schema",schemaOut)
+                  }
+
+
                   requestBody.put("content", content)
 
 
@@ -559,18 +575,28 @@ class OpenapiGenerator extends CodeGenerator {
 
 
               def toPath(operation: Operation): String = {
-                "/v" + service.version.split("\\.").head + operation.path.split('/').map(
-                  pathElement =>
-                    if (pathElement.startsWith(":")) {
-                      "{" + pathElement.stripPrefix(":") + "}"
-                    } else {
-                      pathElement
-                    }
-                ).mkString("/")
+                "/v" + service.version.split("\\.").head +
+                  operation.path.split('/').map(
+                    pathElement =>
+                      if (pathElement.startsWith(":")) {
+                        "{" + pathElement.stripPrefix(":") + "}"
+                      } else {
+                        pathElement
+                      }
+                  ).mkString("/")
               }
 
 
-              paths.put(toPath(operationIn), pathOut)
+              val pathOut = new mutable.LinkedHashMap[String, Object].asJava
+              pathOut.put(operationIn.method.toString.toLowerCase(), operationOut)
+
+              val adderSupplier = new java.util.function.Function[String, util.LinkedHashMap[String,Object]]() {
+                override def apply(t: String): util.LinkedHashMap[String,Object] = new util.LinkedHashMap[String, Object]
+              }
+
+              paths.computeIfAbsent(toPath(operationIn), adderSupplier).put(operationIn.method.toString.toLowerCase(), operationOut)
+
+//              paths.put(toPath(operationIn), pathOut)
             }
 
           )
@@ -597,6 +623,10 @@ class OpenapiGenerator extends CodeGenerator {
             Server.builder().url(uri).build()
           )
         }
+        )
+      } else {
+        openapi.server(
+          Server.builder().url("/").build()
         )
       }
 

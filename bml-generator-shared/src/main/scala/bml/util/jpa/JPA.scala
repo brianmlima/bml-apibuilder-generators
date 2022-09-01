@@ -23,6 +23,14 @@ object JPA {
     Text.camelToSnakeCase(JavaPojoUtil.toClassName(model))
   }
 
+  def toTableName(className: ClassName): String = {
+    Text.camelToSnakeCase(className.simpleName())
+  }
+
+  def toTableName(model: String): String = {
+    Text.camelToSnakeCase(JavaPojoUtil.toClassName(model))
+  }
+
   def toColumnName(field: Field): String = {
     Text.camelToSnakeCase(JavaPojoUtil.toFieldName(field))
   }

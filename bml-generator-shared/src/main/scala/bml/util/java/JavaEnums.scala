@@ -39,7 +39,7 @@ object JavaEnums {
     }
 
     safe = "[A-Z\\d]".r.replaceAllIn(safe, m => "_" + m.group(0).toLowerCase())
-    safe.toUpperCase().stripPrefix("_")
+    safe.toUpperCase().stripPrefix("_").replaceAll("__", "_")
   }
 
   def toEnumName(enum: Enum): String = {

@@ -73,7 +73,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     val targetClassName = ClassName.get(nameSpaces.model.nameSpace, toClassName(model))
     val targetClassBuilderName = toBuilderClassName(targetClassName)
     val typeBuilder = TypeSpec.classBuilder(className).addModifiers(PUBLIC)
-      .addAnnotation(LombokTypes.Builder)
+      .addAnnotation(LombokAnno.Builder)
       .addAnnotation(LombokAnno.AccessorFluent)
       .addAnnotation(LombokAnno.Generated)
       .addSuperinterface(JavaTypes.supplier(targetClassName))
@@ -107,7 +107,6 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
                   .addAnnotation(BuilderDefault)
                   .initializer("$L()", defaultSupplierMethodName(field))
               }
-
 
 
               else if (field.`type` == "string") {
@@ -165,7 +164,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
           ).asJava
       )
       .addField(
-        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, PUBLIC, STATIC,FINAL)
+        FieldSpec.builder(ClassName.get("", className.simpleName()), defaultFactoryStaticParamName, PUBLIC, STATIC, FINAL)
           .initializer("builder().build()")
           .build()
       )
@@ -311,7 +310,7 @@ object JavaPojoTestFixtures extends JavaPojoUtil {
     def wrapList(codeBlock: CodeBlock): CodeBlock = {
 
       CodeBlock.builder()
-        .add("$T.$L($L,$L)", TestSuppliers.className(nameSpaces), TestSuppliers.methods.listSupplier, codeBlock, field.maximum.getOrElse(50).toString)
+        .add("$T.$L($L,$L,$L)", TestSuppliers.className(nameSpaces), TestSuppliers.methods.listSupplier, codeBlock, field.minimum.getOrElse(0).toString, field.maximum.getOrElse(50).toString)
         .build()
     }
 

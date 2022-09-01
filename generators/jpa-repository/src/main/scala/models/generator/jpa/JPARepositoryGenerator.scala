@@ -2,7 +2,7 @@ package models.generator.jpa
 
 import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.AnotationUtil.SpringDataAnno
-import bml.util.attribute.{Hibernate, Unique}
+import bml.util.attribute.{FindBy, Hibernate, Unique}
 import bml.util.java.ClassNames.SpringTypes.SpringDataTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{JavaPojoUtil, JavaPojos}
@@ -10,7 +10,7 @@ import bml.util.jpa.JPA
 import bml.util.{GeneratorFSUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ParameterSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.Service
+import io.apibuilder.spec.v0.models.{Field, Model, Service}
 import javax.lang.model.element.Modifier
 import lib.generator.CodeGenerator
 import play.api.Logger
@@ -71,7 +71,6 @@ class JPARepositoryGenerator extends CodeGenerator {
           val idField = model.fields.filter(_.name == "id").last
           val idType = JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
 
-
           def saveMethod(): MethodSpec = {
             MethodSpec.methodBuilder("save").returns(entityClassName).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
               .addJavadoc(
@@ -86,6 +85,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               .addParameter(
                 ParameterSpec.builder(entityClassName, "entity")
                   .addAnnotation(JavaxValidationAnnotations.NotNull)
+//                  .addAnnotation(JavaxValidationAnnotations.Valid)
                   .build()
               )
               .build()
@@ -105,6 +105,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               .addParameter(
                 ParameterSpec.builder(entityClassName, "entity")
                   .addAnnotation(JavaxValidationAnnotations.NotNull)
+//                  .addAnnotation(JavaxValidationAnnotations.Valid)
                   .build()
               )
               .build()
@@ -182,6 +183,44 @@ class JPARepositoryGenerator extends CodeGenerator {
               .addJavadoc(javaDoc)
               .addParameter(parameterSpec.build())
               .build()
+          }
+
+          def findAll(): MethodSpec = {
+            val javaDoc = Seq[String](
+              "Retrieves all models.",
+              "NOTE: As of mid 2022 you need to have an open transaction for stream to work properly in jpa. The only alternative is to use ",
+              "Collection and that can easily be abused and has the potential to cause stack blowouts and out of memory exceptions.",
+              "So pretty much dont use this unless you are storing an enum or something known to be small.",
+              "",
+              "@return A Stream of all models in the database, the stream will be empty if none found",
+            ).mkString("\n")
+            MethodSpec.methodBuilder("findAll").returns(JavaTypes.Stream(entityClassName)).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+              .addJavadoc(javaDoc)
+              .build()
+          }
+
+          def genFind(model: Model): Seq[MethodSpec] = {
+
+            val findBy = FindBy.fromModel(model)
+            if (findBy.isEmpty) {
+              return Seq[MethodSpec]()
+            }
+            val fields = findBy.get.indicesToFields(model)
+
+
+            def doField(field: Field): MethodSpec = {
+
+              val methodName = "findBy" + JavaPojoUtil.toClassName(field.name)
+              val returnType = JavaTypes.Stream(entityClassName)
+              val paramType = JavaPojoUtil.dataTypeFromField(service, field.`type`, nameSpaces.model)
+
+              val param = ParameterSpec.builder(paramType, field.name, Modifier.FINAL).build()
+              MethodSpec.methodBuilder(methodName).returns(returnType).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                .addParameter(param)
+                .build()
+            }
+
+            fields.flatten.map(doField(_))
           }
 
           def existsById(): MethodSpec = {
@@ -351,11 +390,7 @@ class JPARepositoryGenerator extends CodeGenerator {
                           )
                           .mkString("\n")
                         //                        )
-
                       )
-
-
-
                       //                      .addJavadoc()
                       .addParameters(
                         fields.map(
@@ -369,7 +404,6 @@ class JPARepositoryGenerator extends CodeGenerator {
                               parameterSpec = ParameterSpec.builder(idFieldType, JavaPojoUtil.toIdFieldName(aField))
                                 .addAnnotation(JavaxValidationAnnotations.NotNull)
                                 .build()
-
                             } else {
                               parameterSpec = ParameterSpec.builder(fieldType, JavaPojoUtil.toFieldName(aField))
                                 .addAnnotation(JavaxValidationAnnotations.NotNull)
@@ -390,6 +424,100 @@ class JPARepositoryGenerator extends CodeGenerator {
           }
 
 
+          def indexFieldExistsBys(): Seq[MethodSpec] = {
+            val fields = model.fields.filter(!_.annotations.filter(_ == "index").isEmpty)
+            logger.info(s"Found ${fields.length} indexed Fields. Model=${model.name}")
+
+            var out = Seq[MethodSpec]()
+            val uniqueIndexesOption = Unique.fromModel(model)
+            if (uniqueIndexesOption.isDefined) {
+              val uniqueIndexes = uniqueIndexesOption.get
+              val indices = uniqueIndexes.indices
+              val fieldSets = uniqueIndexes.indicesToFields(model)
+              fieldSets.foreach(
+                fieldSet =>
+                  logger.info(s"Creatingunique index existsBy for fields ${fieldSet.map(_.name).mkString(",")}")
+              )
+              out = out ++
+                fieldSets.map(
+                  fields => {
+                    val modelTypeFields = fields.filter(JavaPojoUtil.isModelType(service, _)).map(a => a -> JavaPojoUtil.findIdField(service, a.`type`))(collection.breakOut).toMap
+                    val methodName = fields.map(
+                      aField => if (modelTypeFields.get(aField).flatten.isDefined) {
+                        JavaPojoUtil.toFieldName(aField.name + " _id")
+                      } else {
+                        JavaPojoUtil.toFieldName(aField.name)
+                      }
+                    ).map(_.capitalize).mkString("And")
+                    var c = 1
+                    var query = "SELECT (COUNT(o) = 1) FROM #{#entityName} o WHERE "
+
+                    query = query + fields.map(
+                      aField => {
+                        val foo = modelTypeFields.get(aField).flatten
+                        var out: String = ""
+                        if (foo.isDefined) {
+                          val idField = foo.get
+                          out = s"o.${JavaPojoUtil.toFieldName(aField)}.${JavaPojoUtil.toFieldName(idField)}=?${c}"
+                        } else {
+                          out = s"o.${JavaPojoUtil.toFieldName(aField)}=?${c}"
+                        }
+                        c = c + 1
+                        out
+                      }
+                    ).mkString(" AND ")
+
+                    val spec = MethodSpec.methodBuilder(s"existsBy${methodName}")
+                      .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                      //                      .addAnnotation(SpringDataAnno.Query(query))
+                      .addJavadoc(
+                        //                        JavaPojoUtil.textToComment(
+                        (
+                          Seq[String](s"Specified by unique attribute field index = [${fields.map(_.name).mkString(",")}] .")
+                            ++
+                            fields.map(
+                              aField => {
+                                val `type` = JavaPojoUtil.dataTypeFromField(service, aField, nameSpaces.model);
+                                s"@param ${JavaPojoUtil.toFieldName(aField)} ${aField.description.getOrElse("")}"
+                              }
+                            ) ++
+                            Seq[String](s"@return True if found false otherwise")
+                          )
+                          .mkString("\n")
+                        //                        )
+                      )
+                      //                      .addJavadoc()
+                      .addParameters(
+                        fields.map(
+                          aField => {
+                            val fieldType = JavaPojoUtil.dataTypeFromField(service, aField, nameSpaces.model)
+                            val idFieldOption = JavaPojoUtil.findIdField(service, aField.`type`)
+                            var parameterSpec: ParameterSpec.Builder = null
+                            if (idFieldOption.isDefined) {
+                              val idField = idFieldOption.get
+                              val idFieldType = JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
+                              parameterSpec = ParameterSpec.builder(idFieldType, JavaPojoUtil.toIdFieldName(aField))
+                            } else {
+                              parameterSpec = ParameterSpec.builder(fieldType, JavaPojoUtil.toFieldName(aField))
+                            }
+                            if (aField.required) {
+                              parameterSpec.addAnnotation(JavaxValidationAnnotations.NotNull)
+                            }
+                            parameterSpec.build()
+                          }
+                        ).asJava
+                      ).returns(TypeName.BOOLEAN)
+                    if (!modelTypeFields.isEmpty) {
+                      spec.addAnnotation(SpringDataAnno.Query(query))
+                    }
+                    spec.build()
+                  }
+                )
+            }
+            out
+          }
+
+
           val repoSpec = TypeSpec.interfaceBuilder(className).addModifiers(Modifier.PUBLIC)
             .addSuperinterface(
               ParameterizedTypeName.get(
@@ -398,15 +526,19 @@ class JPARepositoryGenerator extends CodeGenerator {
                 JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
               )
             )
-            .addAnnotation(JavaxValidationAnnotations.Validated)
+//            .addAnnotation(JavaxValidationAnnotations.Validated)
             .addAnnotation(SpringDataTypes.Repository)
             .addMethod(saveMethod())
             .addMethod(saveAndFlushMethod())
             .addMethod(saveAll())
             .addMethod(findById())
+            .addMethod(findAll())
             .addMethod(existsById())
             .addMethod(deleteById())
             .addMethods(indexFieldFindBys().asJava)
+            .addMethods(indexFieldExistsBys().asJava)
+            .addMethods(genFind(model).asJava)
+
 
           GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.jpa, repoSpec)
         }

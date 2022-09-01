@@ -24,6 +24,12 @@ object AnotationUtil {
    */
   object JacksonAnno {
 
+    def JsonNaming(strategy: ClassName): AnnotationSpec = {
+      AnnotationSpec.builder(JacksonTypes.JsonNaming)
+        .addMember("value", "$L.class", strategy.canonicalName())
+        .build()
+    }
+
     val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
       .addMember("value", "$L", "JsonInclude.Include.NON_NULL")
       .build()
@@ -37,6 +43,10 @@ object AnotationUtil {
 
     def JsonProperty(name: String, required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
       .addMember("value", "$S", name)
+      .addMember("required", "$L", required.toString)
+      .build()
+
+    def JsonProperty(required: Boolean) = AnnotationSpec.builder(ClassNames.jsonProperty)
       .addMember("required", "$L", required.toString)
       .build()
 
@@ -164,7 +174,11 @@ object AnotationUtil {
 
     def Singular = AnnotationSpec.builder(LombokTypes.Singular).build()
 
+    def Singular(singularName: String) = AnnotationSpec.builder(LombokTypes.Singular)
+      .addMember("value", "$S", singularName)
+      .build()
   }
+
 
   /**
    * Javax Annotations.
@@ -215,8 +229,21 @@ object AnotationUtil {
      * Javax Persistence Annotations.
      */
     object JavaxPersistanceAnnotations {
+
+      def Converter(autoApply: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Converter)
+        .addMember("autoApply", "$L", if (autoApply) "true" else "false" )
+        .build()
+
+      def Convert(converterClassName: ClassName) = AnnotationSpec.builder(JavaxPersistanceTypes.Convert)
+        .addMember("converter", "$T.class", converterClassName)
+        .build()
+
       def JoinColumn(field: Field) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
         .addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
+        .build()
+
+      def JoinColumn(columnName: String) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+        .addMember("name", "$S", columnName)
         .build()
 
       def JoinColumn(service: Service, field: Field) = {
@@ -233,6 +260,18 @@ object AnotationUtil {
         spec.build()
       }
 
+      def JoinTable(service: Service, className: ClassName, field: Field) = {
+
+        val fromTableName = Text.camelToSnakeCase(JPA.toTableName(className));
+        val fromColumnName = Text.camelToSnakeCase(JPA.toColumnName(field));
+        val toTableName = Text.camelToSnakeCase(JavaPojoUtil.getArrayType(field.`type`));
+
+        AnnotationSpec.builder(JavaxPersistanceTypes.JoinTable)
+          .addMember("name", "$S", s"${fromTableName}__map__${fromColumnName}__to__${toTableName}")
+          .addMember("joinColumns", "$L", JoinColumn(fromTableName))
+          .addMember("inverseJoinColumns", "$L", JoinColumn(toTableName))
+          .build()
+      }
 
       val ManyToOne = AnnotationSpec.builder(JavaxPersistanceTypes.ManyToOne).build()
 

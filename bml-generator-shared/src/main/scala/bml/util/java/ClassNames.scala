@@ -5,10 +5,14 @@ import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
-import bml.util.JavaNameSpace
+import bml.util.{JavaNameSpace, NameSpaces}
 import bml.util.java.poet.StaticImportMethod
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonInclude, JsonValue}
+import com.fasterxml.jackson.databind.PropertyNamingStrategy.SnakeCaseStrategy
+import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.squareup.javapoet._
+import io.apibuilder.spec.v0.models.Field
+import javax.persistence.CascadeType
 import lombok.Builder.Default
 import lombok._
 import lombok.experimental.{FieldNameConstants, UtilityClass}
@@ -19,6 +23,14 @@ object ClassNames {
 
   def toClassName(namespace: JavaNameSpace, className: String): ClassName = {
     ClassName.get(namespace.nameSpace, className);
+  }
+
+  object AtlasTypes {
+    def enumJpaConverterClassName(`type`: String, nameSpaces: NameSpaces): ClassName = {
+      val enumFieldClassName = JavaPojoUtil.toClassName(nameSpaces.model, `type`)
+      ClassName.get(nameSpaces.jpaConverters.nameSpace, s"${enumFieldClassName.simpleName()}JpaEnumConverter")
+    }
+
   }
 
 
@@ -35,7 +47,10 @@ object ClassNames {
 
     val GenerationTime = ClassName.get("org.hibernate.annotations", "GenerationTime")
     val GenericGenerator = ClassName.get("org.hibernate.annotations", "GenericGenerator")
+    val UUIDGenerator = ClassName.get("org.hibernate.id", "UUIDGenerator")
 
+    val HibernateException = ClassName.get("org.hibernate", "HibernateException")
+    val SharedSessionContractImplementor = ClassName.get("org.hibernate.engine.spi", "SharedSessionContractImplementor")
 
   }
 
@@ -47,12 +62,17 @@ object ClassNames {
   // BEGIN JAVA CORE ###################################################################################################
 
   object JavaTypes {
+    //    val Boolean = ClassName.bestGuess("java.lang.Boolean")
+    val Object = ClassName.bestGuess("java.lang.Object")
+
     val Override = ClassName.get("", "Override")
     val String = ClassName.get("", "String")
     val SuppressWarnings = ClassName.get("", "SuppressWarnings")
 
 
     val Collections = ClassName.bestGuess("java.util.Collections")
+
+    val Serializable = ClassName.bestGuess("java.io.Serializable")
 
     val StandardCharsets = ClassName.bestGuess("java.nio.charset.StandardCharsets")
 
@@ -399,6 +419,7 @@ object ClassNames {
     val Singular = ClassName.get(classOf[Singular])
     val Generated = ClassName.get(classOf[Generated])
 
+
     val EqualsAndHashCode = ClassName.get(classOf[EqualsAndHashCode])
     val Data = ClassName.get(classOf[Data])
     val `val` = ClassName.get("lombok", "val")
@@ -476,6 +497,8 @@ object ClassNames {
       def ConstraintViolation(typeName: TypeName): ParameterizedTypeName = {
         ParameterizedTypeName.get(ConstraintViolation, typeName)
       }
+
+
     }
 
     object JavaxPersistanceTypes {
@@ -496,9 +519,16 @@ object ClassNames {
       val ManyToOne = ClassName.get("javax.persistence", "ManyToOne")
 
       val OneToMany = ClassName.get("javax.persistence", "OneToMany")
+      val OneToOne = ClassName.get("javax.persistence", "OneToOne")
+      val CascadeType = ClassName.get("javax.persistence", "CascadeType")
 
 
       val JoinColumn = ClassName.get("javax.persistence", "JoinColumn")
+      val JoinTable = ClassName.get("javax.persistence", "JoinTable")
+
+      val AttributeConverter = ClassName.get("javax.persistence", "AttributeConverter")
+      val Converter = ClassName.get("javax.persistence", "Converter")
+      val Convert = ClassName.get("javax.persistence", "Convert")
 
 
     }
@@ -547,6 +577,8 @@ object ClassNames {
   val configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
   val primary = ClassName.get("org.springframework.context.annotation", "Primary")
   val mediaType = ClassName.get("org.springframework.http", "MediaType")
+  val HttpMethod = ClassName.get("org.springframework.http", "HttpMethod")
+
   val httpMessageConverter = ClassName.get("org.springframework.http.converter", "HttpMessageConverter")
   val mappingJackson2HttpMessageConverter = ClassName.get("org.springframework.http.converter.json", "MappingJackson2HttpMessageConverter")
   val enableWebSecurity = ClassName.get("org.springframework.security.config.annotation.web.configuration", "EnableWebSecurity")
@@ -557,6 +589,10 @@ object ClassNames {
 
 
   object JacksonTypes {
+
+    val JsonNaming = ClassName.get("com.fasterxml.jackson.databind.annotation", "JsonNaming")
+    val SnakeCaseStrategy = ClassName.get("com.fasterxml.jackson.databind.PropertyNamingStrategies", "SnakeCaseStrategy")
+
     val ObjectMapper = ClassName.get("com.fasterxml.jackson.databind", "ObjectMapper")
     val JavaTimeModule = ClassName.get("com.fasterxml.jackson.datatype.jsr310", "JavaTimeModule")
     val YAMLFactory = ClassName.get("com.fasterxml.jackson.dataformat.yaml", "YAMLFactory")

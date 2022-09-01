@@ -9,6 +9,8 @@ import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
+
 class SpringServices {
 
 }
@@ -92,7 +94,112 @@ object SpringServices {
 
     }
 
+    def doVoidResponseBuilderHelper(responses: Seq[Response]): TypeSpec = {
+
+      val builderClass = ClassName.bestGuess(s"${className.simpleName()}Builder")
+
+      val spec = TypeSpec.classBuilder(builderClass).addModifiers(PUBLIC,STATIC)
+      spec.addJavadoc("Added so we can write shortcut methods so you dont have to create a Response entity if you dont want to.");
+
+      //
+      responses.foreach(
+        response => {
+          val responseType = JavaPojoUtil.dataTypeFromField(service, response.`type`, nameSpaces.model);
+          val paramClassName = ParameterizedTypeName.get(SpringTypes.ResponseEntity, responseType)
+          val fieldName = responseToContainerMemberName(response);
+
+          if (response.`type` == "unit" || response.`type` == "string") {
+            spec.addField(
+              FieldSpec.builder(paramClassName, fieldName)
+                .addModifiers(PRIVATE)
+                .addJavadoc(
+                  "Field for Response Code $S, description $S .",
+                  responseCodeToString(response.code),
+                  response.description.get
+                )
+                .build()
+            )
+          }
+          if (!JavaPojoUtil.isParameterArray(response.`type`) && response.`type` != "unit") {
+            spec.addMethod(
+              MethodSpec.methodBuilder(fieldName)
+                .addModifiers(PUBLIC)
+                .returns(builderClass)
+                .addParameter(ParameterSpec.builder(responseType, "responseBody", FINAL).build())
+                .addCode(
+                  CodeBlock.builder()
+                    .addStatement("this.$L=$T.status($L).body($L)", fieldName, SpringTypes.ResponseEntity, responseCodeToString(response.code), "responseBody")
+                    .addStatement("return this")
+                    .build()
+                )
+                .build()
+            )
+            //            spec.addMethod(
+            //              MethodSpec.methodBuilder(fieldName)
+            //                .addModifiers(PUBLIC)
+            //                .returns(builderClass)
+            //                .addParameter(ParameterSpec.builder(paramClassName, "responseEntity", FINAL).build())
+            //                .addCode(
+            //                  CodeBlock.builder()
+            //                    .addStatement("this.$L=$L", fieldName, "responseEntity")
+            //                    .addStatement("return this")
+            //                    .build()
+            //                )
+            //                .build()
+            //            )
+            spec.addMethod(
+              MethodSpec.methodBuilder(fieldName)
+                .addModifiers(PUBLIC)
+                .returns(builderClass)
+                .addParameter(ParameterSpec.builder(paramClassName, "responseEntity", FINAL).build())
+                .addCode(
+                  CodeBlock.builder()
+                    .addStatement("this.$L=$L", fieldName, "responseEntity")
+                    .addStatement("return this")
+                    .build()
+                )
+                .build()
+            )
+          }
+
+
+          if (response.`type` == "unit") {
+            spec.addMethod(
+              MethodSpec.methodBuilder(fieldName)
+                .addModifiers(PUBLIC)
+                .returns(builderClass)
+                .addCode(
+                  CodeBlock.builder()
+                    .addStatement("this.$L=$T.status($L).build()", fieldName, SpringTypes.ResponseEntity, responseCodeToString(response.code))
+                    .addStatement("return this")
+                    .build()
+                )
+                .build()
+            )
+            spec.addMethod(
+              MethodSpec.methodBuilder(fieldName)
+                .addModifiers(PUBLIC)
+                .returns(builderClass)
+                .addParameter(ParameterSpec.builder(paramClassName, "responseEntity", FINAL).build())
+                .addCode(
+                  CodeBlock.builder()
+                    .addStatement("this.$L=$L", fieldName, "responseEntity")
+                    .addStatement("return this")
+                    .build()
+                )
+                .build()
+            )
+          }
+        }
+      )
+
+
+      return spec.build()
+    }
+
+
     val spec = TypeSpec.classBuilder(className)
+      .addType(doVoidResponseBuilderHelper(operation.responses))
       .addModifiers(Modifier.PUBLIC)
       .addAnnotations(Seq(LombokAnno.Builder, LombokAnno.AccessorFluent).asJava)
       .addJavadoc(operation.description.getOrElse(""))
@@ -144,13 +251,13 @@ object SpringServices {
       .addField(
         FieldSpec.builder(classOf[String], objectMapperBeanNameFieldJson, PUBLIC, STATIC, FINAL)
           .addJavadoc("Bean name for Json ObjectMapper.")
-          .initializer("$S",objectMapperBeanNameJson)
+          .initializer("$S", objectMapperBeanNameJson)
           .build()
       )
       .addField(
         FieldSpec.builder(classOf[String], objectMapperBeanNameFieldYml, PUBLIC, STATIC, FINAL)
           .addJavadoc("Bean name for Json ObjectMapper.")
-          .initializer("$S",objectMapperBeanNameYml)
+          .initializer("$S", objectMapperBeanNameYml)
           .build()
       )
       .addMethod(
@@ -345,6 +452,7 @@ object SpringServices {
             .build()
         )
       }
+
       operation.method match {
         case Method.Get =>
         case Method.Post =>

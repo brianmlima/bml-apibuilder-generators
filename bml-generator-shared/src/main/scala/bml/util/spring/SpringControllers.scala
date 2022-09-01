@@ -52,14 +52,13 @@ object SpringControllers {
   }
 
 
+  //  def toOperationClientClassName(resource: Resource, operation: Operation): String = {
+  //    val method = operation.method.toString.toLowerCase
+  //    val resourcePath = resource.path.getOrElse(resource.plural)
+  //  }
 
-//  def toOperationClientClassName(resource: Resource, operation: Operation): String = {
-//    val method = operation.method.toString.toLowerCase
-//    val resourcePath = resource.path.getOrElse(resource.plural)
-//  }
 
-
-  def toOperationClientClassName( operation: Operation): String = {
+  def toOperationClientClassName(operation: Operation): String = {
     val method = operation.method.toString.toLowerCase()
 
     //resource: Resource,
@@ -74,71 +73,68 @@ object SpringControllers {
     //        }
     //    )
 
-//    val paramterAnds = (
-//      operation.path.split("/").filter(_.contains(":")).filter(_.isEmpty)
-//        .map(v => "By" + JavaPojoUtil.toClassName(v.drop(1))) ++
-//        operation.path.split("/").filter(!_.contains(":")).filter(_.isEmpty)
-//          .map(v => "With" + JavaPojoUtil.toClassName(v))
-//      ).mkString("")
+    //    val paramterAnds = (
+    //      operation.path.split("/").filter(_.contains(":")).filter(_.isEmpty)
+    //        .map(v => "By" + JavaPojoUtil.toClassName(v.drop(1))) ++
+    //        operation.path.split("/").filter(!_.contains(":")).filter(_.isEmpty)
+    //          .map(v => "With" + JavaPojoUtil.toClassName(v))
+    //      ).mkString("")
 
-//    println(operation.path);
-//
-//    val paramterAnds = operation.path.split("/").filter(_.isEmpty).map(
-//      v => {
-//        println("Pathe Element = "+v.toString);
-//        if(v.contains(":")){
-//          println("By".concat(JavaPojoUtil.toClassName(v.drop(1))))
-//          "By" + JavaPojoUtil.toClassName(v.drop(1))
-//        }else{
-//          println("With".concat(JavaPojoUtil.toClassName(v)))
-//          "With" + JavaPojoUtil.toClassName(v)
-//        }
-//      }
-//    ).mkString
-
-
+    //    println(operation.path);
+    //
+    //    val paramterAnds = operation.path.split("/").filter(_.isEmpty).map(
+    //      v => {
+    //        println("Pathe Element = "+v.toString);
+    //        if(v.contains(":")){
+    //          println("By".concat(JavaPojoUtil.toClassName(v.drop(1))))
+    //          "By" + JavaPojoUtil.toClassName(v.drop(1))
+    //        }else{
+    //          println("With".concat(JavaPojoUtil.toClassName(v)))
+    //          "With" + JavaPojoUtil.toClassName(v)
+    //        }
+    //      }
+    //    ).mkString
 
 
-        val paramterAnds = (
-          operation.path.split("/").filter(_.contains(":"))
-            .map(v => JavaPojoUtil.toClassName(v.drop(1)))
-//            ++
-//            operation.parameters.filter(_.location != ParameterLocation.Path)
-//              .map(v => JavaPojoUtil.toClassName(v.name))
-          ).mkString("And")
+    val paramterAnds = (
+      operation.path.split("/").filter(_.contains(":"))
+        .map(v => JavaPojoUtil.toClassName(v.drop(1)))
+
+
+      ).mkString("And")
     var name =
-    if (operation.method == Get) {
-      val ok = operation.responses.find(_.code.productElement(0) == 200)
-      if (ok.isDefined) {
-        JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
-          (
-            if (JavaPojoUtil.isParameterArray(ok.get.`type`)) {
-              "s"
-            } else {
-              ""
-            }
-            )
-      } else {
-        "OkNotDefined"
+      if (operation.method == Get) {
+        val ok = operation.responses.find(_.code.productElement(0) == 200)
+        if (ok.isDefined) {
+          JavaPojoUtil.toClassName(ok.get.`type`).capitalize +
+            (
+              if (JavaPojoUtil.isParameterArray(ok.get.`type`)) {
+                "s"
+              } else {
+                ""
+              }
+              )
+        } else {
+          "OkNotDefined"
+        }
+      } else if (operation.method == Post || operation.method == Put) {
+        if (operation.body.isDefined) {
+          JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
+        } else {
+          "BodyNotDefined"
+        }
+      } else if (operation.method == Delete) {
+        if (operation.body.isDefined) {
+          JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
+        } else {
+          ""
+        }
       }
-    } else if (operation.method == Post || operation.method == Put) {
-      if (operation.body.isDefined) {
-        JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
-      } else {
-        "BodyNotDefined"
-      }
-    } else if (operation.method == Delete) {
-      if (operation.body.isDefined) {
-        JavaPojoUtil.toClassName(operation.body.get.`type`).capitalize
-      } else {
-        ""
-      }
-    }
 
 
-    else {
-      "NotHandled"
-    }
+      else {
+        "NotHandled"
+      }
 
     JavaPojoUtil.toMethodName(method + name +
       (
@@ -260,14 +256,16 @@ object SpringControllers {
 
 
     def toSpringPath(path: String): String = {
-      path.split("/").map(
-        element =>
-          if (element.startsWith(":")) {
-            element.replace(":", "{") + "}"
-          } else {
-            element
-          }
-      ).mkString("/")
+      "/" + path.split("/")
+        .filter(!_.isEmpty)
+        .map(
+          element =>
+            if (element.startsWith(":")) {
+              element.replace(":", "{") + "}"
+            } else {
+              element
+            }
+        ).mkString("/")
     }
 
 

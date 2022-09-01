@@ -40,10 +40,10 @@ object TestSuppliers {
   def className(nameSpaces: NameSpaces) = ClassName.get(nameSpaces.tool.nameSpace, "TestSuppliers")
 
   //####################################################################################################################
-  // BEGIN java class method names for use in java classes that need to refrence them ##################################
+  // BEGIN java class method names for use in java classes that need to reference them ##################################
   /**
    * Encapsulates method names for generated classes.
-   * Generated Java class method names for use in java classes that need to refrence them
+   * Generated Java class method names for use in java classes that need to reference them
    */
   object methods {
     val uuidSupplier = templates.uuid.methodName
@@ -60,7 +60,7 @@ object TestSuppliers {
 
   }
 
-  // END java class method names for use in java classes that need to refrence them ####################################
+  // END java class method names for use in java classes that need to reference them ####################################
   //####################################################################################################################
 
   def testSuppliers(nameSpaces: NameSpaces): File = {
@@ -86,6 +86,12 @@ object TestSuppliers {
       .addStatement("return new $L($L,$L)", templates.list.className(nameSpaces).simpleName(), supplierParam.name, maxSizeParameter.name)
       .build()
 
+    val listSupplierlMethodLong = methodBuilder(templates.list.methodName).addModifiers(PUBLIC, STATIC)
+      .addTypeVariable(t)
+      .returns(templates.list.supplierParameterizedType)
+      .addParameters(Seq(supplierParam.parameterSpec, minSizeParameter, maxSizeParameter).asJava)
+      .addStatement("return new $L($L,$L,$L)", templates.list.className(nameSpaces).simpleName(), supplierParam.name, minSizeParameter.name, maxSizeParameter.name)
+      .build()
 
     //generate the common ones with a template
     val stdGetMethods = Seq(templates.uuid, templates.`boolean`, templates.localDate, templates.localDateTime, templates.integer, templates.long).map(
@@ -113,6 +119,7 @@ object TestSuppliers {
         (Seq(
           wrapRecallMethod,
           wrapProbNullMethod,
+          listSupplierlMethodLong,
           listSupplierlMethod,
 
           generateRangeStringSupplier(nameSpaces)
@@ -349,10 +356,10 @@ object TestSuppliers {
         LoremTooling.minParam,
         LoremTooling.maxParam
       ).map(_.parameterSpec).asJava)
-      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L={} $L={}\", $L, $L))", max, min, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
+      .addStatement("if ($L < $L) throw new $T($T.format(\"$L param can not be less than min param. $L=%s $L=%s\", $L, $L))", max, min, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
       .addStatement("if ($L == 0 && $L == 0) throw new $T(\"$L param and $L param can not both be 0\")", min, max, JavaTypes.IllegalArgumentException, max, min)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", min, JavaTypes.IllegalArgumentException, JavaTypes.String, min, min, max, min, max)
-      .addStatement("if ($L < 0) throw new $T($T.format(\"$L aram can not be less than 0. $L={} $L={}\", $L, $L))", max, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L param can not be less than 0. $L=%s $L=%s\", $L, $L))", min, JavaTypes.IllegalArgumentException, JavaTypes.String, min, min, max, min, max)
+      .addStatement("if ($L < 0) throw new $T($T.format(\"$L param can not be less than 0. $L=%s $L=%s\", $L, $L))", max, JavaTypes.IllegalArgumentException, JavaTypes.String, max, min, max, min, max)
       .addCode(
         CodeBlock.builder()
           .add("return () -> {\n")
@@ -372,32 +379,41 @@ object TestSuppliers {
   }
 
   //val sourceParameter = ParameterSpec.builder(JavaTypes.supplier(t), "source", FINAL).build()
+  val minSizeParameter = ParameterSpec.builder(TypeName.INT, "minSize", FINAL).build()
   val maxSizeParameter = ParameterSpec.builder(TypeName.INT, "maxSize", FINAL).build()
 
 
   def listSupplier(nameSpaces: NameSpaces): TypeSpec = {
 
     val sourceField = FieldSpec.builder(JavaTypes.supplier(t), "supplier", PRIVATE, FINAL).build()
+    val minSizeField = FieldSpec.builder(TypeName.INT, "minSize", PRIVATE, FINAL).build()
     val maxSizeField = FieldSpec.builder(TypeName.INT, "maxSize", PRIVATE, FINAL).build()
 
+    val fields = Seq(sourceField, minSizeField, maxSizeField, randomField).asJava
 
-    val fields = Seq(sourceField, maxSizeField, randomField).asJava
 
-
-    val constructor = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
+    val constructorFull = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
       .addParameter(supplierParam.parameterSpec)
+      .addParameter(minSizeParameter)
       .addParameter(maxSizeParameter)
       .addStatement("this.supplier = supplier")
+      .addStatement("this.minSize = minSize")
       .addStatement("this.maxSize = maxSize")
       .build()
 
+    val constructorShort = MethodSpec.constructorBuilder().addModifiers(PUBLIC)
+      .addParameter(supplierParam.parameterSpec)
+      .addParameter(maxSizeParameter)
+      .addStatement("this(supplier,0,maxSize) ")
+      .build()
+
     val getMethod = MethodSpec.methodBuilder("get").addModifiers(PUBLIC).returns(JavaTypes.List(t))
-      .addJavadoc("WARNING: we are catching an exception to fix the recursion bug in models that refrence themselves.")
+      .addJavadoc("WARNING: we are catching an exception to fix the recursion bug in models that reference themselves.")
       .addStatement("int size = random.nextInt(maxSize)")
       .addStatement("$T list = new $T(maxSize)", JavaTypes.List(t), JavaTypes.ArrayList(t))
       .addCode("try{")
       .addCode("for (int c = 1; c < size; c++) {list.add(supplier.get());}")
-      .addComment("WARNING: we are catching an exception to fix the recursion bug in models that refrence themselves.")
+      .addComment("WARNING: we are catching an exception to fix the recursion bug in models that reference themselves.")
       .addCode("}catch(Exception e){return list;}")
       .addStatement("return list")
       .build()
@@ -407,7 +423,8 @@ object TestSuppliers {
       .addTypeVariable(t)
       .addSuperinterface(JavaTypes.supplier(JavaTypes.List(t)))
       .addFields(fields)
-      .addMethod(constructor)
+      .addMethod(constructorFull)
+      .addMethod(constructorShort)
       .addMethod(getMethod)
       .build()
   }

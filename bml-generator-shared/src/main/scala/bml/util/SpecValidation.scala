@@ -28,7 +28,8 @@ object SpecValidation {
         checkAllArraysHaveMaximum(service),
         checkAllHibernateModelsHaveFieldRefWhereNecessary(service),
         checkAllPostOperationsHaveBody(service),
-        checkAllReponsesHaveADescription(service)
+        checkAllReponsesHaveADescription(service),
+        checkAllPathsUnderResourceStartWithForwardSlash(service)
       ).flatten
     if (errors.isEmpty) {
       None
@@ -40,24 +41,39 @@ object SpecValidation {
 
   def checkAllHibernateModelsHaveFieldRefWhereNecessary(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()
+    out
+//    service.models.filter(Hibernate.fromModel(_).use)
+//      .foreach(
+//        model =>
+//          model.fields.foreach(
+//            field =>
+//              if (JavaPojoUtil.isListOfModeslType(service, field)) {
+//                if (FieldRef.fromField(field).isEmpty) {
+//                  val msg = s"ERROR: A model that has the hibernate attribute has a field that is and array of models and does not have a field_ref attribute defined. This is used to derrive foreign keys and is required. Service='${service.name}' Model '${model.name}' Field='${field.name}'"
+//                  log.error(msg)
+//                  out = out ++ Seq(msg)
+//                }
+//              }
+//          )
+//      )
+//    out
+  }
 
-    service.models.filter(Hibernate.fromModel(_).use)
-      .foreach(
-        model =>
-          model.fields.foreach(
-            field =>
-              if (JavaPojoUtil.isListOfModeslType(service, field)) {
-                if (FieldRef.fromField(field).isEmpty) {
-                  val msg = s"ERROR: A model that has the hibernate attribute has a field that is and array of models and does not have a field_ref attribute defined. This is used to derrive foreign keys and is required. Service='${service.name}' Model '${model.name}' Field='${field.name}'"
-                  log.error(msg)
-                  out = out ++ Seq(msg)
-                }
-              }
-          )
+  def checkAllPathsUnderResourceStartWithForwardSlash(service: Service): Seq[String] = {
+    var out: Seq[String] = Seq()
+    service.resources
+      .filter(_.path.isDefined)
+      .map(
+        resource => {
+          if (!resource.path.get.startsWith("/")) {
+            val msg = s"ERROR: All resource paths must start with a forward slash '/'. Organization='${service.organization.key}' Service='${service.name}' Resource '${resource.`type`}' Path='${resource.path}'"
+            log.error(msg)
+            out = out ++ Seq(msg)
+          }
+        }
       )
     out
   }
-
 
   def checkAllArraysHaveMaximum(service: Service): Seq[String] = {
     var out: Seq[String] = Seq()
