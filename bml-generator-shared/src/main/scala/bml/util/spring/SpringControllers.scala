@@ -11,6 +11,7 @@ import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
 import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import lib.Text
+import org.openjdk.tools.javac.util.DefinedBy.Api
 
 
 class SpringControllers {
@@ -462,6 +463,13 @@ object SpringControllers {
       }
     }
 
+    parameter.`type` match {
+      //@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+      case "date-time-iso8601" => builder.addAnnotation(SpringAnno.DateTimeFormat_ISO_DATE_TIME)
+      //@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+      case "date-iso8601" => builder.addAnnotation(SpringAnno.DateTimeFormat_ISO_DATE)
+      case default => false
+    }
 
     if (parameter.minimum.isDefined || parameter.maximum.isDefined) {
       builder.addAnnotation(JavaxValidationAnnotations.Size(parameter.minimum, parameter.maximum))

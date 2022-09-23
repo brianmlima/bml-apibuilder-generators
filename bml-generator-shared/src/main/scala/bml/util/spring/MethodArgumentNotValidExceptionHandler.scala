@@ -2,7 +2,9 @@ package bml.util.spring
 
 import bml.util.NameSpaces
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes, SpringTypes}
+import bml.util.java.JavaPojoUtil
 import io.apibuilder.generator.v0.models.File
+import io.apibuilder.spec.v0.models.Service
 
 object MethodArgumentNotValidExceptionHandler {
 
@@ -11,10 +13,11 @@ object MethodArgumentNotValidExceptionHandler {
   import com.squareup.javapoet.CodeBlock.of
   import bml.util.GeneratorFSUtil.makeFile
 
-  /**
-   * The generated class simple name
-   */
-  val name = "MethodArgumentNotValidExceptionHandler"
+  //  /**
+  //   * The generated class simple name
+  //   */
+  //  val name = "MethodArgumentNotValidExceptionHandler"
+  def name(service: Service) = JavaPojoUtil.toClassName(service.name + "-method-argument-not-valid-exception-handler")
 
   /**
    * Generats a spring @ControllerAdvice that handles validation errors and responses for all endpoints.
@@ -23,9 +26,11 @@ object MethodArgumentNotValidExceptionHandler {
    * @param nameSpaces the NameSpaces object we are generating in
    * @return a @ControllerAdvice impl class
    */
-  def get(nameSpaces: NameSpaces): Seq[File] = {
+  def get(service: Service, nameSpaces: NameSpaces): Seq[File] = {
 
     val staticImports = Seq(JavaTypes.toList.staticImport)
+
+    val name = JavaPojoUtil.toClassName(service.name + "-method-argument-not-valid-exception-handler")
 
     val builder = TypeSpec.classBuilder(name)
       .addAnnotation(LombokTypes.Generated)

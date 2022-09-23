@@ -45,7 +45,7 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
         generateServices(service) ++
           generateControllers(service) ++
           ApiImplementationException.getFile(nameSpaces) ++
-          MethodArgumentNotValidExceptionHandler.get(nameSpaces) ++
+          MethodArgumentNotValidExceptionHandler.get(service ,nameSpaces) ++
 //          SwaggerUiConfig.generate(nameSpaces, service) ++
           //        SpringBootApps.foo(nameSpaces, service) ++
           StringToEnumConverters.enumConverters(service, nameSpaces, service.enums) ++
