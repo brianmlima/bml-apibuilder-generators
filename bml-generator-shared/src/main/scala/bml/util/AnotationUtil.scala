@@ -59,6 +59,16 @@ object AnotationUtil {
    * Spring Annotations.
    */
   object SpringAnno {
+
+
+    val DateTimeFormat_ISO_DATE = AnnotationSpec.builder(SpringTypes.DateTimeFormat)
+      .addMember("iso", "$T.ISO.DATE", SpringTypes.DateTimeFormat)
+      .build()
+    val DateTimeFormat_ISO_DATE_TIME = AnnotationSpec.builder(SpringTypes.DateTimeFormat)
+      .addMember("iso", "$T.ISO.DATE_TIME", SpringTypes.DateTimeFormat)
+      .build()
+
+
     val Configuration = AnnotationSpec.builder(ClassNames.SpringTypes.Configuration).build()
     val Autowired = AnnotationSpec.builder(SpringTypes.Autowired).build()
 
@@ -231,7 +241,7 @@ object AnotationUtil {
     object JavaxPersistanceAnnotations {
 
       def Converter(autoApply: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Converter)
-        .addMember("autoApply", "$L", if (autoApply) "true" else "false" )
+        .addMember("autoApply", "$L", if (autoApply) "true" else "false")
         .build()
 
       def Convert(converterClassName: ClassName) = AnnotationSpec.builder(JavaxPersistanceTypes.Convert)

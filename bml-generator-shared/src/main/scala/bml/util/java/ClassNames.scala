@@ -246,6 +246,8 @@ object ClassNames {
 
   object SpringTypes {
 
+    val DateTimeFormat = ClassName.get("org.springframework.format.annotation", "DateTimeFormat")
+
     val Configuration = ClassName.get("org.springframework.context.annotation", "Configuration")
     val Bean = ClassName.get("org.springframework.context.annotation", "Bean")
     val ResponseEntity: ClassName = ClassName.get("org.springframework.http", "ResponseEntity")
