@@ -544,7 +544,16 @@ object JavaClients {
             containerAccessorName,
             JavaTypes.Optional
           )
-        } else if (JavaPojoUtil.isModelType(service, response.`type`) || JavaPojoUtil.isModelNameWithPackage(response.`type`)) {
+        } else if (response.`type` == "string") {
+          webClientBlock.add("return responseIn.bodyToMono($T.class).map(", responseType)
+          webClientBlock.add(" (content) -> responseOut.body(")
+          webClientBlock.add("  bodyOut.$L(", containerAccessorName)
+          webClientBlock.add("$T.of(content)",JavaTypes.Optional)
+          webClientBlock.add(").build()")
+          webClientBlock.add(").build()")
+          webClientBlock.add(");")
+        }
+        else if (JavaPojoUtil.isModelType(service, response.`type`) || JavaPojoUtil.isModelNameWithPackage(response.`type`)) {
           webClientBlock.add("return responseIn.bodyToMono($T.class).map(", JavaTypes.String)
           webClientBlock.add(" (content) -> responseOut.body(")
           webClientBlock.add("  bodyOut.$L(", containerAccessorName)

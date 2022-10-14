@@ -331,11 +331,11 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
   }
 
   def isEnumType(service: Service, field: Field): Boolean = {
-    !service.enums.filter(_.name == field.`type`).isEmpty
+    !service.enums.filter(_.name == field.`type`).isEmpty | field.`type`.contains(".enums.")
   }
 
   def isEnumType(service: Service, `type`: String): Boolean = {
-    !service.enums.filter(_.name == `type`).isEmpty
+    !service.enums.filter(_.name == `type`).isEmpty | `type`.contains(".enums.")
   }
 
   def isListOfEnumlType(service: Service, field: Field): Boolean = {
