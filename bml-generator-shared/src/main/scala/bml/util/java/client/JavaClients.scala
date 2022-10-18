@@ -3,10 +3,12 @@ package bml.util.java.client
 import java.net.URI
 import java.nio.charset.StandardCharsets
 
+import akka.http.scaladsl.model.headers.CacheDirectives.public
 import bml.util.AnotationUtil.LombokAnno
 import bml.util.attribute.Version
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.ClassNames.{JacksonTypes, JavaTypes, LombokTypes, SpringTypes}
+import bml.util.java.client.util.{ParamTypeEnum, Params, UriParam}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaPojoUtil}
 import bml.util.{GeneratorFSUtil, NameSpaces}
 import bml.util.spring.SpringControllers
@@ -78,6 +80,10 @@ object JavaClients {
             .build()
         ).asJava
       ).build()
+
+
+    val paramTypeEnum = new ParamTypeEnum(clientClassName);
+    val uriParamClass = new UriParam(clientClassName, paramTypeEnum);
 
 
     val responseModelType = TypeSpec.classBuilder("ResponseModel").addTypeVariable(TypeVariableName.get("T"))
@@ -155,6 +161,8 @@ object JavaClients {
         ).asJava
       )
       .addType(configType)
+      .addType(uriParamClass.uriParamType)
+      .addType(paramTypeEnum.makeType())
       .addType(responseModelType)
       .addTypes(
         service.resources.map(
@@ -206,8 +214,18 @@ object JavaClients {
               .addTypes(
                 resource.operations.map(
                   operation => {
-                    //                    TypeSpec.classBuilder(JavaPojoUtil.toClassName(SpringControllers.toControllerOperationName(operation) + "Client"))
-                    TypeSpec.classBuilder(JavaPojoUtil.toClassName(toOperationClientClassName(operation)))
+
+
+                    val containerClassName = ClassName.bestGuess(JavaPojoUtil.toClassName(toOperationClientClassName(operation)))
+
+                    val paramsUtils = new Params(
+                      service,
+                      nameSpaces,
+                      containerClassName,
+                      operation.parameters.filter(p => (p.location == ParameterLocation.Path || p.location == ParameterLocation.Query)),
+                      uriParamClass
+                    )
+                    val spec = TypeSpec.classBuilder(containerClassName)
                       .addModifiers(PUBLIC, STATIC)
                       .addAnnotation(LombokAnno.Generated)
                       .addFields(stdClientFields.asJava)
@@ -221,8 +239,16 @@ object JavaClients {
                       )
                       .addType(generateServiceOperationResponseContainer(service, resource, operation, nameSpaces))
                       .addMethod(generateAccessAsync(service, resource, operation, nameSpaces))
+                      .addMethod(generateStaticAccessAsyncParamHandler(service, resource, operation, nameSpaces))
                       .addMethod(generateStaticAccessAsync(service, resource, operation, nameSpaces))
-                      .build()
+
+
+                    if (paramsUtils.uriParams.nonEmpty) {
+                      spec.addType(paramsUtils.makeType())
+                    }
+
+
+                    spec.build()
                   }
                 ).asJava
 
@@ -394,6 +420,13 @@ object JavaClients {
 
   }
 
+  def generateStaticAccessAsyncParamHandler(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
+
+    return MethodSpec.methodBuilder("buildUri").returns(Void.TYPE).build()
+
+  }
+
+
   def generateStaticAccessAsync(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
 
 
@@ -418,50 +451,122 @@ object JavaClients {
 
     val versionPath = if (version.isEmpty) defaultVersionPath else if (version.get.drop) "" else defaultVersionPath
 
+
+    val uriComponentsPath = versionPath + operation.path.split("/").map(
+      part => if (part.startsWith(":")) {
+        s"{${part.replaceFirst(":", "")}}"
+      } else {
+        part
+      }
+    ).mkString("/")
+
+
+
     val uriBlock =
       if (operation.path.contains(":")) {
-//        val path = versionPath + "/" + operation.path.split("/").map(
-        val path = versionPath  + operation.path.split("/").map(
+//        val path = versionPath + operation.path.split("/").map(
+//          part => if (part.startsWith(":")) {
+//            "%s"
+//          } else {
+//            part
+//          }
+//        ).mkString("/")
+//        val params = operation.path.split("/").filter(_.startsWith(":"))
+//          .map(
+//            param =>
+//              JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true)
+//          ).mkString(",")
+
+//        val encoded = operation.path.split("/").seq
+//          .filter(_.startsWith(":"))
+//          .map(
+//            param =>
+//              CodeBlock.builder()
+//                .addStatement("final $T $L = $T.encode($L.toString(),$S)",
+//                  JavaTypes.String,
+//                  JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true),
+//                  JavaTypes.URLEncoder,
+//                  JavaPojoUtil.toParamName(param.drop(1), true),
+//                  "UTF-8"
+//                ).build()
+//          ).asJava
+
+
+        val uriComponentsPath = versionPath + operation.path.split("/").map(
           part => if (part.startsWith(":")) {
-            "%s"
+            s"{${part.replaceFirst(":", "")}}"
           } else {
             part
           }
         ).mkString("/")
-        val params = operation.path.split("/").filter(_.startsWith(":"))
-          .map(
-            param =>
-              JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true)
-          ).mkString(",")
-
-        val encoded = operation.path.split("/").seq
-          .filter(_.startsWith(":"))
-          .map(
-            param =>
-              CodeBlock.builder()
-                .addStatement("final $T $L = $T.encode($L.toString(),$S)",
-                  JavaTypes.String,
-                  JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true),
-                  JavaTypes.URLEncoder,
-                  JavaPojoUtil.toParamName(param.drop(1), true),
-                  "UTF-8"
-                ).build()
-          ).asJava
 
 
-        CodeBlock.builder()
-          .add(JavaPojoUtil.textToComment("Encode url path paramters"))
-          .add(CodeBlock.join(encoded, ""))
-          .addStatement("final $T path = $T.format($S,$L)", JavaTypes.String, JavaTypes.String, path, params)
-          .addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
+        val code = CodeBlock.builder()
+          .addStatement(
+            CodeBlock.builder()
+              .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
+              .add(".pathSegment($S)", uriComponentsPath)
+              .build()
+          )
+        code
+          .add(
+            "val uri  = uriBuilder"
+          )
+
+
+        operation.parameters
+          .filter(_.location == ParameterLocation.Query)
+          .foreach(
+            param => {
+              val staticFieldName = JavaPojoUtil.toStaticFieldName(param.name)
+              code.add(
+                ".queryParamIfPresent(Params.$L.name, Optional.ofNullable($L).or(() -> Params.$L.defaultValue()))",
+                staticFieldName,
+                param.name,
+                staticFieldName
+              )
+            }
+          )
+
+
+        code.addStatement(".buildAndExpand($L).toUri()",
+          operation.path.split("/").seq
+            .filter(_.startsWith(":"))
+            .map(
+              _.drop(1)
+            ).mkString(", ")
+        )
+        code.addStatement("log.info(\"Calling uri={}\",uri)")
+          //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
           .build()
       }
 
       else {
-//        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + "/" + operation.path)
-        CodeBlock.builder().addStatement("final $T path = $S", JavaTypes.String, versionPath + operation.path)
-          .addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
-          .build();
+
+        val code = CodeBlock.builder()
+          //          .add(JavaPojoUtil.textToComment("Encode url path paramters"))
+          //          .add(CodeBlock.join(encoded, ""))
+          //          .addStatement("final $T path = $T.format($S,$L)", JavaTypes.String, JavaTypes.String, path, params)
+          .addStatement(
+            CodeBlock.builder()
+              .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
+              .add(".pathSegment($S)", uriComponentsPath)
+              .build()
+          )
+        code
+          .add(
+            "val uri  = uriBuilder"
+          )
+        code.addStatement(".buildAndExpand($L).toUri()",
+          operation.path.split("/").seq
+            .filter(_.startsWith(":"))
+            .map(
+              _.drop(1)
+            ).mkString(", ")
+        )
+        code.addStatement("log.info(\"Calling uri={}\",uri)")
+          //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
+          .build()
       }
 
 
@@ -478,16 +583,6 @@ object JavaClients {
         ParameterSpec.builder(paramType, paramName, FINAL).build()
       }
     )
-
-    //Handle query params when we have some to test with
-    //    ++ operation.parameters
-    //      .filter(_.location == ParameterLocation.Query)
-    //      .map(
-    //        queryParam => {
-    //
-    //        }
-    //      )
-
 
     val webClientBlock = CodeBlock.builder()
       .add("final $T exchange =  $L.$L().method($T.$L)",
@@ -548,7 +643,7 @@ object JavaClients {
           webClientBlock.add("return responseIn.bodyToMono($T.class).map(", responseType)
           webClientBlock.add(" (content) -> responseOut.body(")
           webClientBlock.add("  bodyOut.$L(", containerAccessorName)
-          webClientBlock.add("$T.of(content)",JavaTypes.Optional)
+          webClientBlock.add("$T.of(content)", JavaTypes.Optional)
           webClientBlock.add(").build()")
           webClientBlock.add(").build()")
           webClientBlock.add(");")

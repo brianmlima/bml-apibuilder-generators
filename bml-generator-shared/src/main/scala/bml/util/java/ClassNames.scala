@@ -62,6 +62,8 @@ object ClassNames {
   // BEGIN JAVA CORE ###################################################################################################
 
   object JavaTypes {
+    // for generics
+    val T = TypeVariableName.get("T")
     //    val Boolean = ClassName.bestGuess("java.lang.Boolean")
     val Object = ClassName.bestGuess("java.lang.Object")
 
@@ -101,6 +103,22 @@ object ClassNames {
       ParameterizedTypeName.get(Supplier, typeName)
     }
 
+    val Function = ClassName.get("java.util.function", "Function")
+
+    def Function(paramType: ClassName, returnType: ClassName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Function, paramType, returnType)
+    }
+
+    def Function(paramType: TypeName, returnType: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Function, paramType, returnType)
+    }
+
+    val BiFunction = ClassName.get("java.util.function", "BiFunction")
+
+    def BiFunction(param1Type: TypeName, param2Type: TypeName, returnType: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(BiFunction, param1Type, param2Type, returnType)
+    }
+
 
     val Stream = ClassName.get("java.util.stream", "Stream")
 
@@ -128,14 +146,19 @@ object ClassNames {
 
     val `Boolean` = ClassName.get("", "Boolean")
     val `Class` = ClassName.get("", "Class")
+
+    def `Class`(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(`Class`, typeName)
+    }
+
     val InvocationTargetException = ClassName.get("java.lang.reflect", "InvocationTargetException")
     val StringBuilder = ClassName.get("", "StringBuilder")
 
 
     val Optional = ClassName.get("java.util", "Optional")
 
-    def Optional(className: ClassName): ParameterizedTypeName = {
-      ParameterizedTypeName.get(Optional, className)
+    def Optional(typeName: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(Optional, typeName)
     }
 
     def Collectors = ClassName.get("java.util.stream", "Collectors")
@@ -245,6 +268,12 @@ object ClassNames {
 
 
   object SpringTypes {
+
+
+    val UriComponentsBuilder = ClassName.get("org.springframework.web.util", "UriComponentsBuilder")
+
+
+    val UriBuilder = ClassName.get("org.springframework.web.util", "UriBuilder")
 
     val DateTimeFormat = ClassName.get("org.springframework.format.annotation", "DateTimeFormat")
 
