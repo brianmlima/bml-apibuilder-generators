@@ -1,5 +1,6 @@
 package bml.util.java
 
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.java.ClassNames.HValidatorTypes
 import bml.util.{GeneratorFSUtil, JavaNameSpace, NameSpaces}
 import com.squareup.javapoet._
@@ -67,7 +68,7 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
 
 
   def toClassName(modelName: String): String = {
-//    println(s"toClassName('${modelName}')")
+    //    println(s"toClassName('${modelName}')")
     // We don't support upper case class names so if a word is upper case then make it lower case
     def checkForUpperCase(word: String): String =
       if (word == word.toUpperCase) word.toLowerCase
@@ -401,6 +402,12 @@ trait JavaPojoUtil extends JavaNamespaceUtil {
     }
     val model = modelOption.get
     model.fields.find(_.name == "id")
+  }
+
+  def isDateOrTime(field: Field): Boolean = {
+    if (field.`type` == "date-iso8601") return true;
+    if (field.`type` == "date-time-iso8601") return true;
+    false
   }
 
 

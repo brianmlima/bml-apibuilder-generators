@@ -123,7 +123,7 @@ class OpenapiGenerator extends CodeGenerator {
       }
       // assemble descriptions for each enum value
       out = out ++ Seq("<ol>") ++ `enum`.values.map(valueIn => {
-        valueIn.name -> (
+        valueIn.value.getOrElse(valueIn.name) -> (
           if (valueIn.description.isDefined) {
             valueIn.description.get
           } else {
@@ -308,7 +308,11 @@ class OpenapiGenerator extends CodeGenerator {
           val schemaOut = Schema.builder().description(enumToDescription(enumIn))
           schemaOut.`type`(Type.string)
           schemaOut.enums(
-            enumIn.values.map(_.name).asJava
+
+            enumIn.values.map(
+              e => e.value.getOrElse(e.name)
+            ).asJava
+            //            enumIn.values.map(_.name).asJava
           )
           nameSpaces.model.nameSpace + "." + enumIn.name.capitalize -> schemaOut.build()
         }
@@ -339,7 +343,7 @@ class OpenapiGenerator extends CodeGenerator {
           )
       }
 
-      val paths = new mutable.LinkedHashMap[String, util.LinkedHashMap[String,Object]].asJava
+      val paths = new mutable.LinkedHashMap[String, util.LinkedHashMap[String, Object]].asJava
       service.resources.foreach(
         resourceIn => {
           resourceIn.operations.foreach(
@@ -380,10 +384,10 @@ class OpenapiGenerator extends CodeGenerator {
                     applicationJson.put("schema", schema)
                   }
 
-                  if(isModelType(service,bodyIn.`type`)){
+                  if (isModelType(service, bodyIn.`type`)) {
                     val schemaOut = new mutable.LinkedHashMap[String, Object].asJava
                     schemaOut.put("$ref", toRef(bodyIn.`type`))
-                    applicationJson.put("schema",schemaOut)
+                    applicationJson.put("schema", schemaOut)
                   }
 
 
@@ -590,13 +594,13 @@ class OpenapiGenerator extends CodeGenerator {
               val pathOut = new mutable.LinkedHashMap[String, Object].asJava
               pathOut.put(operationIn.method.toString.toLowerCase(), operationOut)
 
-              val adderSupplier = new java.util.function.Function[String, util.LinkedHashMap[String,Object]]() {
-                override def apply(t: String): util.LinkedHashMap[String,Object] = new util.LinkedHashMap[String, Object]
+              val adderSupplier = new java.util.function.Function[String, util.LinkedHashMap[String, Object]]() {
+                override def apply(t: String): util.LinkedHashMap[String, Object] = new util.LinkedHashMap[String, Object]
               }
 
               paths.computeIfAbsent(toPath(operationIn), adderSupplier).put(operationIn.method.toString.toLowerCase(), operationOut)
 
-//              paths.put(toPath(operationIn), pathOut)
+              //              paths.put(toPath(operationIn), pathOut)
             }
 
           )

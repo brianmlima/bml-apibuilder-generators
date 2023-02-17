@@ -61,6 +61,7 @@ object JPA {
         )
         .addAnnotation(HibernateTypes.CreationTimestamp)
         .addAnnotation(JacksonAnno.JsonProperty(createdAtFieldName, false))
+        .addAnnotation(JacksonAnno.JsonFormatString)
         .addAnnotation(JavaxPersistanceAnnotations.Column(createdAtFieldName))
         .build(),
 
@@ -71,6 +72,7 @@ object JPA {
           ).mkString("\n")
         )
         .addAnnotation(HibernateTypes.UpdateTimestamp)
+        .addAnnotation(JacksonAnno.JsonFormatString)
         .addAnnotation(JacksonAnno.JsonProperty(updatedAtFieldName, false))
         .addAnnotation(JavaxPersistanceAnnotations.Column(updatedAtFieldName))
         .build()

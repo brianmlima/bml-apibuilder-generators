@@ -239,7 +239,7 @@ object JavaClients {
                       )
                       .addType(generateServiceOperationResponseContainer(service, resource, operation, nameSpaces))
                       .addMethod(generateAccessAsync(service, resource, operation, nameSpaces))
-                      .addMethod(generateStaticAccessAsyncParamHandler(service, resource, operation, nameSpaces))
+//                      .addMethod(generateStaticAccessAsyncParamHandler(service, resource, operation, nameSpaces))
                       .addMethod(generateStaticAccessAsync(service, resource, operation, nameSpaces))
 
 
@@ -420,11 +420,11 @@ object JavaClients {
 
   }
 
-  def generateStaticAccessAsyncParamHandler(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
-
-    return MethodSpec.methodBuilder("buildUri").returns(Void.TYPE).build()
-
-  }
+//  def generateStaticAccessAsyncParamHandler(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
+//
+//    return MethodSpec.methodBuilder("buildUri").returns(Void.TYPE).build()
+//
+//  }
 
 
   def generateStaticAccessAsync(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
@@ -461,113 +461,85 @@ object JavaClients {
     ).mkString("/")
 
 
-
     val uriBlock =
-      if (operation.path.contains(":")) {
-//        val path = versionPath + operation.path.split("/").map(
-//          part => if (part.startsWith(":")) {
-//            "%s"
-//          } else {
-//            part
-//          }
-//        ).mkString("/")
-//        val params = operation.path.split("/").filter(_.startsWith(":"))
-//          .map(
-//            param =>
-//              JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true)
-//          ).mkString(",")
-
-//        val encoded = operation.path.split("/").seq
-//          .filter(_.startsWith(":"))
-//          .map(
-//            param =>
-//              CodeBlock.builder()
-//                .addStatement("final $T $L = $T.encode($L.toString(),$S)",
-//                  JavaTypes.String,
-//                  JavaPojoUtil.toParamName(param.drop(1) + "Encoded", true),
-//                  JavaTypes.URLEncoder,
-//                  JavaPojoUtil.toParamName(param.drop(1), true),
-//                  "UTF-8"
-//                ).build()
-//          ).asJava
+    //      if (operation.path.contains(":")) {
+    {
+      val uriComponentsPath = versionPath + operation.path.split("/").map(
+        part => if (part.startsWith(":")) {
+          s"{${part.replaceFirst(":", "")}}"
+        } else {
+          part
+        }
+      ).mkString("/")
 
 
-        val uriComponentsPath = versionPath + operation.path.split("/").map(
-          part => if (part.startsWith(":")) {
-            s"{${part.replaceFirst(":", "")}}"
-          } else {
-            part
+      val code = CodeBlock.builder()
+        .addStatement(
+          CodeBlock.builder()
+            .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
+            .add(".path($S)", uriComponentsPath)
+            .build()
+        )
+      code
+        .add(
+          "val uri  = uriBuilder"
+        )
+
+
+      operation.parameters
+        .filter(_.location == ParameterLocation.Query)
+        .foreach(
+          param => {
+            val staticFieldName = JavaPojoUtil.toStaticFieldName(param.name)
+            code.add(
+              ".queryParamIfPresent(Params.$L.name, Params.$L.applyDefault($L))",
+              staticFieldName,
+              staticFieldName,
+              param.name
+            )
           }
-        ).mkString("/")
-
-
-        val code = CodeBlock.builder()
-          .addStatement(
-            CodeBlock.builder()
-              .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
-              .add(".pathSegment($S)", uriComponentsPath)
-              .build()
-          )
-        code
-          .add(
-            "val uri  = uriBuilder"
-          )
-
-
-        operation.parameters
-          .filter(_.location == ParameterLocation.Query)
-          .foreach(
-            param => {
-              val staticFieldName = JavaPojoUtil.toStaticFieldName(param.name)
-              code.add(
-                ".queryParamIfPresent(Params.$L.name, Optional.ofNullable($L).or(() -> Params.$L.defaultValue()))",
-                staticFieldName,
-                param.name,
-                staticFieldName
-              )
-            }
-          )
-
-
-        code.addStatement(".buildAndExpand($L).toUri()",
-          operation.path.split("/").seq
-            .filter(_.startsWith(":"))
-            .map(
-              _.drop(1)
-            ).mkString(", ")
         )
-        code.addStatement("log.info(\"Calling uri={}\",uri)")
-          //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
-          .build()
-      }
 
-      else {
 
-        val code = CodeBlock.builder()
-          //          .add(JavaPojoUtil.textToComment("Encode url path paramters"))
-          //          .add(CodeBlock.join(encoded, ""))
-          //          .addStatement("final $T path = $T.format($S,$L)", JavaTypes.String, JavaTypes.String, path, params)
-          .addStatement(
-            CodeBlock.builder()
-              .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
-              .add(".pathSegment($S)", uriComponentsPath)
-              .build()
-          )
-        code
-          .add(
-            "val uri  = uriBuilder"
-          )
-        code.addStatement(".buildAndExpand($L).toUri()",
-          operation.path.split("/").seq
-            .filter(_.startsWith(":"))
-            .map(
-              _.drop(1)
-            ).mkString(", ")
-        )
-        code.addStatement("log.info(\"Calling uri={}\",uri)")
-          //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
-          .build()
-      }
+      code.addStatement(".buildAndExpand($L).toUri()",
+        operation.path.split("/").seq
+          .filter(_.startsWith(":"))
+          .map(
+            _.drop(1)
+          ).mkString(", ")
+      )
+      code.addStatement("log.info(\"Calling uri={}\",uri)")
+        //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
+        .build()
+    }
+
+    //      else {
+    //
+    //        val code = CodeBlock.builder()
+    //          //          .add(JavaPojoUtil.textToComment("Encode url path paramters"))
+    //          //          .add(CodeBlock.join(encoded, ""))
+    //          //          .addStatement("final $T path = $T.format($S,$L)", JavaTypes.String, JavaTypes.String, path, params)
+    //          .addStatement(
+    //            CodeBlock.builder()
+    //              .add("val uriBuilder = $T.fromUri(config.baseUri())", SpringTypes.UriComponentsBuilder)
+    //              .add(".pathSegment($S)", uriComponentsPath)
+    //              .build()
+    //          )
+    //        code
+    //          .add(
+    //            "val uri  = uriBuilder"
+    //          )
+    //        code.addStatement(".buildAndExpand($L).toUri()",
+    //          operation.path.split("/").seq
+    //            .filter(_.startsWith(":"))
+    //            .map(
+    //              _.drop(1)
+    //            ).mkString(", ")
+    //        )
+    //        code.addStatement("log.info(\"Calling uri={}\",uri)")
+    //          //.addStatement("final $T uri = new $T($L.baseUri().toString() + path)", classOf[URI], classOf[URI], configFieldName)
+    //          .build()
+    //  }
 
 
     val params = operation.parameters.map(

@@ -6,4 +6,5 @@ trait JavaNamespaceUtil {
       JavaReservedWordUtil.checkForReservedWord
     }.mkString(".")
   }
+
 }

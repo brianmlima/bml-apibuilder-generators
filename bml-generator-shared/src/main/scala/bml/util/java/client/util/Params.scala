@@ -49,10 +49,13 @@ class Params(val service: Service, val nameSpaces: NameSpaces, val containerClas
               )
 
             if (param.default.isDefined) {
+              println("Param Default")
+              println(s"name=${param.name} type=${param.`type`} default=${param.default.get}")
               param.`type` match {
                 case "string" => code.add(".$L($T.of($S))", uriParamClass.defaultValueField, JavaTypes.Optional, param.default.get)
                 case "integer" => code.add(".$L($T.of($T.valueOf($S)))", uriParamClass.defaultValueField, JavaTypes.Optional, JavaTypes.Integer, param.default.get)
                 case "boolean" => code.add(".$L($T.of($T.valueOf($S)))", uriParamClass.defaultValueField, JavaTypes.Optional, JavaTypes.`Boolean`, param.default.get)
+                case _ =>
               }
             }
             code.add(".build()")

@@ -223,13 +223,11 @@ object JavaPojos {
     } else if (JavaPojoUtil.isListOfModeslType(service, field)) {
 
 
-      if(FieldRef.fromField(field).isDefined){
+      if (FieldRef.fromField(field).isDefined) {
         out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinColumn(service, field))
-      }else{
+      } else {
         out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinTable(service, className, field))
       }
-
-
 
 
     } else {

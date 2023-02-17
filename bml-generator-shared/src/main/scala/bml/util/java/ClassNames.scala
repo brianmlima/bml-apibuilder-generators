@@ -5,13 +5,14 @@ import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.{JavaNameSpace, NameSpaces}
 import bml.util.java.poet.StaticImportMethod
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonInclude, JsonValue}
+import com.fasterxml.jackson.annotation.{JsonFormat, JsonIgnore, JsonInclude, JsonValue}
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.SnakeCaseStrategy
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.squareup.javapoet._
-import io.apibuilder.spec.v0.models.Field
+import io.apibuilder.spec.v0.models.{Field, Service}
 import javax.persistence.CascadeType
 import lombok.Builder.Default
 import lombok._
@@ -25,11 +26,40 @@ object ClassNames {
     ClassName.get(namespace.nameSpace, className);
   }
 
+
   object AtlasTypes {
     def enumJpaConverterClassName(`type`: String, nameSpaces: NameSpaces): ClassName = {
+
+      val hasPackage = JavaPojoUtil.isModelNameWithPackage(`type`);
       val enumFieldClassName = JavaPojoUtil.toClassName(nameSpaces.model, `type`)
-      ClassName.get(nameSpaces.jpaConverters.nameSpace, s"${enumFieldClassName.simpleName()}JpaEnumConverter")
+      val converterName = s"${enumFieldClassName.simpleName()}JpaEnumConverter";
+
+      if (hasPackage) {
+        val externalNamespaces = NameSpaces.fromEnum(`type`).get;
+        ClassName.get(
+          externalNamespaces.jpaConverters.nameSpace,
+          converterName
+        )
+      } else {
+        ClassName.get(
+          nameSpaces.jpaConverters.nameSpace,
+          converterName
+        )
+      }
     }
+
+    //    def enumJpaConverterClassName(`type`: String, nameSpaces: NameSpaces): ClassName = {
+    //      val hasPackage = JavaPojoUtil.isModelNameWithPackage(`type`);
+    //      val enumFieldClassName: ClassName = if (hasPackage) JavaPojoUtil.toClassName(nameSpaces,`type`) else JavaPojoUtil.toClassName(nameSpaces.model, `type`);
+    //
+    //
+    //      if (hasPackage) {
+    //        ClassName.get(enumFieldClassName.packageName(), s"${enumFieldClassName.simpleName()}JpaEnumConverter");
+    //      } else {
+    //        ClassName.get(nameSpaces.jpaConverters.nameSpace, s"${enumFieldClassName.simpleName()}JpaEnumConverter")
+    //      }
+    //    }
+
 
   }
 
@@ -640,6 +670,7 @@ object ClassNames {
     val JsonDeserialize = ClassName.bestGuess("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
     val JsonSerialize = ClassName.bestGuess("com.fasterxml.jackson.databind.annotation.JsonSerialize")
 
+    val JsonFormat = ClassName.get(classOf[JsonFormat])
 
     val JsonInclude = ClassName.get(classOf[JsonInclude])
 

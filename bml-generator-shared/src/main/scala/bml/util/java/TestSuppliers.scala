@@ -348,6 +348,7 @@ object TestSuppliers {
     val min = "min"
     val max = "max"
 
+
     methodBuilder(methods.stringRangeSupplier)
       .addModifiers(PUBLIC, STATIC)
       .returns(JavaTypes.supplier(JavaTypes.String))
@@ -371,6 +372,18 @@ object TestSuppliers {
           .add("if (buff.length() <= randStringLength) { if(buff.length()!=0){buff.append(' ');}buff.append(word); } else { break; }")
           .endControlFlow()
           .addStatement("$T returnValue = (buff.length() > randStringLength) ? buff.toString().substring(0, randStringLength).trim() : buff.toString().trim()", JavaTypes.String)
+
+          .beginControlFlow("while (returnValue.length() < $L)", min)
+          .addStatement("$T alphabet = \"abcdefghijklmnopqrstuvwxyz\"", JavaTypes.String)
+          .addStatement("returnValue += alphabet.charAt($T.current().nextInt(0, alphabet.length()))",JavaTypes.ThreadLocalRandom)
+          .endControlFlow()
+
+          //    while (returnValue.length() < max) {
+          //      String alphabet = "abcdefghijklmnopqrstuvwxyz";
+          //      returnValue += alphabet.charAt(java.util.concurrent.ThreadLocalRandom.current().nextInt(0, alphabet.length()));
+          //      }
+
+
           .addStatement("log.trace(\"Returning Lorem String length={} text=\\\"{}\\\"\", returnValue.length(),returnValue)")
           .addStatement("return returnValue")
           .addStatement("}")

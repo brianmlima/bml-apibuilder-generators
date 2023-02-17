@@ -30,6 +30,13 @@ object AnotationUtil {
         .build()
     }
 
+    val JsonFormat = AnnotationSpec.builder(JacksonTypes.JsonFormat).build();
+
+
+    val JsonFormatString = AnnotationSpec.builder(JacksonTypes.JsonFormat)
+      .addMember("shape","$T.Shape.STRING",JacksonTypes.JsonFormat)
+      .build()
+
     val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
       .addMember("value", "$L", "JsonInclude.Include.NON_NULL")
       .build()

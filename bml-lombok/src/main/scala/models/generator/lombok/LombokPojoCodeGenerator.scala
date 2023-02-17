@@ -1,5 +1,6 @@
 package models.generator.lombok
 
+import akka.http.scaladsl.model.headers.LinkParams.`type`
 import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
 import bml.util.AnotationUtil.{JacksonAnno, LombokAnno}
 import bml.util.GeneratorFSUtil.makeFile
@@ -266,6 +267,17 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           fieldBuilder.addAnnotation(JavaxValidationAnnotations.Valid)
         }
 
+        if (JavaPojoUtil.isDateOrTime(field)) {
+          fieldBuilder.addAnnotation(JacksonAnno.JsonFormatString)
+        }
+
+        if (JavaPojoUtil.isEnumType(service, field.`type`)) {
+          if (field.default.isDefined) {
+            fieldBuilder.addAnnotation(LombokAnno.BuilderDefault)
+            fieldBuilder.initializer("$T.$L", javaDataType, field.default.get)
+          }
+        }
+
         if (useHibernate) {
           if (JavaPojoUtil.isEnumType(service, field)) {
             val convertersOpt = Converters.fromField(field)
@@ -292,6 +304,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
+          fieldBuilder.addAnnotation(JavaxValidationTypes.Valid)
           val singularAttr = Singular.fromField(field)
           if (singularAttr.isDefined) {
             fieldBuilder.addAnnotation(LombokAnno.Singular(singularAttr.get.name))
@@ -301,7 +314,6 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
         if (field.required) {
           fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
-
         }
         //        if (JavaPojoUtil.isParameterArray(field.`type`)) {
         //          if (field.required) {
@@ -338,10 +350,10 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         ) {
 
           val default = field.default.get
-          if (default.equals("true") || default.equals("false"))
+          if (default.equals("true") || default.equals("false")) {
             fieldBuilder.addAnnotation(LombokTypes.BuilderDefault)
+          }
           fieldBuilder.initializer("$L", default)
-
         }
 
 
