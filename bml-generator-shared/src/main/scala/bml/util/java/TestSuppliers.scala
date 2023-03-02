@@ -422,10 +422,10 @@ object TestSuppliers {
 
     val getMethod = MethodSpec.methodBuilder("get").addModifiers(PUBLIC).returns(JavaTypes.List(t))
       .addJavadoc("WARNING: we are catching an exception to fix the recursion bug in models that reference themselves.")
-      .addStatement("int size = random.nextInt(maxSize)")
-      .addStatement("$T list = new $T(maxSize)", JavaTypes.List(t), JavaTypes.ArrayList(t))
+      .addStatement("int size = $T.nextInt(minSize,maxSize)",CommonsLangTypes.RandomUtils)
+      .addStatement("$T list = new $T(size)", JavaTypes.List(t), JavaTypes.ArrayList(t))
       .addCode("try{")
-      .addCode("for (int c = 1; c < size; c++) {list.add(supplier.get());}")
+      .addCode("for (int c = 0; c < size; c++) {list.add(supplier.get());}")
       .addComment("WARNING: we are catching an exception to fix the recursion bug in models that reference themselves.")
       .addCode("}catch(Exception e){return list;}")
       .addStatement("return list")
