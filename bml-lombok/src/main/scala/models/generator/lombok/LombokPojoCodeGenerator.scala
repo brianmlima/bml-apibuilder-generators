@@ -9,7 +9,9 @@ import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidati
 import bml.util.java.ClassNames._
 import bml.util.java.{JavaCommonClasses, JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
+import bml.util.persist.SpringVariableTypes.PersistenceTypes
 import bml.util.persist.UUIDIfNullGenerator
+import bml.util.spring.SpringVersion
 import bml.util.{FieldUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -27,6 +29,8 @@ import scala.collection.JavaConverters._
  * Generator for Lombok based pojos for models.
  */
 trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
+
+  val springVersion = SpringVersion.FIVE;
 
   val logger: Logger = Logger.apply(this.getClass())
 
@@ -110,7 +114,11 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         .addModifiers(PUBLIC)
         .addAnnotation(JavaxPersistanceAnnotations.Converter(true))
         .addSuperinterface(
-          ParameterizedTypeName.get(JavaxPersistanceTypes.AttributeConverter, enumClassName, convertToClassName)
+          ParameterizedTypeName.get(
+            PersistenceTypes.AttributeConverter.toClassName(springVersion),
+            //              JavaxPersistanceTypes.AttributeConverter,
+            enumClassName,
+            convertToClassName)
         )
         .addMethod(
           MethodSpec.methodBuilder("convertToDatabaseColumn")
