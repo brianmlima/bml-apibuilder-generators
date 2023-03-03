@@ -152,6 +152,7 @@ object AnotationUtil {
    * Lombok Annotations.
    */
   object LombokAnno {
+
     val Slf4j = AnnotationSpec.builder(ClassNames.LombokTypes.Slf4j).build()
 
     val Data = AnnotationSpec.builder(LombokTypes.Data).build()

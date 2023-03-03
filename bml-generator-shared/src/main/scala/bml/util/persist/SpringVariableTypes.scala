@@ -6,6 +6,7 @@ import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidati
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
+import bml.util.persist.SpringVariableTypes.AType
 import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, ParameterizedTypeName, TypeName}
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
@@ -35,8 +36,16 @@ object SpringVariableTypes {
     def apply(className: String, subPackage: String) = new AType(className, subPackage)
   }
 
+  object GenerationTypes {
+    val Generated = AType("Generated", "annotation")
+  }
+
+  object GenerationAnnotations {
+    def Generated(springVersion: SpringVersion) = AnnotationSpec.builder(GenerationTypes.Generated.toClassName(springVersion)).build()
+  }
 
   object ValidationTypes {
+
     val NotNull = AType("NotNull", "validation.constraints")
     val NotBlank = AType("NotBlank", "validation.constraints")
     val NotEmpty = AType("NotEmpty", "validation.constraints")
@@ -49,9 +58,13 @@ object SpringVariableTypes {
     val ConstraintViolation = AType("ConstraintViolation", "validation")
   }
 
+
   object ValidationAnnotations {
 
     import com.squareup.javapoet._
+
+
+    //    def Generated
 
 
     def Email(springVersion: SpringVersion) = AnnotationSpec.builder(ValidationTypes.Email.toClassName(springVersion)).build()
