@@ -3,6 +3,8 @@ package bml.util.java
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes, SpringTypes}
+import bml.util.persist.SpringVariableTypes.ValidationAnnotations
+import bml.util.spring.SpringVersion.SpringVersion
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.squareup.javapoet._
 import javax.lang.model.element.Modifier._
@@ -64,7 +66,7 @@ object JavaCommonClasses {
     .build()
 
 
-  def baseEntity(packageName: String): TypeSpec.Builder = TypeSpec.classBuilder("BaseEntity")
+  def baseEntity(springVersion: SpringVersion, packageName: String): TypeSpec.Builder = TypeSpec.classBuilder("BaseEntity")
     .addModifiers(PUBLIC, ABSTRACT)
     .addTypeVariable(TypeVariableName.get("T", ClassName.get("", "BaseEntity")))
     .addSuperinterface(SpringTypes.ObjectIdentity)
@@ -74,9 +76,9 @@ object JavaCommonClasses {
     .addField(serialVersionUID())
     .addMethod(abstractGetThis())
 
-  def baseRepository(packageName: String): TypeSpec.Builder = {
+  def baseRepository(springVersion: SpringVersion, packageName: String): TypeSpec.Builder = {
 
-    val notNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
+    val notNull = ValidationAnnotations.NotNull(springVersion)
     val javersAuditable = AnnotationSpec.builder(classOf[JaversAuditable]).build()
 
     case class TypeHelper(packagePath: String, className: String) {

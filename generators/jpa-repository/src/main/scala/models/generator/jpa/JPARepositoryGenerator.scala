@@ -7,7 +7,9 @@ import bml.util.java.ClassNames.SpringTypes.SpringDataTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
+import bml.util.persist.SpringVariableTypes.ValidationAnnotations
 import bml.util.spring.SpringVersion
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{GeneratorFSUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ParameterSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -49,7 +51,7 @@ class JPARepositoryGenerator extends CodeGenerator {
       }
 
       Right(
-        generateJPARepositories(service)
+        generateJPARepositories(springVersion, service)
           ++
           generateRepositoryConfig(service)
       )
@@ -65,7 +67,7 @@ class JPARepositoryGenerator extends CodeGenerator {
       Seq(GeneratorFSUtil.makeFile(className.simpleName(), nameSpaces.jpa, repoConfigSpec))
     }
 
-    def generateJPARepositories(service: Service): Seq[File] = {
+    def generateJPARepositories(springVersion: SpringVersion, service: Service): Seq[File] = {
 
       service.models.filter(Hibernate.fromModel(_).use).map(
         model => {
@@ -88,8 +90,8 @@ class JPARepositoryGenerator extends CodeGenerator {
               )
               .addParameter(
                 ParameterSpec.builder(entityClassName, "entity")
-                  .addAnnotation(JavaxValidationAnnotations.NotNull)
-//                  .addAnnotation(JavaxValidationAnnotations.Valid)
+                  .addAnnotation(ValidationAnnotations.NotNull(springVersion))
+                  //                  .addAnnotation(JavaxValidationAnnotations.Valid)
                   .build()
               )
               .build()
@@ -108,8 +110,8 @@ class JPARepositoryGenerator extends CodeGenerator {
               )
               .addParameter(
                 ParameterSpec.builder(entityClassName, "entity")
-                  .addAnnotation(JavaxValidationAnnotations.NotNull)
-//                  .addAnnotation(JavaxValidationAnnotations.Valid)
+                  .addAnnotation(ValidationAnnotations.NotNull(springVersion))
+                  //                  .addAnnotation(JavaxValidationAnnotations.Valid)
                   .build()
               )
               .build()
@@ -128,7 +130,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               )
               .addParameter(
                 ParameterSpec.builder(JavaTypes.Iterable(entityClassName), "entities")
-                  .addAnnotation(JavaxValidationAnnotations.NotNull)
+                  .addAnnotation(ValidationAnnotations.NotNull(springVersion))
                   .addAnnotation(JavaxValidationAnnotations.NotEmpty)
                   .build()
               )
@@ -150,9 +152,9 @@ class JPARepositoryGenerator extends CodeGenerator {
             ).mkString("\n")
 
             val parameterSpec = ParameterSpec.builder(idType, "id")
-              .addAnnotation(JavaxValidationAnnotations.NotNull)
+              .addAnnotation(ValidationAnnotations.NotNull(springVersion))
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion, entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }
@@ -177,9 +179,9 @@ class JPARepositoryGenerator extends CodeGenerator {
             ).mkString("\n")
 
             val parameterSpec = ParameterSpec.builder(idType, "id")
-              .addAnnotation(JavaxValidationAnnotations.NotNull)
+              .addAnnotation(ValidationAnnotations.NotNull(springVersion))
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion, entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }
@@ -241,9 +243,9 @@ class JPARepositoryGenerator extends CodeGenerator {
             ).mkString("\n")
 
             val parameterSpec = ParameterSpec.builder(idType, "id")
-              .addAnnotation(JavaxValidationAnnotations.NotNull)
+              .addAnnotation(ValidationAnnotations.NotNull(springVersion))
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion, entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }
@@ -406,11 +408,11 @@ class JPARepositoryGenerator extends CodeGenerator {
                               val idField = idFieldOption.get
                               val idFieldType = JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
                               parameterSpec = ParameterSpec.builder(idFieldType, JavaPojoUtil.toIdFieldName(aField))
-                                .addAnnotation(JavaxValidationAnnotations.NotNull)
+                                .addAnnotation(ValidationAnnotations.NotNull(springVersion))
                                 .build()
                             } else {
                               parameterSpec = ParameterSpec.builder(fieldType, JavaPojoUtil.toFieldName(aField))
-                                .addAnnotation(JavaxValidationAnnotations.NotNull)
+                                .addAnnotation(ValidationAnnotations.NotNull(springVersion))
                                 .build()
                             }
                             parameterSpec
@@ -505,7 +507,7 @@ class JPARepositoryGenerator extends CodeGenerator {
                               parameterSpec = ParameterSpec.builder(fieldType, JavaPojoUtil.toFieldName(aField))
                             }
                             if (aField.required) {
-                              parameterSpec.addAnnotation(JavaxValidationAnnotations.NotNull)
+                              parameterSpec.addAnnotation(ValidationAnnotations.NotNull(springVersion))
                             }
                             parameterSpec.build()
                           }
@@ -530,7 +532,7 @@ class JPARepositoryGenerator extends CodeGenerator {
                 JavaPojoUtil.dataTypeFromField(service, idField, nameSpaces.model)
               )
             )
-//            .addAnnotation(JavaxValidationAnnotations.Validated)
+            //            .addAnnotation(JavaxValidationAnnotations.Validated)
             .addAnnotation(SpringDataTypes.Repository)
             .addMethod(saveMethod())
             .addMethod(saveAndFlushMethod())

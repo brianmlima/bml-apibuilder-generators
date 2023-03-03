@@ -3,6 +3,8 @@ package bml.util.spring
 import bml.util.AnotationUtil.LombokAnno
 import bml.util.java.ClassNames._
 import bml.util.java.JavaPojoUtil
+import bml.util.persist.SpringVariableTypes.ValidationAnnotations
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models._
@@ -98,7 +100,7 @@ object SpringServices {
 
       val builderClass = ClassName.bestGuess(s"${className.simpleName()}Builder")
 
-      val spec = TypeSpec.classBuilder(builderClass).addModifiers(PUBLIC,STATIC)
+      val spec = TypeSpec.classBuilder(builderClass).addModifiers(PUBLIC, STATIC)
       spec.addJavadoc("Added so we can write shortcut methods so you dont have to create a Response entity if you dont want to.");
 
       //
@@ -344,53 +346,19 @@ object SpringServices {
   }
 
 
-  def generateService(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+  def generateService(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val serviceName = toServiceClassName(nameSpaces, resource)
     val serviceBuilder = TypeSpec.interfaceBuilder(serviceName).addModifiers(PUBLIC)
       .addJavadoc(resource.description.getOrElse(""))
     //Generate Service methods from operations and add them to the Service Interface
-    resource.operations.flatMap(generateServiceOperation(service, nameSpaces, resource, _, false))
+    resource.operations.flatMap(generateServiceOperation(springVersion, service, nameSpaces, resource, _, false))
       .map(_.build())
       .foreach(serviceBuilder.addMethod)
     //Return the generated Service interface
     Seq(GeneratorFSUtil.makeFile(serviceName.simpleName(), nameSpaces.service, serviceBuilder))
   }
 
-  //  def generateServiceMockTests(nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
-  //    val serviceName = toServiceClassName(nameSpaces, resource)
-  //    val implName = toServiceMockClassName(nameSpaces, resource)
-  //    val implBuilder = TypeSpec.classBuilder(implName).addModifiers(PUBLIC)
-  //      .addAnnotation(SpringTypes.SpringBootTest)
-  //      .addField(
-  //        FieldSpec.builder(serviceName, JavaPojoUtil.toParamName(serviceName.simpleName(), true), PRIVATE)
-  //          .addAnnotation(ClassNames.mock)
-  //          .build()
-  //      )
-  //    //.addSuperinterface(serviceName)
-  //
-  //    //Generate Service methods from operations and add them to the Service Interface
-  //    //    resource.operations.flatMap(generateServiceMockTestOperation(nameSpaces, resource, _))
-  //    //      .map(_.addAnnotation(AnotationUtil.`override`))
-  //    //      .map(_.build())
-  //    //      .foreach(implBuilder.addMethod)
-  //    //Return the generated Service interface
-  //    Seq(GeneratorFSUtil.makeFile(implName.simpleName(), nameSpaces.service, implBuilder))
-  //  }
-  //
-  //  private def generateServiceMockTestOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec.Builder] = {
-  //    val builder = generateServiceOperation(service, nameSpaces, resource, operation, true).get
-  //    //builder.addStatement("return null")
-  //    Some(builder)
-  //  }
-
-
-  //  def generateServicOperationMockFactory(nameSpaces: NameSpaces, resource: Resource,operation: Operation): Seq[File] = {
-  //
-  //  }
-  //  private def generateServiceOperation(nameSpaces: NameSpaces, resource: Resource, operation: Operation,
-
-
-  def generateServiceOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
+  def generateServiceOperation(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation, isconcrete: Boolean): Option[MethodSpec.Builder] = {
     LOG.info("service={} resource={} operationPath={} operationMethod={} isconcrete={}", service.name, resource.`type`, operation.path, operation.method.toString, isconcrete.toString)
 
     val methodName = toOperationName(operation)
@@ -434,7 +402,7 @@ object SpringServices {
           !bodyTypes.contains(param.`type`)
       )
       .map(
-        operationParamToServiceParam(service, operation, nameSpaces, _))
+        operationParamToServiceParam(springVersion, service, operation, nameSpaces, _))
       .foreach(methodSpec.addParameter)
 
 
@@ -447,7 +415,7 @@ object SpringServices {
       def addBody(): Unit = {
         methodSpec.addParameter(
           ParameterSpec.builder(bodyDataType, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
-            .addAnnotation(JavaxValidationAnnotations.NotNull)
+            .addAnnotation(ValidationAnnotations.NotNull(springVersion))
             .addAnnotation(JavaxValidationAnnotations.Valid)
             .build()
         )
@@ -483,11 +451,11 @@ object SpringServices {
     s"@param $paramName ${bodyClassName.simpleName()} ${body.description.getOrElse("")}".trim
   }
 
-  private def operationParamToServiceParam(service: Service, operation: Operation, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
+  private def operationParamToServiceParam(springVersion: SpringVersion, service: Service, operation: Operation, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
     val paramName = JavaPojoUtil.toParamName(parameter.name, true)
     val javaDataType = modelDataType(service, nameSpaces, parameter)
     val builder = ParameterSpec.builder(javaDataType, paramName)
-    if (parameter.required || parameter.default.isDefined) builder.addAnnotation(JavaxValidationAnnotations.NotNull)
+    if (parameter.required || parameter.default.isDefined) builder.addAnnotation(ValidationAnnotations.NotNull(springVersion))
 
     if (parameter.required || parameter.default.isDefined && JavaPojoUtil.isModelNameWithPackage(parameter.`type`))
       builder.addAnnotation(JavaxValidationAnnotations.Valid)

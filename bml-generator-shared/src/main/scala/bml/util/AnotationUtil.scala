@@ -203,7 +203,7 @@ object AnotationUtil {
   object JavaxAnnotations {
 
     object JavaxValidationAnnotations {
-      def NotNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
+//      def NotNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
 
       def NotBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
 

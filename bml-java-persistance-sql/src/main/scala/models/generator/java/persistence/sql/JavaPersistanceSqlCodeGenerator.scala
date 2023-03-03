@@ -1,6 +1,7 @@
 package models.generator.java.persistence.sql
 
 import bml.util.java.{JavaCommonClasses, JavaPojoUtil}
+import bml.util.spring.SpringVersion
 import com.google.googlejavaformat.java.Formatter
 import com.squareup.javapoet.{JavaFile, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -11,6 +12,8 @@ import models.generator.java.persistence.sql.generators._
 
 trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
   def getJavaDocFileHeader(): String //abstract
+
+  val springVersion = SpringVersion.FIVE
 
   override def invoke(form: InvocationForm): Either[Seq[String], Seq[File]] = invoke(form, addHeader = true)
 
@@ -81,8 +84,8 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       //val generatedResolvers: Seq[File] = generateResources(service.resources).filter(_.isDefined).map(_.get)
       Right(
-        Seq(makeFile(config.baseEntitySimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseEntity(config.jpaNameSpace))) ++
-          Seq(makeFile(config.baseRepoSimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseRepository(config.jpaNameSpace))) ++
+        Seq(makeFile(config.baseEntitySimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseEntity(springVersion,config.jpaNameSpace))) ++
+          Seq(makeFile(config.baseRepoSimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseRepository(springVersion, config.jpaNameSpace))) ++
           generatedEnums ++
           generatedUnionTypes ++
           generatedModels ++

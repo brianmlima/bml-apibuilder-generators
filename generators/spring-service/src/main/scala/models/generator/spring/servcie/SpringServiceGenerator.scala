@@ -1,6 +1,7 @@
 package models.generator.spring.service
 
 import bml.util.java.JavaPojoUtil
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.spring._
 import bml.util.{NameSpaces, SpecValidation}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -10,6 +11,8 @@ import play.api.Logger
 
 
 class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
+
+  val springVersion: SpringVersion = SpringVersion.FIVE
 
   val logger: Logger = Logger.apply(this.getClass())
 
@@ -45,8 +48,8 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
         generateServices(service) ++
           generateControllers(service) ++
           ApiImplementationException.getFile(nameSpaces) ++
-          MethodArgumentNotValidExceptionHandler.get(service ,nameSpaces) ++
-//          SwaggerUiConfig.generate(nameSpaces, service) ++
+          MethodArgumentNotValidExceptionHandler.get(service, nameSpaces) ++
+          //          SwaggerUiConfig.generate(nameSpaces, service) ++
           //        SpringBootApps.foo(nameSpaces, service) ++
           StringToEnumConverters.enumConverters(service, nameSpaces, service.enums) ++
           generateBaseConfigration(service) ++
@@ -56,12 +59,12 @@ class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
 
     //Generates Services from Resources
     def generateControllers(service: Service): Seq[File] = {
-      service.resources.flatMap(SpringControllers.generateController(service, nameSpaces, _))
+      service.resources.flatMap(SpringControllers.generateController(springVersion, service, nameSpaces, _))
     }
 
     //Generates Services from Resources
     def generateServices(service: Service): Seq[File] = {
-      service.resources.flatMap(SpringServices.generateService(service, nameSpaces, _))
+      service.resources.flatMap(SpringServices.generateService(springVersion, service, nameSpaces, _))
     }
 
     def generateBaseConfigration(service: Service): Seq[File] = {

@@ -5,6 +5,8 @@ import bml.util.AnotationUtil.SpringAnno
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.persist.SpringVariableTypes.{ValidationAnnotations, ValidationTypes}
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
@@ -177,7 +179,7 @@ object SpringControllers {
     )
   }
 
-  def generateController(service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+  def generateController(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
     val name = SpringControllers.toControllerName(resource)
 
     val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource))
@@ -209,7 +211,7 @@ object SpringControllers {
 
 
     //Generate Controller methods from operations
-    resource.operations.flatMap(SpringControllers.generateControllerOperation(service, nameSpaces, resource, _)).foreach(builder.addMethod)
+    resource.operations.flatMap(SpringControllers.generateControllerOperation(springVersion, service, nameSpaces, resource, _)).foreach(builder.addMethod)
 
 
 
@@ -230,7 +232,7 @@ object SpringControllers {
    * @param operation  the Operation we are generating.
    * @return
    */
-  def generateControllerOperation(service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
+  def generateControllerOperation(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource, operation: Operation): Option[MethodSpec] = {
     val methodName = toControllerOperationName(operation)
     val methodSpec = MethodSpec.methodBuilder(methodName)
       .addModifiers(PUBLIC)
@@ -299,7 +301,7 @@ object SpringControllers {
         param =>
           !bodyTypes.contains(param.`type`)
       )
-      .map(SpringControllers.operationParamToControllerParam(service, nameSpaces, _)).foreach(methodSpec.addParameter)
+      .map(SpringControllers.operationParamToControllerParam(springVersion, service, nameSpaces, _)).foreach(methodSpec.addParameter)
 
     //Handle Body params if present.
 
@@ -431,7 +433,7 @@ object SpringControllers {
     }
   }
 
-  def operationParamToControllerParam(service: Service, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
+  def operationParamToControllerParam(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, parameter: Parameter): ParameterSpec = {
     val paramName = toControllerParamName(parameter)
 
     val paramInType = JavaPojoUtil.dataTypeFromField(service, parameter.`type`, nameSpaces.model.nameSpace)
@@ -457,9 +459,9 @@ object SpringControllers {
     }
     if (parameter.required) {
       if (parameter.`type` == "string") {
-        builder.addAnnotation(JavaxValidationTypes.NotBlank)
+        builder.addAnnotation(ValidationAnnotations.NotBlank(springVersion))
       } else {
-        builder.addAnnotation(JavaxValidationTypes.NotNull)
+        builder.addAnnotation(ValidationAnnotations.NotNull(springVersion))
       }
     }
 

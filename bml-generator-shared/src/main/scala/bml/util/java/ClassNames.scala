@@ -543,7 +543,7 @@ object ClassNames {
   object JavaxTypes {
 
     object JavaxValidationTypes {
-      val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
+//      val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
       val NotBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
       val NotEmpty = ClassName.bestGuess("javax.validation.constraints.NotEmpty")
       val Pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
