@@ -9,7 +9,7 @@ import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidati
 import bml.util.java.ClassNames._
 import bml.util.java.{JavaCommonClasses, JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.persist.SpringVariableTypes.PersistenceTypes
+import bml.util.persist.SpringVariableTypes.{PersistenceAnnotations, PersistenceTypes, ValidationAnnotations, ValidationTypes}
 import bml.util.persist.UUIDIfNullGenerator
 import bml.util.spring.SpringVersion
 import bml.util.{FieldUtil, NameSpaces, SpecValidation}
@@ -112,7 +112,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       val builder = TypeSpec.classBuilder(className)
         .addModifiers(PUBLIC)
-        .addAnnotation(JavaxPersistanceAnnotations.Converter(true))
+        .addAnnotation(PersistenceAnnotations.Converter(springVersion, true))
         .addSuperinterface(
           ParameterizedTypeName.get(
             PersistenceTypes.AttributeConverter.toClassName(springVersion),
@@ -257,8 +257,8 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
 
       if (useHibernate) {
-        classBuilder.addAnnotation(JavaxPersistanceAnnotations.Entity)
-        classBuilder.addAnnotation(JavaxPersistanceAnnotations.Table(model))
+        classBuilder.addAnnotation(PersistenceAnnotations.Entity(springVersion))
+        classBuilder.addAnnotation(PersistenceAnnotations.Table(springVersion, model))
       }
 
       model.fields.foreach(field => {
@@ -272,7 +272,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
 
         if (isModelType(service, field)) {
-          fieldBuilder.addAnnotation(JavaxValidationAnnotations.Valid)
+          fieldBuilder.addAnnotation(ValidationAnnotations.Valid((springVersion)))
         }
 
         if (JavaPojoUtil.isDateOrTime(field)) {
@@ -291,7 +291,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             val convertersOpt = Converters.fromField(field)
             if (convertersOpt.isDefined) {
               val converterClassName = AtlasTypes.enumJpaConverterClassName(field.`type`, nameSpaces)
-              fieldBuilder.addAnnotation(JavaxPersistanceAnnotations.Convert(converterClassName))
+              fieldBuilder.addAnnotation(PersistenceAnnotations.Convert(springVersion, converterClassName))
             } else {
               fieldBuilder.addAnnotation(
                 AnnotationSpec.builder(classOf[Enumerated])
@@ -301,18 +301,13 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
             }
           }
         }
-
-
         if (field.`type` == "integer" && field.default.isDefined) {
-
           fieldBuilder.addAnnotation(LombokTypes.BuilderDefault)
             .initializer("$L", field.default.get)
-
-
         }
 
         if (isParameterArray(field.`type`) || isParameterMap(field.`type`)) {
-          fieldBuilder.addAnnotation(JavaxValidationTypes.Valid)
+          fieldBuilder.addAnnotation(ValidationAnnotations.Valid(springVersion))
           val singularAttr = Singular.fromField(field)
           if (singularAttr.isDefined) {
             fieldBuilder.addAnnotation(LombokAnno.Singular(singularAttr.get.name))
@@ -321,7 +316,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           }
         }
         if (field.required) {
-          fieldBuilder.addAnnotation(JavaxValidationAnnotations.NotNull)
+          fieldBuilder.addAnnotation(ValidationAnnotations.NotNull(springVersion))
         }
         //        if (JavaPojoUtil.isParameterArray(field.`type`)) {
         //          if (field.required) {
@@ -329,7 +324,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         //          }
         //        }
 
-        val sizeAnnotation = JavaPojos.handleSizeAttribute(className, field)
+        val sizeAnnotation = JavaPojos.handleSizeAttribute(springVersion, className, field)
         if (sizeAnnotation.isDefined) {
           fieldBuilder.addAnnotation(sizeAnnotation.get)
         }

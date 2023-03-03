@@ -6,11 +6,9 @@ import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidati
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.persist.SpringVariableTypes.AType
 import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, ParameterizedTypeName, TypeName}
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
-//import org.springframework.core.SpringVersion
 
 object SpringVariableTypes {
 

@@ -7,6 +7,7 @@ import bml.util.java.ClassNames.SpringTypes.SpringDataTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
+import bml.util.spring.SpringVersion
 import bml.util.{GeneratorFSUtil, NameSpaces, SpecValidation}
 import com.squareup.javapoet.{ParameterSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
@@ -18,6 +19,9 @@ import play.api.Logger
 import scala.collection.JavaConverters._
 
 class JPARepositoryGenerator extends CodeGenerator {
+
+  val springVersion = SpringVersion.FIVE;
+
   val logger: Logger = Logger.apply(this.getClass())
 
 
@@ -148,7 +152,7 @@ class JPARepositoryGenerator extends CodeGenerator {
             val parameterSpec = ParameterSpec.builder(idType, "id")
               .addAnnotation(JavaxValidationAnnotations.NotNull)
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }
@@ -175,7 +179,7 @@ class JPARepositoryGenerator extends CodeGenerator {
             val parameterSpec = ParameterSpec.builder(idType, "id")
               .addAnnotation(JavaxValidationAnnotations.NotNull)
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }
@@ -239,7 +243,7 @@ class JPARepositoryGenerator extends CodeGenerator {
             val parameterSpec = ParameterSpec.builder(idType, "id")
               .addAnnotation(JavaxValidationAnnotations.NotNull)
             if (idField.`type` == "string") {
-              val option = JavaPojos.handleSizeAttribute(entityClassName, idField)
+              val option = JavaPojos.handleSizeAttribute(springVersion,entityClassName, idField)
               if (option.isDefined)
                 parameterSpec.addAnnotation(option.get)
             }

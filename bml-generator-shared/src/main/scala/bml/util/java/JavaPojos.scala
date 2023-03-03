@@ -9,6 +9,7 @@ import bml.util.java.ClassNames.JavaTypes
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.JavaPojoUtil.toStaticFieldName
 import bml.util.persist.UUIDIfNullGenerator
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.TypeName.BOOLEAN
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Field, Model, Service}
@@ -165,39 +166,31 @@ object JavaPojos {
       ).flatten
   }
 
-  def handleSizeAttribute(className: ClassName, field: Field): Option[AnnotationSpec] = {
+//  def handleSizeAttribute(className: ClassName, field: Field): Option[AnnotationSpec] = {
+//
+//  }
+
+  def handleSizeAttribute(springVersion: SpringVersion, className: ClassName, field: Field): Option[AnnotationSpec] = {
     val isString = (field.`type` == "string")
     val isList = JavaPojoUtil.isParameterArray(field)
 
     if (!isString && !isList) {
       return None
     }
-
     val minStaticParamName = toMinFieldStaticFieldName(field)
     val maxStaticParamName = toMaxFieldStaticFieldName(field)
     val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
-
-
     if (isList) {
       return Some(spec.addMember("min", "$T.$L", className, minStaticParamName)
         .addMember("max", "$T.$L", className, maxStaticParamName)
         .build())
     }
-
     val hasMin = field.minimum.isDefined
     val hasMax = field.maximum.isDefined
-
     if (hasMin || hasMax) {
       spec.addMember("min", "$T.$L", className, minStaticParamName)
     }
-
-    //    if (hasMax) {
-    //LOG.trace("{} field.maximum.isDefined=true",field.name)
     spec.addMember("max", "$T.$L", className, maxStaticParamName)
-    //    }
-    //    else {
-    //      throw new IllegalArgumentException(s"The field ${field.name} has a minimum defined but no maximum, spec validation should have caught this")
-    //    }
     Some(spec.build())
   }
 
