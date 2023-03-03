@@ -12,15 +12,15 @@ import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
 
 object SpringVariableTypes {
 
-  case class AType(val className: String, val subPackage: String) {
+  class AType(val className: String, val subPackage: String) {
 
     private val javax = "javax"
     private val jakarta = "jakarta"
 
     private def getTopLevelPackage(springVersion: SpringVersion): String = {
       springVersion match {
-        case bml.util.spring.SpringVersion.SIX => javax
-        case bml.util.spring.SpringVersion.FIVE => jakarta
+        case bml.util.spring.SpringVersion.SIX => jakarta
+        case bml.util.spring.SpringVersion.FIVE => javax
       }
     }
 
@@ -28,25 +28,33 @@ object SpringVariableTypes {
       ClassName.get(s"${getTopLevelPackage(springVersion)}.${subPackage}", className)
     }
 
+
+  }
+
+  object AType {
+    def apply(className: String, subPackage: String) = new AType(className, subPackage)
   }
 
 
   object ValidationTypes {
-    val NotNull = AType("validation.constraints", "NotNull")
-    val NotBlank = AType("validation.constraints", "NotBlank")
-    val NotEmpty = AType("validation.constraints", "NotEmpty")
-    val Pattern = AType("validation.constraints", "Pattern")
-    val Size = AType("validation.constraints", "Size")
-    val Email = AType("validation.constraints", "Email")
-    val Valid = AType("validation", "Valid")
-    val Validation = AType("validation", "Validation")
-    val Validator = AType("validation", "Validator")
-    val ConstraintViolation = AType("validation", "ConstraintViolation")
+    val NotNull = AType("NotNull", "validation.constraints")
+    val NotBlank = AType("NotBlank", "validation.constraints")
+    val NotEmpty = AType("NotEmpty", "validation.constraints")
+    val Pattern = AType("Pattern", "validation.constraints")
+    val Size = AType("Size", "validation.constraints")
+    val Email = AType("Email", "validation.constraints")
+    val Valid = AType("Valid", "validation")
+    val Validation = AType("Validation", "validation")
+    val Validator = AType("Validator", "validation")
+    val ConstraintViolation = AType("ConstraintViolation", "validation")
   }
 
   object ValidationAnnotations {
 
     import com.squareup.javapoet._
+
+
+    def Email(springVersion: SpringVersion) = AnnotationSpec.builder(ValidationTypes.Email.toClassName(springVersion)).build()
 
     def NotNull(springVersion: SpringVersion) = AnnotationSpec.builder(ValidationTypes.NotNull.toClassName(springVersion)).build()
 
@@ -92,50 +100,47 @@ object SpringVariableTypes {
 
   object PersistenceTypes {
 
-    val Basic = AType("persistence", "Basic")
+    val Basic = AType("Basic", "persistence")
+    val Column = AType("Column", "persistence")
+    val Entity = AType("Entity", "persistence")
+    val GeneratedValue = AType("GeneratedValue", "persistence")
 
-    val Column = AType("persistence", "Column")
+    val GenerationType = AType("GenerationType", "persistence")
 
-    val Entity = AType("persistence", "Entity")
+    val Id = AType("Id", "persistence")
 
-    val GeneratedValue = AType("persistence", "GeneratedValue")
+    val MappedSuperclass = AType("MappedSuperclass", "persistence")
 
-    val GenerationType = AType("persistence", "GenerationType")
+    val PrePersist = AType("PrePersist", "persistence")
 
-    val Id = AType("persistence", "Id")
+    val PreUpdate = AType("PreUpdate", "persistence")
 
-    val MappedSuperclass = AType("persistence", "MappedSuperclass")
+    val Temporal = AType("Temporal", "persistence")
 
-    val PrePersist = AType("persistence", "PrePersist")
+    val TemporalType = AType("TemporalType", "persistence")
 
-    val PreUpdate = AType("persistence", "PreUpdate")
+    val Version = AType("Version", "persistence")
 
-    val Temporal = AType("persistence", "Temporal")
+    val Table = AType("Table", "persistence")
 
-    val TemporalType = AType("persistence", "TemporalType")
-
-    val Version = AType("persistence", "Version")
-
-    val Table = AType("persistence", "Table")
-
-    val ManyToOne = AType("persistence", "ManyToOne")
+    val ManyToOne = AType("ManyToOne", "persistence")
 
 
-    val OneToMany = AType("persistence", "OneToMany")
+    val OneToMany = AType("OneToMany", "persistence")
 
-    val OneToOne = AType("persistence", "OneToOne")
+    val OneToOne = AType("OneToOne", "persistence")
 
-    val CascadeType = AType("persistence", "CascadeType")
+    val CascadeType = AType("CascadeType", "persistence")
 
-    val JoinColumn = AType("persistence", "JoinColumn")
+    val JoinColumn = AType("JoinColumn", "persistence")
 
-    val JoinTable = AType("persistence", "JoinTable")
+    val JoinTable = AType("JoinTable", "persistence")
 
-    val AttributeConverter = AType("persistence", "AttributeConverter")
+    val AttributeConverter = AType("AttributeConverter", "persistence")
 
-    val Converter = AType("persistence", "Converter")
+    val Converter = AType("Converter", "persistence")
 
-    val Convert = AType("persistence", "Convert")
+    val Convert = AType("Convert", "persistence")
   }
 
   object PersistenceAnnotations {

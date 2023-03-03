@@ -11,7 +11,6 @@ import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 
 class SpringServices {
 
@@ -21,8 +20,6 @@ object SpringServices {
 
   val LOG = LoggerFactory.getLogger(classOf[SpringServices])
 
-
-  import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
   import com.squareup.javapoet._
   import javax.lang.model.element.Modifier._
 
@@ -416,7 +413,7 @@ object SpringServices {
         methodSpec.addParameter(
           ParameterSpec.builder(bodyDataType, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
             .addAnnotation(ValidationAnnotations.NotNull(springVersion))
-            .addAnnotation(JavaxValidationAnnotations.Valid)
+            .addAnnotation(ValidationAnnotations.Valid(springVersion))
             .build()
         )
       }
@@ -458,7 +455,7 @@ object SpringServices {
     if (parameter.required || parameter.default.isDefined) builder.addAnnotation(ValidationAnnotations.NotNull(springVersion))
 
     if (parameter.required || parameter.default.isDefined && JavaPojoUtil.isModelNameWithPackage(parameter.`type`))
-      builder.addAnnotation(JavaxValidationAnnotations.Valid)
+      builder.addAnnotation(ValidationAnnotations.Valid(springVersion))
 
 
     //if(parameter.name == operation.body.map())

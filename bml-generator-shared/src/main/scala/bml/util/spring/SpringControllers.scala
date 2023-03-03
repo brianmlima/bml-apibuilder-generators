@@ -1,6 +1,5 @@
 package bml.util.spring
 
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.AnotationUtil.SpringAnno
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
@@ -13,7 +12,6 @@ import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
 import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
 import lib.Text
-import org.openjdk.tools.javac.util.DefinedBy.Api
 
 
 class SpringControllers {
@@ -474,12 +472,8 @@ object SpringControllers {
     }
 
     if (parameter.minimum.isDefined || parameter.maximum.isDefined) {
-      builder.addAnnotation(JavaxValidationAnnotations.Size(parameter.minimum, parameter.maximum))
+      builder.addAnnotation(ValidationAnnotations.Size(springVersion, parameter.minimum, parameter.maximum))
     }
-    //if (isModel) {
-    //      builder.addAnnotation(JavaxValidationTypes.Valid)
-    //}
-
 
     builder.build()
   }

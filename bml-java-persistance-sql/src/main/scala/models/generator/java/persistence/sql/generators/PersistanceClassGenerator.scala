@@ -1,6 +1,7 @@
 package models.generator.java.persistence.sql.generators
 
 import bml.util.java.{JavaCommonClasses, JavaPojoUtil}
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, ClassName, FieldSpec, ParameterizedTypeName}
 import io.apibuilder.spec.v0.models.Service
 import javax.lang.model.element.Modifier.PROTECTED
@@ -18,7 +19,7 @@ object PersistanceClassGenerator extends JavaPojoUtil {
    *
    * @return
    */
-  def generatePersistenceModel(service: Service, modelData: ModelData): ModelData = {
+  def generatePersistenceModel(springVersion: SpringVersion, service: Service, modelData: ModelData): ModelData = {
 
     //Create the JavaPoet builder tool for the java file and add the default javadoc header
     val classBuilder = GeneratorsCommon.commonClassBuilder(modelData)
@@ -75,6 +76,7 @@ object PersistanceClassGenerator extends JavaPojoUtil {
 
       if (field.minimum.isDefined && field.maximum.isDefined) {
         GenUtils.size(
+          springVersion,
           classBuilder,
           fieldBuilder,
           field.name,
@@ -103,7 +105,7 @@ object PersistanceClassGenerator extends JavaPojoUtil {
       GenUtils.javaDoc(fieldBuilder, field)
       ///////////////////////////////////////
       // Deal with individual known attributes.
-      GeneratorsCommon.processCommonAttributes(classBuilder, field, fieldBuilder)
+      GeneratorsCommon.processCommonAttributes(springVersion, classBuilder, field, fieldBuilder)
       classBuilder.addField(fieldBuilder.build)
     })
     modelData

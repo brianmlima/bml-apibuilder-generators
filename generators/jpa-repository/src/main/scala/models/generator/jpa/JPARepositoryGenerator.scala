@@ -1,6 +1,5 @@
 package models.generator.jpa
 
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxValidationAnnotations
 import bml.util.AnotationUtil.SpringDataAnno
 import bml.util.attribute.{FindBy, Hibernate, Unique}
 import bml.util.java.ClassNames.SpringTypes.SpringDataTypes
@@ -131,7 +130,7 @@ class JPARepositoryGenerator extends CodeGenerator {
               .addParameter(
                 ParameterSpec.builder(JavaTypes.Iterable(entityClassName), "entities")
                   .addAnnotation(ValidationAnnotations.NotNull(springVersion))
-                  .addAnnotation(JavaxValidationAnnotations.NotEmpty)
+                  .addAnnotation(ValidationAnnotations.NotEmpty(springVersion))
                   .build()
               )
               .build()

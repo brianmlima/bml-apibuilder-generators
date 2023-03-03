@@ -1,6 +1,7 @@
 package models.generator.java.persistence.sql.generators
 
 import bml.util.java.JavaPojoUtil
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, FieldSpec}
 import io.apibuilder.spec.v0.models.Service
 import javax.lang.model.element.Modifier.PROTECTED
@@ -17,7 +18,7 @@ object ClassGenerator extends JavaPojoUtil {
    *
    * @return
    */
-  def generateNonPersistenceModel(service: Service, modelData: ModelData): ModelData = {
+  def generateNonPersistenceModel(springVersion: SpringVersion, service: Service, modelData: ModelData): ModelData = {
     //Get normalized class name
     //val className = toClassName(model.name)
     //Create the JavaPoet builder tool for the java file and add the default javadoc header
@@ -48,7 +49,7 @@ object ClassGenerator extends JavaPojoUtil {
       //Deal with javadocs
       GenUtils.javaDoc(fieldBuilder, field)
       // Deal with individual known attributes.
-      GeneratorsCommon.processCommonAttributes(classBuilder, field, fieldBuilder)
+      GeneratorsCommon.processCommonAttributes(springVersion, classBuilder, field, fieldBuilder)
       // Add the field to the current class
       classBuilder.addField(fieldBuilder.build)
     })

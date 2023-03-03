@@ -2,12 +2,12 @@ package bml.util.java
 
 
 import bml.util.AnotationUtil.HibernateAnnotations
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
+import bml.util.persist.SpringVariableTypes.PersistenceAnnotations
 import bml.util.attribute.FieldRef
 import bml.util.{NameSpaces, attribute}
 import bml.util.java.ClassNames.JavaTypes
-import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.JavaPojoUtil.toStaticFieldName
+import bml.util.persist.SpringVariableTypes.ValidationTypes
 import bml.util.persist.UUIDIfNullGenerator
 import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.TypeName.BOOLEAN
@@ -166,9 +166,9 @@ object JavaPojos {
       ).flatten
   }
 
-//  def handleSizeAttribute(className: ClassName, field: Field): Option[AnnotationSpec] = {
-//
-//  }
+  //  def handleSizeAttribute(className: ClassName, field: Field): Option[AnnotationSpec] = {
+  //
+  //  }
 
   def handleSizeAttribute(springVersion: SpringVersion, className: ClassName, field: Field): Option[AnnotationSpec] = {
     val isString = (field.`type` == "string")
@@ -179,7 +179,7 @@ object JavaPojos {
     }
     val minStaticParamName = toMinFieldStaticFieldName(field)
     val maxStaticParamName = toMaxFieldStaticFieldName(field)
-    val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
+    val spec = AnnotationSpec.builder(ValidationTypes.Size.toClassName(springVersion))
     if (isList) {
       return Some(spec.addMember("min", "$T.$L", className, minStaticParamName)
         .addMember("max", "$T.$L", className, maxStaticParamName)
@@ -194,7 +194,7 @@ object JavaPojos {
     Some(spec.build())
   }
 
-  def handlePersisitanceAnnontations(service: Service, className: ClassName, field: Field): Seq[AnnotationSpec] = {
+  def handlePersisitanceAnnontations(springVersion: SpringVersion, service: Service, className: ClassName, field: Field): Seq[AnnotationSpec] = {
     val isId = (field.name == "id")
     val isUUID = (field.`type` == "uuid")
     val isString = (field.`type` == "string")
@@ -203,33 +203,29 @@ object JavaPojos {
     val isList = JavaPojoUtil.isParameterArray(field)
 
     var out: Seq[AnnotationSpec] = Seq()
-    out ++ Seq(JavaxPersistanceAnnotations.Id)
+    out ++ Seq(PersistenceAnnotations.Id(springVersion))
 
-    out = out ++ Seq(JavaxPersistanceAnnotations.Basic(field.required))
+    out = out ++ Seq(PersistenceAnnotations.Basic(springVersion, field.required))
 
     if (isId) {
       LOG.info(s"Found id field in class=${className.toString}")
-      out = out ++ Seq(JavaxPersistanceAnnotations.Id)
+      out = out ++ Seq(PersistenceAnnotations.Id(springVersion))
     }
     if (isModel) {
-      out = out ++ Seq(JavaxPersistanceAnnotations.ManyToOne, JavaxPersistanceAnnotations.JoinColumn(service, field))
+      out = out ++ Seq(PersistenceAnnotations.ManyToOne(springVersion), PersistenceAnnotations.JoinColumn(springVersion, service, field))
     } else if (JavaPojoUtil.isListOfModeslType(service, field)) {
-
-
       if (FieldRef.fromField(field).isDefined) {
-        out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinColumn(service, field))
+        out = out ++ Seq(PersistenceAnnotations.OneToMany(springVersion), PersistenceAnnotations.JoinColumn(springVersion, service, field))
       } else {
-        out = out ++ Seq(JavaxPersistanceAnnotations.OneToMany, JavaxPersistanceAnnotations.JoinTable(service, className, field))
+        out = out ++ Seq(PersistenceAnnotations.OneToMany(springVersion), PersistenceAnnotations.JoinTable(springVersion, service, className, field))
       }
-
-
     } else {
-      out = out ++ Seq(JavaxPersistanceAnnotations.Column(field))
+      out = out ++ Seq(PersistenceAnnotations.Column(springVersion, field))
     }
     if (isId && isUUID) {
       val nameSpaces = new NameSpaces(service)
       out = out ++ Seq(
-        JavaxPersistanceAnnotations.GeneratedValue("UUID"),
+        PersistenceAnnotations.GeneratedValue(springVersion, "UUID"),
         HibernateAnnotations.GenericGenerator("UUID", UUIDIfNullGenerator.className(nameSpaces).canonicalName())
       )
     }

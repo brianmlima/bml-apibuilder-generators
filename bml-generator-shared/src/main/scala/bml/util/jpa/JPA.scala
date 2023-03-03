@@ -1,9 +1,10 @@
 package bml.util.jpa
 
 import bml.util.AnotationUtil.JacksonAnno
-import bml.util.AnotationUtil.JavaxAnnotations.JavaxPersistanceAnnotations
 import bml.util.java.ClassNames.{HibernateTypes, JavaTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.persist.SpringVariableTypes.PersistenceAnnotations
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{JavaNameSpace, Text}
 import com.squareup.javapoet.{ClassName, FieldSpec}
 import io.apibuilder.spec.v0.models.{Field, Model}
@@ -35,7 +36,7 @@ object JPA {
     Text.camelToSnakeCase(JavaPojoUtil.toFieldName(field))
   }
 
-  def addJPAStandardFields(model: Model): Seq[FieldSpec] = {
+  def addJPAStandardFields(springVersion: SpringVersion, model: Model): Seq[FieldSpec] = {
     val versionFieldName = "version"
     val createdAtFieldName = "createdAt"
     val updatedAtFieldName = "updatedAt"
@@ -49,8 +50,8 @@ object JPA {
           ).mkString("\n")
         )
         .addAnnotation(JacksonAnno.JsonProperty(versionFieldName, false))
-        .addAnnotation(JavaxPersistanceAnnotations.Version)
-        .addAnnotation(JavaxPersistanceAnnotations.Column(versionFieldName))
+        .addAnnotation(PersistenceAnnotations.Version(springVersion))
+        .addAnnotation(PersistenceAnnotations.Column(springVersion, versionFieldName))
         .build(),
 
       FieldSpec.builder(ClassNames.JavaTypes.LocalDateTime, createdAtFieldName, Modifier.PROTECTED)
@@ -62,7 +63,7 @@ object JPA {
         .addAnnotation(HibernateTypes.CreationTimestamp)
         .addAnnotation(JacksonAnno.JsonProperty(createdAtFieldName, false))
         .addAnnotation(JacksonAnno.JsonFormatString)
-        .addAnnotation(JavaxPersistanceAnnotations.Column(createdAtFieldName))
+        .addAnnotation(PersistenceAnnotations.Column(springVersion, createdAtFieldName))
         .build(),
 
       FieldSpec.builder(ClassNames.JavaTypes.LocalDateTime, updatedAtFieldName, Modifier.PROTECTED)
@@ -74,7 +75,7 @@ object JPA {
         .addAnnotation(HibernateTypes.UpdateTimestamp)
         .addAnnotation(JacksonAnno.JsonFormatString)
         .addAnnotation(JacksonAnno.JsonProperty(updatedAtFieldName, false))
-        .addAnnotation(JavaxPersistanceAnnotations.Column(updatedAtFieldName))
+        .addAnnotation(PersistenceAnnotations.Column(springVersion, updatedAtFieldName))
         .build()
     )
   }

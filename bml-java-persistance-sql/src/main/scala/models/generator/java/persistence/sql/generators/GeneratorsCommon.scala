@@ -2,6 +2,7 @@ package models.generator.java.persistence.sql.generators
 
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{ClassName, FieldSpec, TypeSpec}
 import io.apibuilder.spec.v0.models.{Field, Model}
 import javax.lang.model.element.Modifier.PUBLIC
@@ -41,11 +42,12 @@ object GeneratorsCommon extends JavaPojoUtil {
     return classBuilder
   }
 
-  def processCommonAttributes(classBuilder: TypeSpec.Builder, field: Field, fieldBuilder: FieldSpec.Builder): Unit = {
+  def processCommonAttributes(springVersion: SpringVersion, classBuilder: TypeSpec.Builder, field: Field, fieldBuilder: FieldSpec.Builder): Unit = {
     field.attributes.foreach(attribute => {
       attribute.name match {
         //Handle @Size
         case "size" => GenUtils.size(
+          springVersion,
           classBuilder,
           fieldBuilder,
           field.name,

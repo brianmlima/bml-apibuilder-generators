@@ -547,7 +547,7 @@ object ClassNames {
       val NotBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
       val NotEmpty = ClassName.bestGuess("javax.validation.constraints.NotEmpty")
       val Pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
-      val Size = ClassName.bestGuess("javax.validation.constraints.Size")
+//      val Size = ClassName.bestGuess("javax.validation.constraints.Size")
       val Email = ClassName.bestGuess("javax.validation.constraints.Email")
       val Valid = ClassName.bestGuess("javax.validation.Valid")
       val Validation = ClassName.bestGuess("javax.validation.Validation")

@@ -4,6 +4,8 @@ import bml.util.java.ClassNames
 import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
+import bml.util.persist.SpringVariableTypes.{ValidationAnnotations, ValidationTypes}
+import bml.util.spring.SpringVersion.SpringVersion
 import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
 import com.squareup.javapoet._
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model}
@@ -11,6 +13,7 @@ import javax.lang.model.element.Modifier.{FINAL, PUBLIC, STATIC}
 import javax.persistence._
 import lombok.experimental.Accessors
 import lombok.{AllArgsConstructor, Builder, Data, EqualsAndHashCode}
+import org.checkerframework.checker.units.qual.{m, min}
 import org.springframework.beans.factory.annotation.Autowired
 
 import scala.collection.mutable.ListBuffer
@@ -63,14 +66,15 @@ object GenUtils {
   def table(model: Model) = AnnotationSpec.builder(classOf[Table]).addMember("name", "$S", model.plural).build()
 
   //@Size(min=${min},max=${max})
-  def size(min: Int, max: Int): AnnotationSpec = AnnotationSpec.builder(JavaxValidationTypes.Size).addMember("min", "$L", new Integer(min)).addMember("max", "$L", new Integer(max)).build()
+  //def size(min: Int, max: Int): AnnotationSpec = ;
+  //    AnnotationSpec.builder(ValidationTypes.Size).addMember("min", "$L", new Integer(min)).addMember("max", "$L", new Integer(max)).build()
 
-  def size(attribute: Attribute): AnnotationSpec = size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
+  def size(springVersion: SpringVersion, attribute: Attribute): AnnotationSpec = ValidationAnnotations.Size(springVersion, (attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
 
-  def size(
-            classBuilder: TypeSpec.Builder,
-            fieldBuilder: FieldSpec.Builder,
-            fieldName: String, min: Int, max: Int): Unit = {
+  def size(springVersion: SpringVersion,
+           classBuilder: TypeSpec.Builder,
+           fieldBuilder: FieldSpec.Builder,
+           fieldName: String, min: Int, max: Int): Unit = {
     var maxFieldName = s"${fieldName.toUpperCase()}_MAX_LEN"
     var minFieldName = s"${fieldName.toUpperCase()}_MIN_LEN"
     var staticFields = Iterable(
@@ -80,7 +84,7 @@ object GenUtils {
     classBuilder.addField(FieldSpec.builder(TypeName.INT, minFieldName, PUBLIC, STATIC, FINAL).initializer(s"${min}").build())
     classBuilder.addField(FieldSpec.builder(TypeName.INT, maxFieldName, PUBLIC, STATIC, FINAL).initializer(s"${max}").build())
     fieldBuilder.addAnnotation(
-      AnnotationSpec.builder(JavaxValidationTypes.Size)
+      AnnotationSpec.builder(ValidationTypes.Size.toClassName(springVersion))
         .addMember("min", "$L", minFieldName)
         .addMember("max", "$L", maxFieldName).build()
     )

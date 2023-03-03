@@ -34,7 +34,7 @@ object AnotationUtil {
 
 
     val JsonFormatString = AnnotationSpec.builder(JacksonTypes.JsonFormat)
-      .addMember("shape","$T.Shape.STRING",JacksonTypes.JsonFormat)
+      .addMember("shape", "$T.Shape.STRING", JacksonTypes.JsonFormat)
       .build()
 
     val JsonIncludeNON_NULL = AnnotationSpec.builder(JacksonTypes.JsonInclude)
@@ -200,151 +200,151 @@ object AnotationUtil {
   /**
    * Javax Annotations.
    */
-  object JavaxAnnotations {
+  //  object JavaxAnnotations {
 
-    object JavaxValidationAnnotations {
-//      def NotNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
+  //    object JavaxValidationAnnotations {
+  ////      def NotNull = AnnotationSpec.builder(JavaxValidationTypes.NotNull).build()
+  //
+  ////      def NotBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
+  //
+  ////      def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
+  //
+  //      //val Validated = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
+  //
+  //      //val Valid = AnnotationSpec.builder(JavaxValidationTypes.Valid).build()
+  //
+  ////      def Size(min: Int, max: Int): AnnotationSpec = {
+  ////        AnnotationSpec.builder(JavaxValidationTypes.Size)
+  ////          .addMember("min", "$L", new Integer(min))
+  ////          .addMember("max", "$L", new Integer(max))
+  ////          .build()
+  ////      }
+  ////
+  ////      def Size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
+  ////        val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
+  ////        if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
+  ////        if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
+  ////        spec.build()
+  ////      }
+  ////
+  ////      def Size(attribute: Attribute): AnnotationSpec = {
+  ////        JavaxValidationAnnotations.Size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
+  ////      }
+  //
+  ////      def Pattern(regexp: String): AnnotationSpec = {
+  ////        AnnotationSpec.builder(JavaxValidationTypes.Pattern)
+  ////          .addMember("regexp", "$S", regexp)
+  ////          .build()
+  ////      }
+  ////
+  ////      def Pattern(attribute: Attribute): AnnotationSpec = {
+  ////        Pattern((attribute.value \ "regexp").as[String])
+  ////      }
+  //    }
 
-      def NotBlank = AnnotationSpec.builder(JavaxValidationTypes.NotBlank).build()
-
-      def NotEmpty = AnnotationSpec.builder(JavaxValidationTypes.NotEmpty).build()
-
-      val Validated = AnnotationSpec.builder(SpringValidationTypes.Validated).build()
-
-      val Valid = AnnotationSpec.builder(JavaxValidationTypes.Valid).build()
-
-      def Size(min: Int, max: Int): AnnotationSpec = {
-        AnnotationSpec.builder(JavaxValidationTypes.Size)
-          .addMember("min", "$L", new Integer(min))
-          .addMember("max", "$L", new Integer(max))
-          .build()
-      }
-
-      def Size(min: Option[Long], max: Option[Long]): AnnotationSpec = {
-        val spec = AnnotationSpec.builder(JavaxValidationTypes.Size)
-        if (min.isDefined) spec.addMember("min", "$L", min.get.toString)
-        if (max.isDefined) spec.addMember("max", "$L", max.get.toString)
-        spec.build()
-      }
-
-      def Size(attribute: Attribute): AnnotationSpec = {
-        JavaxValidationAnnotations.Size((attribute.value \ "min").as[Int], (attribute.value \ "max").as[Int])
-      }
-
-      def Pattern(regexp: String): AnnotationSpec = {
-        AnnotationSpec.builder(JavaxValidationTypes.Pattern)
-          .addMember("regexp", "$S", regexp)
-          .build()
-      }
-
-      def Pattern(attribute: Attribute): AnnotationSpec = {
-        Pattern((attribute.value \ "regexp").as[String])
-      }
-    }
-
-    /**
-     * Javax Persistence Annotations.
-     */
-    object JavaxPersistanceAnnotations {
-
-      def Converter(autoApply: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Converter)
-        .addMember("autoApply", "$L", if (autoApply) "true" else "false")
-        .build()
-
-      def Convert(converterClassName: ClassName) = AnnotationSpec.builder(JavaxPersistanceTypes.Convert)
-        .addMember("converter", "$T.class", converterClassName)
-        .build()
-
-      def JoinColumn(field: Field) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
-        .addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
-        .build()
-
-      def JoinColumn(columnName: String) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
-        .addMember("name", "$S", columnName)
-        .build()
-
-      def JoinColumn(service: Service, field: Field) = {
-        val isModel = JavaPojoUtil.isModelType(service, field)
-        val isList = JavaPojoUtil.isListOfModeslType(service, field)
-        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
-        if (isModel) {
-          spec.addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
-        }
-        if (isList) {
-          val fieldRef = FieldRef.fromField(field)
-          spec.addMember("name", "$S", Text.camelToSnakeCase(if (fieldRef.isDefined) fieldRef.get.field else ""))
-        }
-        spec.build()
-      }
-
-      def JoinTable(service: Service, className: ClassName, field: Field) = {
-
-        val fromTableName = Text.camelToSnakeCase(JPA.toTableName(className));
-        val fromColumnName = Text.camelToSnakeCase(JPA.toColumnName(field));
-        val toTableName = Text.camelToSnakeCase(JavaPojoUtil.getArrayType(field.`type`));
-
-        AnnotationSpec.builder(JavaxPersistanceTypes.JoinTable)
-          .addMember("name", "$S", s"${fromTableName}__map__${fromColumnName}__to__${toTableName}")
-          .addMember("joinColumns", "$L", JoinColumn(fromTableName))
-          .addMember("inverseJoinColumns", "$L", JoinColumn(toTableName))
-          .build()
-      }
-
-      val ManyToOne = AnnotationSpec.builder(JavaxPersistanceTypes.ManyToOne).build()
-
-      val OneToMany = AnnotationSpec.builder(JavaxPersistanceTypes.OneToMany).build()
-
-      def Basic(optional: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Basic)
-        .addMember("optional", "$L", optional.toString)
-        .build()
-
-      val Id = AnnotationSpec.builder(JavaxPersistanceTypes.Id).build()
-
-      def GeneratedValue(strategy: CodeBlock) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
-        .addMember("strategy", strategy).build()
-
-      def Column(fieldName: String): AnnotationSpec = {
-        AnnotationSpec.builder(JavaxPersistanceTypes.Column)
-          .addMember("name", "$S", Text.camelToSnakeCase(fieldName))
-          .build()
-      }
-
-      def Column(field: Field): AnnotationSpec = {
-        val isId = (field.name == "id")
-        val isUUID = (field.`type` == "uuid")
-        val isString = (field.`type` == "string")
-
-        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.Column)
-          .addMember("name", "$S", JPA.toColumnName(field))
-          .addMember("nullable", "$L", (!field.required).toString)
-          .addMember("unique", "$L", (isId || field.annotations.find(_ == "unique").isDefined).toString)
-
-        if (isString && field.maximum.isDefined) {
-          spec.addMember("length", "$L", JavaPojos.toMaxFieldStaticFieldName(field))
-        }
-
-        if (isUUID && isId) {
-          spec.addMember("updatable", "$L", false.toString)
-            .addMember("insertable", "$L", true.toString)
-        }
-        spec.build()
-      }
-
-      def Table(model: Model): AnnotationSpec = {
-        AnnotationSpec.builder(JavaxPersistanceTypes.Table).addMember("name", "$S", JPA.toTableName(model)).build()
-      }
-
-      val Entity = AnnotationSpec.builder(JavaxPersistanceTypes.Entity).build()
-      val Version = AnnotationSpec.builder(JavaxPersistanceTypes.Version).build()
-
-      val TemporalTIMESTAMP = AnnotationSpec.builder(JavaxPersistanceTypes.Temporal).addMember("value", "$T.TIMESTAMP", JavaxPersistanceTypes.TemporalType).build()
-
-      def GeneratedValue(generator: String) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
-        .addMember("generator", "$S", generator)
-        .build()
-    }
-
-  }
+  //    /**
+  //     * Javax Persistence Annotations.
+  //     */
+  //    object JavaxPersistanceAnnotations {
+  //
+  //      def Converter(autoApply: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Converter)
+  //        .addMember("autoApply", "$L", if (autoApply) "true" else "false")
+  //        .build()
+  //
+  //      def Convert(converterClassName: ClassName) = AnnotationSpec.builder(JavaxPersistanceTypes.Convert)
+  //        .addMember("converter", "$T.class", converterClassName)
+  //        .build()
+  //
+  //      def JoinColumn(field: Field) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+  //        .addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
+  //        .build()
+  //
+  //      def JoinColumn(columnName: String) = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+  //        .addMember("name", "$S", columnName)
+  //        .build()
+  //
+  //      def JoinColumn(service: Service, field: Field) = {
+  //        val isModel = JavaPojoUtil.isModelType(service, field)
+  //        val isList = JavaPojoUtil.isListOfModeslType(service, field)
+  //        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.JoinColumn)
+  //        if (isModel) {
+  //          spec.addMember("name", "$S", Text.camelToSnakeCase(field.name) + "_id")
+  //        }
+  //        if (isList) {
+  //          val fieldRef = FieldRef.fromField(field)
+  //          spec.addMember("name", "$S", Text.camelToSnakeCase(if (fieldRef.isDefined) fieldRef.get.field else ""))
+  //        }
+  //        spec.build()
+  //      }
+  //
+  //      def JoinTable(service: Service, className: ClassName, field: Field) = {
+  //
+  //        val fromTableName = Text.camelToSnakeCase(JPA.toTableName(className));
+  //        val fromColumnName = Text.camelToSnakeCase(JPA.toColumnName(field));
+  //        val toTableName = Text.camelToSnakeCase(JavaPojoUtil.getArrayType(field.`type`));
+  //
+  //        AnnotationSpec.builder(JavaxPersistanceTypes.JoinTable)
+  //          .addMember("name", "$S", s"${fromTableName}__map__${fromColumnName}__to__${toTableName}")
+  //          .addMember("joinColumns", "$L", JoinColumn(fromTableName))
+  //          .addMember("inverseJoinColumns", "$L", JoinColumn(toTableName))
+  //          .build()
+  //      }
+  //
+  //      val ManyToOne = AnnotationSpec.builder(JavaxPersistanceTypes.ManyToOne).build()
+  //
+  //      val OneToMany = AnnotationSpec.builder(JavaxPersistanceTypes.OneToMany).build()
+  //
+  //      def Basic(optional: Boolean) = AnnotationSpec.builder(JavaxPersistanceTypes.Basic)
+  //        .addMember("optional", "$L", optional.toString)
+  //        .build()
+  //
+  //      val Id = AnnotationSpec.builder(JavaxPersistanceTypes.Id).build()
+  //
+  //      def GeneratedValue(strategy: CodeBlock) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
+  //        .addMember("strategy", strategy).build()
+  //
+  //      def Column(fieldName: String): AnnotationSpec = {
+  //        AnnotationSpec.builder(JavaxPersistanceTypes.Column)
+  //          .addMember("name", "$S", Text.camelToSnakeCase(fieldName))
+  //          .build()
+  //      }
+  //
+  //      def Column(field: Field): AnnotationSpec = {
+  //        val isId = (field.name == "id")
+  //        val isUUID = (field.`type` == "uuid")
+  //        val isString = (field.`type` == "string")
+  //
+  //        val spec = AnnotationSpec.builder(JavaxPersistanceTypes.Column)
+  //          .addMember("name", "$S", JPA.toColumnName(field))
+  //          .addMember("nullable", "$L", (!field.required).toString)
+  //          .addMember("unique", "$L", (isId || field.annotations.find(_ == "unique").isDefined).toString)
+  //
+  //        if (isString && field.maximum.isDefined) {
+  //          spec.addMember("length", "$L", JavaPojos.toMaxFieldStaticFieldName(field))
+  //        }
+  //
+  //        if (isUUID && isId) {
+  //          spec.addMember("updatable", "$L", false.toString)
+  //            .addMember("insertable", "$L", true.toString)
+  //        }
+  //        spec.build()
+  //      }
+  //
+  //      def Table(model: Model): AnnotationSpec = {
+  //        AnnotationSpec.builder(JavaxPersistanceTypes.Table).addMember("name", "$S", JPA.toTableName(model)).build()
+  //      }
+  //
+  //      val Entity = AnnotationSpec.builder(JavaxPersistanceTypes.Entity).build()
+  //      val Version = AnnotationSpec.builder(JavaxPersistanceTypes.Version).build()
+  //
+  //      val TemporalTIMESTAMP = AnnotationSpec.builder(JavaxPersistanceTypes.Temporal).addMember("value", "$T.TIMESTAMP", JavaxPersistanceTypes.TemporalType).build()
+  //
+  //      def GeneratedValue(generator: String) = AnnotationSpec.builder(JavaxPersistanceTypes.GeneratedValue)
+  //        .addMember("generator", "$S", generator)
+  //        .build()
+  //    }
+  //
+  //  }
 
   /**
    * Hibernate Annotations.

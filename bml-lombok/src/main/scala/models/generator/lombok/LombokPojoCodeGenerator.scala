@@ -1,13 +1,10 @@
 package models.generator.lombok
 
-import akka.http.scaladsl.model.headers.LinkParams.`type`
-import bml.util.AnotationUtil.JavaxAnnotations.{JavaxPersistanceAnnotations, JavaxValidationAnnotations}
 import bml.util.AnotationUtil.{JacksonAnno, LombokAnno}
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.attribute.{Converters, Hibernate, JsonName, Singular, SnakeCase}
-import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidationTypes}
 import bml.util.java.ClassNames._
-import bml.util.java.{JavaCommonClasses, JavaEnums, JavaPojoUtil, JavaPojos}
+import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
 import bml.util.persist.SpringVariableTypes.{PersistenceAnnotations, PersistenceTypes, ValidationAnnotations, ValidationTypes}
 import bml.util.persist.UUIDIfNullGenerator
@@ -20,8 +17,6 @@ import javax.lang.model.element.Modifier._
 import javax.persistence.{EnumType, Enumerated}
 import lib.generator.CodeGenerator
 import play.api.Logger
-import play.api.libs.json
-import play.api.libs.json.JsonNaming
 
 import scala.collection.JavaConverters._
 
@@ -330,7 +325,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
         }
 
         if (useHibernate) {
-          JavaPojos.handlePersisitanceAnnontations(service, className, field).foreach(fieldBuilder.addAnnotation(_))
+          JavaPojos.handlePersisitanceAnnontations(springVersion, service, className, field).foreach(fieldBuilder.addAnnotation(_))
         }
 
         if (snakeCase) {
@@ -372,10 +367,10 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
           //logger.info(s"Working on Attribute ${attribute.name}")
           attribute.name match {
             case "pattern" => {
-              fieldBuilder.addAnnotation(JavaxValidationAnnotations.Pattern(attribute))
+              fieldBuilder.addAnnotation(ValidationAnnotations.Pattern(springVersion, attribute))
             }
             case "email" => {
-              fieldBuilder.addAnnotation(JavaxValidationTypes.Email)
+              fieldBuilder.addAnnotation(ValidationAnnotations.Email(springVersion))
             }
             case _ =>
           }
@@ -386,7 +381,7 @@ trait LombokPojoCodeGenerator extends CodeGenerator with JavaPojoUtil {
       )
 
       if (useHibernate) {
-        JPA.addJPAStandardFields(model).foreach(classBuilder.addField)
+        JPA.addJPAStandardFields(springVersion, model).foreach(classBuilder.addField)
       }
       makeFile(className.simpleName(), nameSpaces.model, classBuilder)
     }

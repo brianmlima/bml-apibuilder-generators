@@ -84,7 +84,7 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
 
       //val generatedResolvers: Seq[File] = generateResources(service.resources).filter(_.isDefined).map(_.get)
       Right(
-        Seq(makeFile(config.baseEntitySimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseEntity(springVersion,config.jpaNameSpace))) ++
+        Seq(makeFile(config.baseEntitySimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseEntity(springVersion, config.jpaNameSpace))) ++
           Seq(makeFile(config.baseRepoSimpleName, config.jpaDirectoryPath, config.jpaNameSpace, JavaCommonClasses.baseRepository(springVersion, config.jpaNameSpace))) ++
           generatedEnums ++
           generatedUnionTypes ++
@@ -139,15 +139,14 @@ trait JavaPersistanceSqlCodeGenerator extends CodeGenerator with JavaPojoUtil {
     def generateModel(modelData: ModelData): Seq[Option[File]] = {
       if (modelData.isPersistedModel())
         Seq(
-          PersistanceClassGenerator.generatePersistenceModel(service, modelData).makeClassFile(),
+          PersistanceClassGenerator.generatePersistenceModel(springVersion, service, modelData).makeClassFile(),
           RepositoryGenerator.generate(service, modelData).makeRepoFile()
         )
       else
         Seq(
-          ClassGenerator.generateNonPersistenceModel(service, modelData).makeClassFile()
+          ClassGenerator.generateNonPersistenceModel(springVersion, service, modelData).makeClassFile()
         )
     }
-
 
     def makeFile(name: String, filePath: String, nameSpace: String, builder: TypeSpec.Builder): File = {
       File(s"${name}.java", Some(filePath), new Formatter().formatSource(JavaFile.builder(nameSpace, builder.build).build.toString))
