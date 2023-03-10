@@ -3,6 +3,7 @@ package bml.util.persist
 import bml.util.AnotationUtil.LombokAnno
 import bml.util.GeneratorFSUtil.makeFile
 import bml.util.java.ClassNames.{HibernateTypes, JavaTypes}
+import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{JavaNameSpace, NameSpaces}
 import com.squareup.javapoet.{ClassName, CodeBlock, MethodSpec, ParameterSpec, TypeSpec}
 import javax.lang.model.element.Modifier.PUBLIC
@@ -24,8 +25,17 @@ object UUIDIfNullGenerator {
     nameSpaces.jpa
   }
 
-  def get(nameSpaces: NameSpaces): File = {
+  private def getReturnType(springVersion: SpringVersion): ClassName = {
+    springVersion match {
+      case bml.util.spring.SpringVersion.SIX => JavaTypes.Object
+      case bml.util.spring.SpringVersion.FIVE => JavaTypes.Serializable
+    }
+  }
+
+
+  def get(springVersion: SpringVersion, nameSpaces: NameSpaces): File = {
     val classBuilder = TypeSpec.classBuilder(className(nameSpaces))
+      .addModifiers(PUBLIC)
       .addJavadoc("This UUID ID generator allows passing through set ids. This allows you to import data or duplicate data across services relatively easily by making ids in forms optional.")
       .superclass(HibernateTypes.UUIDGenerator)
       .addAnnotation(LombokAnno.Slf4j)
@@ -38,11 +48,14 @@ object UUIDIfNullGenerator {
           .addException(HibernateTypes.HibernateException)
           .addCode(
             CodeBlock.builder()
-              .addStatement("Serializable id = session.getEntityPersister(null, object).getClassMetadata().getIdentifier(object, session)")
+              .addStatement(
+                "$T id = session.getEntityPersister(null, object).getClassMetadata().getIdentifier(object, session)",
+                getReturnType(springVersion)
+              )
               .addStatement("return id != null ? id : super.generate(session, object)")
               .build()
           )
-          .returns(JavaTypes.Serializable)
+          .returns(getReturnType(springVersion))
           .build()
       )
     makeFile(className(nameSpaces).simpleName(), nameSpace(nameSpaces), classBuilder)

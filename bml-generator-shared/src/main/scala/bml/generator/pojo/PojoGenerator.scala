@@ -18,7 +18,6 @@ import javax.persistence.{EnumType, Enumerated}
 import play.api.Logger
 
 class PojoGenerator(
-
                      springVersion: SpringVersion,
                      apiDocComments: String,
                      service: Service,
@@ -39,7 +38,7 @@ class PojoGenerator(
     if (!useJpa) {
       return Seq[File]()
     }
-    return Seq[File](UUIDIfNullGenerator.get(nameSpaces))
+    return Seq[File](UUIDIfNullGenerator.get(springVersion, nameSpaces))
   }
 
   def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
@@ -268,8 +267,10 @@ class PojoGenerator(
             fieldBuilder.addAnnotation(PersistenceAnnotations.Convert(springVersion, converterClassName))
           } else {
             fieldBuilder.addAnnotation(
-              AnnotationSpec.builder(classOf[Enumerated])
-                .addMember("value", "$T.STRING", classOf[EnumType])
+              //AnnotationSpec.builder(classOf[Enumerated])
+              AnnotationSpec.builder(PersistenceTypes.Enumerated.toClassName(springVersion))
+                //                .addMember("value", "$T.STRING", classOf[EnumType])
+                .addMember("value", "$T.STRING", PersistenceTypes.EnumType.toClassName(springVersion))
                 .build()
             )
           }

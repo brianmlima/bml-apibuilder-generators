@@ -116,6 +116,12 @@ object SpringVariableTypes {
     val Basic = AType("Basic", "persistence")
     val Column = AType("Column", "persistence")
     val Entity = AType("Entity", "persistence")
+
+    val EnumType = AType("EnumType", "persistence")
+
+    val Enumerated = AType("Enumerated", "persistence")
+
+
     val GeneratedValue = AType("GeneratedValue", "persistence")
 
     val GenerationType = AType("GenerationType", "persistence")

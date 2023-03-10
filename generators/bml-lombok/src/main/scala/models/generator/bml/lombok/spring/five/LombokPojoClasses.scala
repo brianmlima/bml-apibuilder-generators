@@ -1,36 +1,18 @@
-package models.generator.lombok
+package models.generator.bml.lombok.spring.five
 
 import bml.generator.pojo.PojoGenerator
-import bml.util.AnotationUtil.{JacksonAnno, LombokAnno}
-import bml.util.GeneratorFSUtil.makeFile
-import bml.util.attribute.{Converters, Hibernate, JsonName, Singular, SnakeCase}
-import bml.util.java.ClassNames._
-import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
-import bml.util.jpa.JPA
-import bml.util.persist.SpringVariableTypes.{PersistenceAnnotations, PersistenceTypes, ValidationAnnotations, ValidationTypes}
-import bml.util.persist.UUIDIfNullGenerator
 import bml.util.spring.SpringVersion
-import bml.util.spring.SpringVersion.SpringVersion
-import bml.util.{FieldUtil, NameSpaces, SpecValidation}
-import com.squareup.javapoet.{ClassName, TypeSpec, _}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
-import io.apibuilder.spec.v0.models.{Enum, Field, Model, Service, Union}
-import javax.lang.model.element.Modifier._
-import javax.persistence.{EnumType, Enumerated}
 import lib.generator.CodeGenerator
 import play.api.Logger
 
 
-/**
- * Generator for Lombok based pojos for models.
- */
-trait LombokPojoCodeGenerator extends CodeGenerator {
+object LombokPojoClasses
+  extends CodeGenerator {
+  def getJavaDocFileHeader() = "WARNING: not all features (notably unions) and data types work with the java generator yet. \nplease contact brianmlima@gmail.com"
 
   val springVersion = SpringVersion.FIVE;
-
   val logger: Logger = Logger.apply(this.getClass())
-
-  def getJavaDocFileHeader(): String //abstract
 
   override def invoke(form: InvocationForm): Either[Seq[String], Seq[File]] = invoke(form, addHeader = true)
 

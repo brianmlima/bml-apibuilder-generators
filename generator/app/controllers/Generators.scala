@@ -40,11 +40,21 @@ object Generators {
       metaData = Generator(
         key = "bml_lombok",
         name = "BML Lombok Models",
-        description = Some("ALPHA Generate Java models from the API description."),
+        description = Some("ALPHA Generate Java models from the API description. Uses Javax spring 5 and below compatibility. "),
         language = Some("Java")
       ),
       status = lib.generator.Status.InDevelopment,
-      codeGenerator = Some(models.generator.lombok.LombokPojoClasses)
+      codeGenerator = Some(models.generator.bml.lombok.spring.five.LombokPojoClasses)
+    ),
+    CodeGenTarget(
+      metaData = Generator(
+        key = "bml_lombok_spring_6",
+        name = "BML Lombok Models for Spring 6",
+        description = Some("BETA Generate Java models from the API description. Uses Jakarta JPA and Validation from Jakarta as opposed to Javax."),
+        language = Some("Java")
+      ),
+      status = lib.generator.Status.InDevelopment,
+      codeGenerator = Some(models.generator.bml.lombok.spring.six.LombokPojoClasses)
     ),
     CodeGenTarget(
       metaData = Generator(

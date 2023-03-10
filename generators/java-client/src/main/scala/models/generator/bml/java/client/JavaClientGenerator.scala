@@ -1,14 +1,21 @@
 package models.generator.bml.java.client
 
 import bml.util.java.client.JavaClients
+import bml.util.spring.SpringVersion
 import bml.util.{NameSpaces, SpecValidation}
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.Service
 import lib.generator.CodeGenerator
 import play.api.Logger
 
+object JavaClient extends JavaClientGenerator {
+
+}
+
 class JavaClientGenerator extends CodeGenerator {
   val logger: Logger = Logger.apply(this.getClass())
+
+  val springVersion = SpringVersion.SIX;
 
   def getJavaDocFileHeader() = "WARNING: not all features (notably unions) and data types work with the java generator yet. \nplease contact brianmlima@gmail.com"
 

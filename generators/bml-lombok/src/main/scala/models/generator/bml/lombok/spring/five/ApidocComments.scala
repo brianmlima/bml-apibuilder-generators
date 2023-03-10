@@ -1,4 +1,4 @@
-package models.generator.lombok
+package models.generator.bml.lombok.spring.five
 
 import lib.Constants
 
@@ -10,6 +10,6 @@ class ApidocComments(version: String, userAgent: Option[String]) {
     userAgent
   ).flatten
 
-  val forClassFile: String = elements.mkString("", "\n","\n")
+  val forClassFile: String = elements.mkString("", "\n", "\n")
 
 }
