@@ -6,7 +6,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.{Locale, Random, UUID}
 
 import akka.http.scaladsl.model.headers.LinkParams.`type`
-import bml.util.{JavaNameSpace, NameSpaces}
+import bml.util.{JavaNameSpace, NameSpaces, java}
 import bml.util.java.poet.StaticImportMethod
 import com.fasterxml.jackson.annotation.{JsonFormat, JsonIgnore, JsonInclude, JsonValue}
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.SnakeCaseStrategy
@@ -31,11 +31,15 @@ object ClassNames {
     def enumJpaConverterClassName(`type`: String, nameSpaces: NameSpaces): ClassName = {
 
       val hasPackage = JavaPojoUtil.isModelNameWithPackage(`type`);
-      val enumFieldClassName = JavaPojoUtil.toClassName(nameSpaces.model, `type`)
+      val enumFieldClassName = if (JavaPojoUtil.isParameterArray(`type`))
+        JavaPojoUtil.toClassName(nameSpaces.model, JavaPojoUtil.getArrayType(`type`))
+      else JavaPojoUtil.toClassName(nameSpaces.model, `type`)
       val converterName = s"${enumFieldClassName.simpleName()}JpaEnumConverter";
 
       if (hasPackage) {
-        val externalNamespaces = NameSpaces.fromEnum(`type`).get;
+        val externalNamespaces = NameSpaces.fromEnum(
+          if (JavaPojoUtil.isParameterArray(`type`)) JavaPojoUtil.getArrayType(`type`) else `type`
+        ).get;
         ClassName.get(
           externalNamespaces.jpaConverters.nameSpace,
           converterName
@@ -360,6 +364,7 @@ object ClassNames {
     val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
     val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")
     val HttpStatus = ClassName.bestGuess("org.springframework.http.HttpStatus")
+    val HttpStatusCode = ClassName.get("org.springframework.http", "HttpStatusCode")
 
     val I_AM_A_TEAPOT = StaticImportMethod.apply(HttpStatus, "I_AM_A_TEAPOT")
 
@@ -543,11 +548,11 @@ object ClassNames {
   object JavaxTypes {
 
     object JavaxValidationTypes {
-//      val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
+      //      val NotNull = ClassName.bestGuess("javax.validation.constraints.NotNull")
       val NotBlank = ClassName.bestGuess("javax.validation.constraints.NotBlank")
       val NotEmpty = ClassName.bestGuess("javax.validation.constraints.NotEmpty")
       val Pattern = ClassName.bestGuess("javax.validation.constraints.Pattern")
-//      val Size = ClassName.bestGuess("javax.validation.constraints.Size")
+      //      val Size = ClassName.bestGuess("javax.validation.constraints.Size")
       val Email = ClassName.bestGuess("javax.validation.constraints.Email")
       val Valid = ClassName.bestGuess("javax.validation.Valid")
       val Validation = ClassName.bestGuess("javax.validation.Validation")

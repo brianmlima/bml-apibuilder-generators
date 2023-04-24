@@ -1,16 +1,26 @@
-package models.generator.bml.lombok.test
+package models.generator.bml.lombok.test.spring.five
 
 import bml.util.NameSpaces
+import bml.util.java._
 import bml.util.java.testing.{ExcersicePojoSpringValidation, ExcersizeEnums, ExercisePojos}
-import bml.util.java.{JavaPojoTestFixtures, JavaPojoUtil, LoremTooling, ProbabilityTools, TestSuppliers}
+import bml.util.spring.SpringVersion
+import bml.util.spring.SpringVersion.SpringVersion
 import io.apibuilder.generator.v0.models.{File, InvocationForm}
 import io.apibuilder.spec.v0.models.Service
 import lib.generator.{CodeGenerator, GeneratorUtil}
-import org.slf4j.LoggerFactory
+import play.api.Logger
 
+
+object BMLLombokTests extends BMLLombokTestGenerator {
+
+}
 
 class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
+  val logger: Logger = Logger.apply(this.getClass())
+
   def getJavaDocFileHeader() = "WARNING: not all features (notably unions) and data types work with the java generator yet. \nplease contact brianmlima@gmail.com"
+
+  val springVersion = SpringVersion.FIVE;
 
   override def invoke(form: InvocationForm): Either[Seq[String], Seq[File]] = invoke(form, addHeader = true)
 
@@ -20,12 +30,11 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
     val header =
       if (addHeader) Some(new ApidocComments(form.service.version, form.userAgent).forClassFile)
       else None
-    new Generator(form.service, header).generateSourceFiles()
+    new Generator(springVersion, form.service, header).generateSourceFiles()
   }
 
 
-  class Generator(service: Service, header: Option[String]) {
-    val log = LoggerFactory.getLogger(classOf[Generator])
+  class Generator(springVersion: SpringVersion, service: Service, header: Option[String]) {
     private val nameSpaces = new NameSpaces(service)
     //Resolves data types for built in types and models
     private val datatypeResolver = GeneratorUtil.datatypeResolver(service)
@@ -39,11 +48,10 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
           JavaPojoTestFixtures.makeLanguages(nameSpaces: NameSpaces),
           ProbabilityTools.probabilityTool(nameSpaces),
           ExercisePojos.excersisePojoTestClass(service, nameSpaces),
-          ExcersicePojoSpringValidation.excersisePojoTestClass(service, nameSpaces),
+          ExcersicePojoSpringValidation.excersisePojoTestClass(springVersion, service, nameSpaces),
           ExcersizeEnums.excersiseEnumTestClass(service, nameSpaces)
         )
     }
-
 
     //Generates Services from Resources
     def generateFixtureBuilders(): Seq[File] = {
@@ -51,7 +59,7 @@ class BMLLombokTestGenerator extends CodeGenerator with JavaPojoUtil {
       service.models.map(JavaPojoTestFixtures.generateMockFactory(service, nameSpaces, _))
     }
 
-
   }
 
 }
+

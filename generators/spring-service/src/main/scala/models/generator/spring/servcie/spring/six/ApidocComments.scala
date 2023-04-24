@@ -1,4 +1,4 @@
-package models.generator.bml.java.client
+package models.generator.spring.servcie.spring.six
 
 import lib.Constants
 

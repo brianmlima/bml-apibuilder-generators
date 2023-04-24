@@ -5,7 +5,7 @@ import bml.util.java.ClassNames._
 import bml.util.java.JavaPojoUtil
 import bml.util.persist.SpringVariableTypes.ValidationAnnotations
 import bml.util.spring.SpringVersion.SpringVersion
-import bml.util.{GeneratorFSUtil, NameSpaces}
+import bml.util.{GeneratorFSUtil, NameSpaces, ServiceTool}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models._
 import javax.lang.model.element.Modifier
@@ -27,9 +27,22 @@ object SpringServices {
 
   def toServiceName(resource: Resource): String = JavaPojoUtil.toClassName(resource.`type`) + "Service"
 
+  def toServiceName(springVersion: SpringVersion, service: Service, resource: Resource): String = {
+    springVersion match {
+      case bml.util.spring.SpringVersion.SIX => JavaPojoUtil.toClassName(s"${ServiceTool.prefix(springVersion, service)}-${JavaPojoUtil.toClassName(resource.`type`)}Service")
+      case bml.util.spring.SpringVersion.FIVE => JavaPojoUtil.toClassName(s"${JavaPojoUtil.toClassName(resource.`type`)}Service")
+    }
+  }
+
   def toServiceMockName(resource: Resource): String = toServiceName(resource) + "Mock"
 
-  def toServiceClassName(nameSpaces: NameSpaces, resource: Resource): ClassName = ClassName.get(nameSpaces.service.nameSpace, toServiceName(resource))
+  def toServiceClassName(nameSpaces: NameSpaces, resource: Resource): ClassName = {
+    ClassName.get(nameSpaces.service.nameSpace, toServiceName(resource))
+  }
+
+  def toServiceClassName(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): ClassName = {
+    ClassName.get(nameSpaces.service.nameSpace, toServiceName(springVersion, service, resource))
+  }
 
   def toResponseSubTypeCLassName(nameSpaces: NameSpaces, operation: Operation): ClassName = {
     JavaPojoUtil.toClassName(nameSpaces.service, "ResponseModel" + toOperationName(operation).capitalize)
@@ -344,7 +357,7 @@ object SpringServices {
 
 
   def generateService(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
-    val serviceName = toServiceClassName(nameSpaces, resource)
+    val serviceName = toServiceClassName(springVersion, service, nameSpaces, resource)
     val serviceBuilder = TypeSpec.interfaceBuilder(serviceName).addModifiers(PUBLIC)
       .addJavadoc(resource.description.getOrElse(""))
     //Generate Service methods from operations and add them to the Service Interface

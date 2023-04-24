@@ -1,7 +1,7 @@
 package bml.util
 
 import bml.util.java.poet.StaticImport
-import com.google.googlejavaformat.java.{Formatter, JavaFormatterOptions}
+import com.google.googlejavaformat.java.{Formatter, FormatterException, JavaFormatterOptions}
 import com.squareup.javapoet.{ClassName, JavaFile, TypeSpec}
 import io.apibuilder.generator.v0.models.File
 import org.slf4j.LoggerFactory
@@ -10,6 +10,17 @@ import org.slf4j.LoggerFactory
 class GeneratorFSUtil {
 
 }
+
+
+class GeneratorFormattingException(
+                                    val e: FormatterException,
+                                    val javaFileBuilder: JavaFile.Builder,
+                                    val name: String,
+                                    val path: String,
+                                    val nameSpace: String
+                                  ) extends Exception {
+}
+
 
 /**
  * Handles the Common generation task of creating a class file from a Builder.
@@ -42,7 +53,7 @@ object GeneratorFSUtil {
         LOG.error(javaFile.build().toString)
         LOG.error(x.diagnostics().toString)
         LOG.error(x.getLocalizedMessage)
-        throw x
+        throw new GeneratorFormattingException(x, javaFile, name, path, nameSpace)
       }
     }
   }

@@ -1,4 +1,4 @@
-package models.generator.spring.service
+package models.generator.spring.servcie.spring.five
 
 import bml.util.java.JavaPojoUtil
 import bml.util.spring.SpringVersion.SpringVersion
@@ -9,6 +9,9 @@ import io.apibuilder.spec.v0.models.Service
 import lib.generator.{CodeGenerator, GeneratorUtil}
 import play.api.Logger
 
+object SpringService extends SpringServiceGenerator {
+
+}
 
 class SpringServiceGenerator extends CodeGenerator with JavaPojoUtil {
 

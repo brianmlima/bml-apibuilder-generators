@@ -1,12 +1,11 @@
 package bml.util.spring
 
 import bml.util.AnotationUtil.SpringAnno
-import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import bml.util.persist.SpringVariableTypes.{ValidationAnnotations, ValidationTypes}
 import bml.util.spring.SpringVersion.SpringVersion
-import bml.util.{GeneratorFSUtil, NameSpaces}
+import bml.util.{GeneratorFSUtil, NameSpaces, ServiceTool}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
 import io.apibuilder.spec.v0.models._
@@ -34,8 +33,20 @@ object SpringControllers {
     JavaPojoUtil.toClassName(resource.`type` + "Controller")
   }
 
+  def toControllerName(springVersion: SpringVersion, service: Service, resource: Resource): String = {
+    val prefix = springVersion match {
+      case bml.util.spring.SpringVersion.SIX => ServiceTool.versionedPrefix(service)
+      case bml.util.spring.SpringVersion.FIVE => ""
+    }
+    JavaPojoUtil.toClassName(s"${prefix}-${resource.`type`}-Controller")
+  }
+
   def toControllerName(nameSpaces: NameSpaces, resource: Resource): ClassName = {
     ClassName.get(nameSpaces.controller.nameSpace, toControllerName(resource))
+  }
+
+  def toControllerName(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): ClassName = {
+    ClassName.get(nameSpaces.controller.nameSpace, toControllerName(springVersion, service, resource))
   }
 
 
@@ -178,10 +189,10 @@ object SpringControllers {
   }
 
   def generateController(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
-    val name = SpringControllers.toControllerName(resource)
+    val name = SpringControllers.toControllerName(springVersion, service, resource)
 
-    val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource))
-    val serviceFieldName = Text.initLowerCase(SpringServices.toServiceName(resource))
+    val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(springVersion, service, resource))
+    val serviceFieldName = Text.initLowerCase(serviceClassName.simpleName())
 
     val builder = TypeSpec.classBuilder(name)
       .addJavadoc("Holds all the operations for the {@link $L} resource. org=$S app=$S version=$S. ", JavaPojoUtil.toClassName(nameSpaces.model, resource.`type`), service.organization.key, service.name, service.version)
@@ -316,7 +327,7 @@ object SpringControllers {
               AnnotationSpec.builder(SpringTypes.RequestBody).build()
             )
             .addAnnotation(
-              JavaxValidationTypes.Valid
+              ValidationTypes.Valid.toClassName(springVersion)
             )
             .build()
         )
@@ -388,7 +399,7 @@ object SpringControllers {
       .add(
         "final $T responseModel = $L.$L(\n",
         SpringServices.toResponseSubTypeCLassName(nameSpaces, operation),
-        Text.initLowerCase(SpringServices.toServiceName(resource)),
+        Text.initLowerCase(SpringServices.toServiceName(springVersion, service, resource)),
         methodName
       )
 

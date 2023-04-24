@@ -13,6 +13,24 @@ import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
 
 object SpringVariableTypes {
 
+  class SwappableType(val classNameFive: ClassName, val classNameSix: ClassName) {
+
+    private def getTopLevelPackage(springVersion: SpringVersion): ClassName = {
+      springVersion match {
+        case bml.util.spring.SpringVersion.SIX => classNameSix
+        case bml.util.spring.SpringVersion.FIVE => classNameFive
+      }
+    }
+
+    def toClassName(springVersion: SpringVersion): ClassName = {
+      getTopLevelPackage(springVersion)
+    }
+  }
+
+  object SwappableType {
+    def apply(classNameFive: ClassName, classNameSix: ClassName) = new SwappableType(classNameFive, classNameSix)
+  }
+
   class AType(val className: String, val subPackage: String) {
 
     private val javax = "javax"
@@ -29,7 +47,9 @@ object SpringVariableTypes {
       ClassName.get(s"${getTopLevelPackage(springVersion)}.${subPackage}", className)
     }
 
-
+    def withTypeParameter(springVersion: SpringVersion, paramType: TypeName): ParameterizedTypeName = {
+      ParameterizedTypeName.get(toClassName(springVersion), paramType)
+    }
   }
 
   object AType {
@@ -43,6 +63,16 @@ object SpringVariableTypes {
   object GenerationAnnotations {
     def Generated(springVersion: SpringVersion) = AnnotationSpec.builder(GenerationTypes.Generated.toClassName(springVersion)).build()
   }
+
+  //  object HttpTypes {
+  //
+  //    val httpStatusType = SwappableType(
+  //      ClassName.get("org.springframework.http", "HttpStatusCode")
+  //      ClassName.get("org.springframework.http", "HttpStatusCode"),
+  //    )
+  //
+  //  }
+
 
   object ValidationTypes {
 

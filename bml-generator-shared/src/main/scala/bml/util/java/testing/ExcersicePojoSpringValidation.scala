@@ -6,6 +6,8 @@ import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.{AnotationUtil, NameSpaces}
 import bml.util.java.{ClassNames, JavaPojoTestFixtures, JavaPojoUtil, TestSuppliers}
 import bml.util.java.poet.StaticImport
+import bml.util.persist.SpringVariableTypes.ValidationTypes
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{ClassName, FieldSpec, MethodSpec, ParameterSpec, TypeSpec}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.{Model, Service}
@@ -28,7 +30,7 @@ object ExcersicePojoSpringValidation {
    */
   def className(nameSpaces: NameSpaces) = ClassName.get(nameSpaces.base.nameSpace, "ExercisePojoValidationTests")
 
-  def excersisePojoTestClass(service: Service, nameSpaces: NameSpaces): File = {
+  def excersisePojoTestClass(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces): File = {
     val theClassName = className(nameSpaces)
 
     val staticImports = Seq[StaticImport](
@@ -73,7 +75,13 @@ object ExcersicePojoSpringValidation {
     def constraintViolationsToLogStringMethod(): MethodSpec = {
       MethodSpec.methodBuilder(methods.constraintViolationsToLogString).addModifiers(PRIVATE)
         .addTypeVariable(ClassNames.T)
-        .addParameter(ParameterSpec.builder(JavaTypes.Set(JavaxValidationTypes.ConstraintViolation(ClassNames.T)), "constraintViolations", FINAL).build())
+        .addParameter(ParameterSpec.builder(
+          JavaTypes.Set(ValidationTypes.ConstraintViolation.withTypeParameter(springVersion, ClassNames.T)),
+          "constraintViolations",
+          FINAL
+        )
+          .build()
+        )
         .returns(JavaTypes.String)
         .addCode("return constraintViolations.stream().map(")
         .addCode("(violation) ->")
@@ -100,7 +108,7 @@ object ExcersicePojoSpringValidation {
         .addStatement("$T factory = $T.$L", mockFactoryClassName, mockFactoryClassName, JavaPojoTestFixtures.defaultFactoryStaticParamName)
         .addStatement("$L(\" factory instance of $T should not be null\",factory,$L())", HamcrestTypes.assertThat.methodName, mockFactoryClassName, HamcrestTypes.notNullValue.methodName)
         .addStatement("$T object = factory.get()", modelClassName)
-        .addStatement("$T constraintViolations", JavaTypes.Set(JavaxValidationTypes.ConstraintViolation(modelClassName)))
+        .addStatement("$T constraintViolations", JavaTypes.Set(ValidationTypes.ConstraintViolation.withTypeParameter(springVersion, modelClassName)))
         .addCode("try{")
         .addStatement("constraintViolations = validator.validate(object)")
         .addCode("}catch($T e){ ", JavaTypes.Exception)
@@ -118,8 +126,8 @@ object ExcersicePojoSpringValidation {
       .addAnnotation(LombokAnno.Generated)
       .addAnnotation(LombokAnno.Slf4j)
       .addField(
-        FieldSpec.builder(JavaxValidationTypes.Validator, fields.validator, PRIVATE, FINAL)
-          .initializer("$T.buildDefaultValidatorFactory().getValidator()", JavaxValidationTypes.Validation)
+        FieldSpec.builder(ValidationTypes.Validator.toClassName(springVersion), fields.validator, PRIVATE, FINAL)
+          .initializer("$T.buildDefaultValidatorFactory().getValidator()", ValidationTypes.Validation.toClassName(springVersion))
           .build()
       )
       .addMethod(constraintViolationsToLogStringMethod)

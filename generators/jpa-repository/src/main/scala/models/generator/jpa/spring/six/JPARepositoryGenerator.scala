@@ -1,4 +1,4 @@
-package models.generator.jpa
+package models.generator.jpa.spring.six
 
 import bml.util.AnotationUtil.SpringDataAnno
 import bml.util.attribute.{FindBy, Hibernate, Unique}
@@ -19,9 +19,11 @@ import play.api.Logger
 
 import scala.collection.JavaConverters._
 
+object JPARepository extends JPARepositoryGenerator {}
+
 class JPARepositoryGenerator extends CodeGenerator {
 
-  val springVersion = SpringVersion.FIVE;
+  val springVersion = SpringVersion.SIX;
 
   val logger: Logger = Logger.apply(this.getClass())
 

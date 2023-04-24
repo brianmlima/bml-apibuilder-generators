@@ -10,15 +10,14 @@ import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.ClassNames.{JacksonTypes, JavaTypes, LombokTypes, SpringTypes}
 import bml.util.java.client.util.{ParamTypeEnum, Params, UriParam}
 import bml.util.java.{ClassNames, JavaDataTypes, JavaPojoUtil}
-import bml.util.{GeneratorFSUtil, NameSpaces}
-import bml.util.spring.SpringControllers
+import bml.util.persist.SpringVariableTypes.ValidationTypes
+import bml.util.{NameSpaces}
 import bml.util.spring.SpringServices.{responseCodeToString, toResponseSubTypeCLassName}
+import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeName, TypeSpec, TypeVariableName}
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Method.{Get, Post, Put}
 import io.apibuilder.spec.v0.models.{Operation, ParameterLocation, Resource, Response, Service}
-import javax.lang.model.element.Modifier
-import javax.validation.constraints.NotNull
 import lombok.Getter
 import org.slf4j.LoggerFactory
 
@@ -46,7 +45,7 @@ object JavaClients {
   val configFieldName = "config"
 
 
-  def generateClient(service: Service, nameSpaces: NameSpaces): Seq[File] = {
+  def generateClient(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces): Seq[File] = {
     val clientClassName = toClientClassName(service, nameSpaces);
     val configClassName = ClassName.get(clientClassName.packageName() + "." + clientClassName.simpleName(), "Config")
 
@@ -55,7 +54,7 @@ object JavaClients {
 
     val baseUriField = FieldSpec.builder(JavaTypes.URI, baseUriFieldName, PRIVATE, FINAL)
       .addAnnotation(LombokTypes.Getter)
-      .addAnnotation(classOf[NotNull])
+      .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
 
     if (service.baseUrl.isDefined) {
       baseUriField.addAnnotation(LombokAnno.BuilderDefault)
@@ -71,12 +70,12 @@ object JavaClients {
         Seq(
           FieldSpec.builder(SpringTypes.WebClient, webClientFieldName, PRIVATE, FINAL)
             .addAnnotation(LombokTypes.Getter)
-            .addAnnotation(classOf[NotNull])
+            .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
             .build(),
           baseUriField.build(),
           FieldSpec.builder(JacksonTypes.ObjectMapper, objectMapperFieldName, PRIVATE, FINAL)
             .addAnnotation(LombokTypes.Getter)
-            .addAnnotation(classOf[NotNull])
+            .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
             .build()
         ).asJava
       ).build()
@@ -94,19 +93,19 @@ object JavaClients {
       .addField(
         FieldSpec.builder(SpringTypes.HttpStatus, "httpStatus", PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])
-          .addAnnotation(classOf[NotNull])
+          .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
           .build()
       )
       .addField(
         FieldSpec.builder(SpringTypes.Headers, "headers", PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])
-          .addAnnotation(classOf[NotNull])
+          .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
           .build()
       )
       .addField(
         FieldSpec.builder(TypeVariableName.get("T"), "body", PRIVATE, FINAL)
           .addAnnotation(classOf[Getter])
-          .addAnnotation(classOf[NotNull])
+          .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))
           .build()
       )
       .build()
@@ -239,7 +238,7 @@ object JavaClients {
                       )
                       .addType(generateServiceOperationResponseContainer(service, resource, operation, nameSpaces))
                       .addMethod(generateAccessAsync(service, resource, operation, nameSpaces))
-//                      .addMethod(generateStaticAccessAsyncParamHandler(service, resource, operation, nameSpaces))
+                      //                      .addMethod(generateStaticAccessAsyncParamHandler(service, resource, operation, nameSpaces))
                       .addMethod(generateStaticAccessAsync(service, resource, operation, nameSpaces))
 
 
@@ -420,11 +419,11 @@ object JavaClients {
 
   }
 
-//  def generateStaticAccessAsyncParamHandler(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
-//
-//    return MethodSpec.methodBuilder("buildUri").returns(Void.TYPE).build()
-//
-//  }
+  //  def generateStaticAccessAsyncParamHandler(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
+  //
+  //    return MethodSpec.methodBuilder("buildUri").returns(Void.TYPE).build()
+  //
+  //  }
 
 
   def generateStaticAccessAsync(service: Service, resource: Resource, operation: Operation, nameSpaces: NameSpaces): MethodSpec = {
@@ -594,9 +593,8 @@ object JavaClients {
       .add("return exchange.flatMap(")
       .beginControlFlow("($T responseIn) ->", SpringTypes.ClientResponse)
       .addStatement("$T httpStatusIn = responseIn.statusCode()", LombokTypes.`val`)
-      .addStatement("$T responseOut = ResponseModel.<BodyModel>builder().httpStatus(httpStatusIn).headers(responseIn.headers())", LombokTypes.`val`)
+      .addStatement("$T responseOut = ResponseModel.<BodyModel>builder().httpStatus($T.valueOf(httpStatusIn.value())).headers(responseIn.headers())", LombokTypes.`val`, SpringTypes.HttpStatus)
       .addStatement("val bodyOut = BodyModel.builder()")
-
       .beginControlFlow("switch (httpStatusIn.value())")
 
     operation.responses.foreach(

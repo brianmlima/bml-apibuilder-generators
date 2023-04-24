@@ -1,4 +1,4 @@
-package models.generator.bml.lombok.test
+package models.generator.spring.servcie.spring.five
 
 import lib.Constants
 

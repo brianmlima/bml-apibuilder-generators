@@ -1,4 +1,4 @@
-package models.generator.spring.service
+package models.generator.jpa.spring.five
 
 import lib.Constants
 

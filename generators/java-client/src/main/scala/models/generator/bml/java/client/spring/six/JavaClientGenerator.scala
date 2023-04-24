@@ -1,4 +1,4 @@
-package models.generator.bml.java.client
+package models.generator.bml.java.client.spring.six
 
 import bml.util.java.client.JavaClients
 import bml.util.spring.SpringVersion
@@ -43,7 +43,7 @@ class JavaClientGenerator extends CodeGenerator {
     }
 
     def generateClient(): Seq[File] = {
-      JavaClients.generateClient(service, nameSpaces)
+      JavaClients.generateClient(springVersion, service, nameSpaces)
     }
   }
 

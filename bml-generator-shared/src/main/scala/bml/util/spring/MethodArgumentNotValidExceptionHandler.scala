@@ -1,8 +1,10 @@
 package bml.util.spring
 
-import bml.util.NameSpaces
+import bml.util.{NameSpaces, ServiceTool, VersionTool}
 import bml.util.java.ClassNames.{JavaTypes, LombokTypes, SpringTypes}
 import bml.util.java.JavaPojoUtil
+import bml.util.spring.MethodArgumentNotValidExceptionHandler.className
+import bml.util.spring.SpringVersion.SpringVersion
 import io.apibuilder.generator.v0.models.File
 import io.apibuilder.spec.v0.models.Service
 
@@ -13,11 +15,13 @@ object MethodArgumentNotValidExceptionHandler {
   import com.squareup.javapoet.CodeBlock.of
   import bml.util.GeneratorFSUtil.makeFile
 
-  //  /**
-  //   * The generated class simple name
-  //   */
-  //  val name = "MethodArgumentNotValidExceptionHandler"
-  def name(service: Service) = JavaPojoUtil.toClassName(service.name + "-method-argument-not-valid-exception-handler")
+  def className(springVersion: SpringVersion, service: Service): String = {
+
+    springVersion match {
+      case bml.util.spring.SpringVersion.SIX => JavaPojoUtil.toClassName(s"${ServiceTool.prefix(springVersion, service)}-method-argument-not-valid-exception-handler")
+      case bml.util.spring.SpringVersion.FIVE => JavaPojoUtil.toClassName(s"${service.name}-method-argument-not-valid-exception-handler")
+    }
+  }
 
   /**
    * Generats a spring @ControllerAdvice that handles validation errors and responses for all endpoints.
@@ -27,10 +31,13 @@ object MethodArgumentNotValidExceptionHandler {
    * @return a @ControllerAdvice impl class
    */
   def get(service: Service, nameSpaces: NameSpaces): Seq[File] = {
+    get(SpringVersion.FIVE, service, nameSpaces)
+  }
+
+  def get(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces): Seq[File] = {
 
     val staticImports = Seq(JavaTypes.toList.staticImport)
-
-    val name = JavaPojoUtil.toClassName(service.name + "-method-argument-not-valid-exception-handler")
+    val name = className(springVersion, service)
 
     val builder = TypeSpec.classBuilder(name)
       .addAnnotation(LombokTypes.Generated)
@@ -72,15 +79,25 @@ object MethodArgumentNotValidExceptionHandler {
     Seq(makeFile(name, nameSpaces.controller, builder, staticImports: _*))
   }
 
-  private def fieldValidationResponse = ClassName.get("org.bml.validation.v0.models", "FieldValidationResponse")
+  private def fieldValidationResponse
 
-  private def fieldValidationError = ClassName.get("org.bml.validation.v0.models", "FieldValidationError")
+  = ClassName.get("org.bml.validation.v0.models", "FieldValidationResponse")
 
-  private def fieldValidationResponseBuilder = ClassName.get("org.bml.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
+  private def fieldValidationError
 
-  private def responseStatusBadRequest = AnnotationSpec.builder(SpringTypes.ResponseStatus).addMember("value", "$T.BAD_REQUEST", SpringTypes.HttpStatus).build()
+  = ClassName.get("org.bml.validation.v0.models", "FieldValidationError")
 
-  private def badArgExceptionHandler = AnnotationSpec.builder(SpringTypes.ExceptionHandler).addMember("value", "$T.class", SpringTypes.MethodArgumentNotValidException).build()
+  private def fieldValidationResponseBuilder
+
+  = ClassName.get("org.bml.validation.v0.models.FieldValidationResponse", "FieldValidationResponseBuilder")
+
+  private def responseStatusBadRequest
+
+  = AnnotationSpec.builder(SpringTypes.ResponseStatus).addMember("value", "$T.BAD_REQUEST", SpringTypes.HttpStatus).build()
+
+  private def badArgExceptionHandler
+
+  = AnnotationSpec.builder(SpringTypes.ExceptionHandler).addMember("value", "$T.class", SpringTypes.MethodArgumentNotValidException).build()
 
 
 }
