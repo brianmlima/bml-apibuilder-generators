@@ -340,16 +340,6 @@ object SpringServices {
             .build()
         ).build()
     )
-    //
-    //    @Component
-    //    public static class YamlMessageConverter extends MappingJackson2HttpMessageConverter {
-    //      public YamlMessageConverter() {
-    //        //can use overloaded constructor to set supported MediaType
-    //        super(new ObjectMapper(new YAMLFactory()));
-    //        this.setSupportedMediaTypes(ImmutableList.of(MEDIA_TYPE_YML, MEDIA_TYPE_YAML));
-    //      }
-    //    }
-
 
     //Return the generated Service interface
     Seq(GeneratorFSUtil.makeFile(configName, nameSpaces.config, configBuilder))
@@ -357,6 +347,7 @@ object SpringServices {
 
 
   def generateService(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
+
     val serviceName = toServiceClassName(springVersion, service, nameSpaces, resource)
     val serviceBuilder = TypeSpec.interfaceBuilder(serviceName).addModifiers(PUBLIC)
       .addJavadoc(resource.description.getOrElse(""))

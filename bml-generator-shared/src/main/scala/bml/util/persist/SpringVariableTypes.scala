@@ -6,7 +6,7 @@ import bml.util.java.ClassNames.JavaxTypes.{JavaxPersistanceTypes, JavaxValidati
 import bml.util.java.ClassNames.SpringTypes.SpringValidationTypes
 import bml.util.java.{JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
-import bml.util.persist.SpringVariableTypes.AType
+import bml.util.persist.SpringVariableTypes.JavaxOrJakartaType
 import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, ParameterizedTypeName, TypeName}
 import io.apibuilder.spec.v0.models.{Attribute, Field, Model, Service}
@@ -31,7 +31,27 @@ object SpringVariableTypes {
     def apply(classNameFive: ClassName, classNameSix: ClassName) = new SwappableType(classNameFive, classNameSix)
   }
 
-  class AType(val className: String, val subPackage: String) {
+
+  //  class VersionedType(val className: String, val fullPackageSpring5: String, val fullPackageSpring6: String) {
+  //
+  //    private def getTopLevelPackage(springVersion: SpringVersion): String = {
+  //      springVersion match {
+  //        case bml.util.spring.SpringVersion.FIVE => fullPackageSpring5
+  //        case bml.util.spring.SpringVersion.SIX => fullPackageSpring6
+  //      }
+  //    }
+  //
+  //    def toClassName(springVersion: SpringVersion): ClassName = {
+  //      ClassName.get(getTopLevelPackage(springVersion), className)
+  //    }
+  //
+  //    def withTypeParameter(springVersion: SpringVersion, paramType: TypeName): ParameterizedTypeName = {
+  //      ParameterizedTypeName.get(toClassName(springVersion), paramType)
+  //    }
+  //  }
+
+
+  class JavaxOrJakartaType(val className: String, val subPackage: String) {
 
     private val javax = "javax"
     private val jakarta = "jakarta"
@@ -52,12 +72,12 @@ object SpringVariableTypes {
     }
   }
 
-  object AType {
-    def apply(className: String, subPackage: String) = new AType(className, subPackage)
+  object JavaxOrJakartaType {
+    def apply(className: String, subPackage: String) = new JavaxOrJakartaType(className, subPackage)
   }
 
   object GenerationTypes {
-    val Generated = AType("Generated", "annotation")
+    val Generated = JavaxOrJakartaType("Generated", "annotation")
   }
 
   object GenerationAnnotations {
@@ -65,27 +85,37 @@ object SpringVariableTypes {
   }
 
   //  object HttpTypes {
-  //
   //    val httpStatusType = SwappableType(
   //      ClassName.get("org.springframework.http", "HttpStatusCode")
   //      ClassName.get("org.springframework.http", "HttpStatusCode"),
   //    )
-  //
   //  }
+
+  val Generated = SwappableType(
+    ClassName.get("javax.annotation", "Generated"),
+    ClassName.get("javax.annotation.processing", "Generated")
+  )
+
+  def Generated(springVersion: SpringVersion, generatorName: String, comments: String): AnnotationSpec = {
+    AnnotationSpec.builder(Generated.toClassName(springVersion))
+      .addMember("value", "$S", generatorName)
+      .addMember("comments", "$S", comments)
+      .build()
+  }
 
 
   object ValidationTypes {
 
-    val NotNull = AType("NotNull", "validation.constraints")
-    val NotBlank = AType("NotBlank", "validation.constraints")
-    val NotEmpty = AType("NotEmpty", "validation.constraints")
-    val Pattern = AType("Pattern", "validation.constraints")
-    val Size = AType("Size", "validation.constraints")
-    val Email = AType("Email", "validation.constraints")
-    val Valid = AType("Valid", "validation")
-    val Validation = AType("Validation", "validation")
-    val Validator = AType("Validator", "validation")
-    val ConstraintViolation = AType("ConstraintViolation", "validation")
+    val NotNull = JavaxOrJakartaType("NotNull", "validation.constraints")
+    val NotBlank = JavaxOrJakartaType("NotBlank", "validation.constraints")
+    val NotEmpty = JavaxOrJakartaType("NotEmpty", "validation.constraints")
+    val Pattern = JavaxOrJakartaType("Pattern", "validation.constraints")
+    val Size = JavaxOrJakartaType("Size", "validation.constraints")
+    val Email = JavaxOrJakartaType("Email", "validation.constraints")
+    val Valid = JavaxOrJakartaType("Valid", "validation")
+    val Validation = JavaxOrJakartaType("Validation", "validation")
+    val Validator = JavaxOrJakartaType("Validator", "validation")
+    val ConstraintViolation = JavaxOrJakartaType("ConstraintViolation", "validation")
   }
 
 
@@ -143,53 +173,53 @@ object SpringVariableTypes {
 
   object PersistenceTypes {
 
-    val Basic = AType("Basic", "persistence")
-    val Column = AType("Column", "persistence")
-    val Entity = AType("Entity", "persistence")
+    val Basic = JavaxOrJakartaType("Basic", "persistence")
+    val Column = JavaxOrJakartaType("Column", "persistence")
+    val Entity = JavaxOrJakartaType("Entity", "persistence")
 
-    val EnumType = AType("EnumType", "persistence")
+    val EnumType = JavaxOrJakartaType("EnumType", "persistence")
 
-    val Enumerated = AType("Enumerated", "persistence")
-
-
-    val GeneratedValue = AType("GeneratedValue", "persistence")
-
-    val GenerationType = AType("GenerationType", "persistence")
-
-    val Id = AType("Id", "persistence")
-
-    val MappedSuperclass = AType("MappedSuperclass", "persistence")
-
-    val PrePersist = AType("PrePersist", "persistence")
-
-    val PreUpdate = AType("PreUpdate", "persistence")
-
-    val Temporal = AType("Temporal", "persistence")
-
-    val TemporalType = AType("TemporalType", "persistence")
-
-    val Version = AType("Version", "persistence")
-
-    val Table = AType("Table", "persistence")
-
-    val ManyToOne = AType("ManyToOne", "persistence")
+    val Enumerated = JavaxOrJakartaType("Enumerated", "persistence")
 
 
-    val OneToMany = AType("OneToMany", "persistence")
+    val GeneratedValue = JavaxOrJakartaType("GeneratedValue", "persistence")
 
-    val OneToOne = AType("OneToOne", "persistence")
+    val GenerationType = JavaxOrJakartaType("GenerationType", "persistence")
 
-    val CascadeType = AType("CascadeType", "persistence")
+    val Id = JavaxOrJakartaType("Id", "persistence")
 
-    val JoinColumn = AType("JoinColumn", "persistence")
+    val MappedSuperclass = JavaxOrJakartaType("MappedSuperclass", "persistence")
 
-    val JoinTable = AType("JoinTable", "persistence")
+    val PrePersist = JavaxOrJakartaType("PrePersist", "persistence")
 
-    val AttributeConverter = AType("AttributeConverter", "persistence")
+    val PreUpdate = JavaxOrJakartaType("PreUpdate", "persistence")
 
-    val Converter = AType("Converter", "persistence")
+    val Temporal = JavaxOrJakartaType("Temporal", "persistence")
 
-    val Convert = AType("Convert", "persistence")
+    val TemporalType = JavaxOrJakartaType("TemporalType", "persistence")
+
+    val Version = JavaxOrJakartaType("Version", "persistence")
+
+    val Table = JavaxOrJakartaType("Table", "persistence")
+
+    val ManyToOne = JavaxOrJakartaType("ManyToOne", "persistence")
+
+
+    val OneToMany = JavaxOrJakartaType("OneToMany", "persistence")
+
+    val OneToOne = JavaxOrJakartaType("OneToOne", "persistence")
+
+    val CascadeType = JavaxOrJakartaType("CascadeType", "persistence")
+
+    val JoinColumn = JavaxOrJakartaType("JoinColumn", "persistence")
+
+    val JoinTable = JavaxOrJakartaType("JoinTable", "persistence")
+
+    val AttributeConverter = JavaxOrJakartaType("AttributeConverter", "persistence")
+
+    val Converter = JavaxOrJakartaType("Converter", "persistence")
+
+    val Convert = JavaxOrJakartaType("Convert", "persistence")
   }
 
   object PersistenceAnnotations {

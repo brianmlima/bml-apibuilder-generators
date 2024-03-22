@@ -1,14 +1,16 @@
 package bml.generator.pojo
 
+import akka.actor.FSM.->
 import bml.util.AnotationUtil.{JacksonAnno, LombokAnno}
-import bml.util.GeneratorFSUtil.makeFile
-import bml.util.{FieldUtil, NameSpaces, SpecValidation}
+import bml.util.GeneratorFSUtil
+import bml.util.{FieldUtil, GeneratorFSUtil, JavaNameSpace, NameSpaces, SpecValidation}
 import bml.util.attribute.{Converters, Hibernate, JsonName, Singular, SnakeCase}
 import bml.util.java.ClassNames.{AtlasTypes, JacksonTypes, JavaTypes, LombokTypes}
+import bml.util.java.poet.StaticImport
 import bml.util.java.{JavaEnums, JavaPojoUtil, JavaPojos}
 import bml.util.jpa.JPA
 import bml.util.persist.SpringVariableTypes.{PersistenceAnnotations, PersistenceTypes, ValidationAnnotations}
-import bml.util.persist.UUIDIfNullGenerator
+import bml.util.persist.{SpringVariableTypes, UUIDIfNullGenerator}
 import bml.util.spring.SpringVersion.SpringVersion
 import com.squareup.javapoet.{AnnotationSpec, ClassName, CodeBlock, FieldSpec, MethodSpec, ParameterSpec, ParameterizedTypeName, TypeSpec}
 import io.apibuilder.generator.v0.models.File
@@ -16,6 +18,7 @@ import io.apibuilder.spec.v0.models.{Enum, Model, Service, Union}
 import javax.lang.model.element.Modifier.{FINAL, PROTECTED, PUBLIC}
 import javax.persistence.{EnumType, Enumerated}
 import play.api.Logger
+import play.api.libs.json.Json
 
 class PojoGenerator(
                      springVersion: SpringVersion,
@@ -30,6 +33,14 @@ class PojoGenerator(
 
   private val nameSpaces = new NameSpaces(service)
 
+  private val javaFileUtil = new GeneratorFSUtil(
+    springVersion,
+    "bml_lombok",
+    "bml_lombok_spring_6",
+    service
+  )
+
+
   private val useJpa = service.models.seq
     .map(Hibernate.fromModel(_).use)
     .find(_ == true).isDefined
@@ -40,6 +51,7 @@ class PojoGenerator(
     }
     return Seq[File](UUIDIfNullGenerator.get(springVersion, nameSpaces))
   }
+
 
   def generateSourceFiles(): Either[Seq[String], Seq[File]] = {
     val errors = SpecValidation.validate(service: Service, header: Option[String])
@@ -127,22 +139,21 @@ class PojoGenerator(
 
           .build()
       )
-
-
-    makeFile(className, nameSpaces.jpaConverters, builder)
+    javaFileUtil.makeFile(className, nameSpaces.jpaConverters, builder)
 
   }
-
 
   def generateEnum(enum: Enum): File = {
     val className = toClassName(enum.name)
     val builder = JavaEnums.standardEnumBuilder(enum, apiDocComments)
+
+
     enum.values.foreach(value => {
       val enumValBuilder = TypeSpec.anonymousClassBuilder("$S,$S", value.value.getOrElse(value.name), value.description.getOrElse(""))
       if (value.description.isDefined) enumValBuilder.addJavadoc(value.description.get)
       builder.addEnumConstant(toEnumName(value.name), enumValBuilder.build())
     })
-    makeFile(className, nameSpaces.model, builder)
+    javaFileUtil.makeFile(className, nameSpaces.model, builder)
   }
 
   def generateUnionType(union: Union): File = {
@@ -171,7 +182,7 @@ class PojoGenerator(
     //
     //        }
     //      )
-    makeFile(className, nameSpaces.model, builder)
+    javaFileUtil.makeFile(className, nameSpaces.model, builder)
   }
 
   def generateModel(model: Model, relatedUnions: Seq[Union]): File = {
@@ -363,7 +374,7 @@ class PojoGenerator(
     if (useHibernate) {
       JPA.addJPAStandardFields(springVersion, model).foreach(classBuilder.addField)
     }
-    makeFile(className.simpleName(), nameSpaces.model, classBuilder)
+    javaFileUtil.makeFile(className.simpleName(), nameSpaces.model, classBuilder)
   }
 
 }
