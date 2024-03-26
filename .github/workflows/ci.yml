@@ -66,8 +66,9 @@ jobs:
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
-            type=ref,event=branch-{{date 'YYYYMMDD-HHmmss' tz='UTC'}}
+            type=ref,event=branch,,pattern={{branch}}-{{date 'YYYYMMDD-HHmmss' tz='UTC'}}
             type=ref,event=pr
+            type=semver,pattern=v{{version}}
             type=semver,pattern={{branch}}.v{{version}}
       - name: Build and push
         id: docker_build
