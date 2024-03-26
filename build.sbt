@@ -2,8 +2,7 @@ import scoverage.ScoverageKeys
 
 name := "bml-generator"
 organization := "bml"
-
-val scalaVer = "2.12.8"
+val scalaVer = "2.12.19"
 scalaVersion in ThisBuild := scalaVer
 
 lazy val generated = project
@@ -16,7 +15,6 @@ lazy val generated = project
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
     )
   )
-
 
 // TODO: lib will eventually be published as a jar if it turns out
 // that we need it. For now it is here mostly for reference - hoping

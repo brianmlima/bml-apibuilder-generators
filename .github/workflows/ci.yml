@@ -1,12 +1,76 @@
 name: CI
-on: [push, pull_request]
-#jobs:
-#  build:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: olafurpg/setup-scala@v10
-#        with:
-#          java-version: adopt@1.11
-#      - name: Compile
-#        run: sbt compile
+on:
+  workflow_dispatch:
+    push:
+      branches:
+        - 'master'
+      tags:
+        - 'v*'
+    pull_request:
+      branches:
+        - 'master'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+    steps:
+      # Check
+      - name: ATTEMPTING SECRET VALIDATION DOCKERHUB_USERNAME
+        run: |
+          if [[ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]]; then
+            echo "FAIL SECRET NOT SET DOCKERHUB_USERNAME"          
+            exit 1
+          else
+            echo "PASS SECRET SET DOCKERHUB_USERNAME"
+          fi
+      - name: ATTEMPTING SECRET VALIDATION DOCKERHUB_TOKEN
+        run: |
+          if [[ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]]; then
+            echo "FAIL SECRET NOT SET DOCKERHUB_TOKEN"          
+            exit 1
+          else
+            echo "PASS SECRET SET DOCKERHUB_TOKEN"
+          fi
+      - name: Code Checkout
+        uses: actions/checkout@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Build Service
+        run: sbt dist
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.2.0
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            brianmlima/apibuilder-generators
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,pattern={{branch}}-{{version}}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}

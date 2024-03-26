@@ -22,7 +22,8 @@ source ${PROJECT_HOME}/bin/Functions.sh
 source ${PROJECT_HOME}/bin/conf.sh
 ################################################################################
 
-SECRETS_FILE="${HOME}/.github-actions"
+#SECRETS_FILE="${HOME}/.github-actions"
+SECRETS_FILE="${HOME}/.act/secrets/bml-apibuilder-generators.vault"
 
 
 function initActionEnv() {
@@ -43,7 +44,7 @@ printHeader
 initActionEnv
 
 pushd ${PROJECT_HOME} &>/dev/null
-  act --secret-file ${SECRETS_FILE}
+  act --verbose --secret-file ${SECRETS_FILE} 2>&1 | tee act.log
 popd &>/dev/null
 
 ################################################################################
