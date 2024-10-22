@@ -1,7 +1,7 @@
 # BML Apibuilder Generators
 > A set of code generators as a service for the Apibuilder.io plattform. 
 
-This project aims to prved advanced Java and Spring support for the ApiBuilder spec format so users can leverage spec driven developement and Api First methodologies when buildiung services with Java.
+This project aims to provide advanced Java and Spring support for the ApiBuilder spec format so users can leverage spec driven developement and Api First methodologies when buildiung services with Java.
 
 
 ![](header.png)
