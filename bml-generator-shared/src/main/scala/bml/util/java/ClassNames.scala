@@ -359,7 +359,7 @@ object ClassNames {
 
     val DeleteMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.DeleteMapping")
 
-
+    val PatchMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PatchMapping")
     val PostMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PostMapping")
     val PutMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.PutMapping")
     val RequestMapping = ClassName.bestGuess("org.springframework.web.bind.annotation.RequestMapping")

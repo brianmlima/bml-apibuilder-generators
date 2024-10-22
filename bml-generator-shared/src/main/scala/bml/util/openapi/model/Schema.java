@@ -44,14 +44,13 @@ public class Schema {
     @Getter
     @Singular
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected List<String> enums = new LinkedList<>();
-
+    protected List<String> enums ;
 
     @JsonProperty(value = "required", required = false)
     @Getter
     @Singular
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    protected List<String> requiredFields = new LinkedList<>();
+    protected List<String> requiredFields ;
 
 
 }

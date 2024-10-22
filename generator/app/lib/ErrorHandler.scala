@@ -15,7 +15,7 @@ class ErrorHandler
   }
 
   def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
-    Logger.error(exception.toString, exception)
+    Logger.logger.error(exception.toString, exception)
     Future.successful(InternalServerError(Json.toJson(Validation.serverError())))
   }
 

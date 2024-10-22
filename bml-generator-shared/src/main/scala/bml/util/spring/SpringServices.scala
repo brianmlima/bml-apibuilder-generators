@@ -7,7 +7,9 @@ import bml.util.persist.SpringVariableTypes.ValidationAnnotations
 import bml.util.spring.SpringVersion.SpringVersion
 import bml.util.{GeneratorFSUtil, NameSpaces, ServiceTool}
 import io.apibuilder.generator.v0.models.File
+import io.apibuilder.spec.v0.models.Method.{Delete, Post, Put}
 import io.apibuilder.spec.v0.models._
+
 import javax.lang.model.element.Modifier
 import org.slf4j.LoggerFactory
 
@@ -378,16 +380,15 @@ object SpringServices {
 
     javadocs = javadocs ++ operation.parameters.map(serviceParamJavadoc(service, nameSpaces, _))
 
-    operation.method match {
-      case Method.Get =>
-      case Method.Put =>
-      case Method.Post =>
 
+
+    operation.method match {
+      case Method.Post =>
         if (operation.body.isDefined) {
           var body = operation.body.get
           javadocs = javadocs ++ Seq[String](serviceBodyJavadoc(nameSpaces, body))
         }
-      case Method.Delete =>
+      case _ =>
     }
     javadocs = javadocs ++ Seq[String](s"@return ${SpringTypes.ResponseEntity.simpleName()}")
     methodSpec.addJavadoc(javadocs.mkString("\n"))
@@ -406,30 +407,20 @@ object SpringServices {
         operationParamToServiceParam(springVersion, service, operation, nameSpaces, _))
       .foreach(methodSpec.addParameter)
 
-
     if (operation.body.isDefined) {
       val body = operation.body.get
       val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
       val bodyDataType = JavaPojoUtil.dataTypeFromField(service, body.`type`, nameSpaces.model)
 
-
-      def addBody(): Unit = {
-        methodSpec.addParameter(
-          ParameterSpec.builder(bodyDataType, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
-            .addAnnotation(ValidationAnnotations.NotNull(springVersion))
-            .addAnnotation(ValidationAnnotations.Valid(springVersion))
-            .build()
-        )
-      }
-
       operation.method match {
-        case Method.Get =>
-        case Method.Post =>
-          addBody()
-        case Method.Put =>
-          addBody()
-        case Method.Delete =>
-          addBody()
+        case Post|Put|Delete =>
+          methodSpec.addParameter(
+            ParameterSpec.builder(bodyDataType, JavaPojoUtil.toFieldName(bodyClassName.simpleName()))
+              .addAnnotation(ValidationAnnotations.NotNull(springVersion))
+              .addAnnotation(ValidationAnnotations.Valid(springVersion))
+              .build()
+          )
+        case _ =>
       }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

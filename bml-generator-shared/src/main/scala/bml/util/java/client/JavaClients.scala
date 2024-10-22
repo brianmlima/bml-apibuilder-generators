@@ -49,9 +49,6 @@ object JavaClients {
     val clientClassName = toClientClassName(service, nameSpaces);
     val configClassName = ClassName.get(clientClassName.packageName() + "." + clientClassName.simpleName(), "Config")
 
-    service.baseUrl
-
-
     val baseUriField = FieldSpec.builder(JavaTypes.URI, baseUriFieldName, PRIVATE, FINAL)
       .addAnnotation(LombokTypes.Getter)
       .addAnnotation(ValidationTypes.NotNull.toClassName(springVersion))

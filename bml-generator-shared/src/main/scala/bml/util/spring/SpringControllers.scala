@@ -1,16 +1,19 @@
 package bml.util.spring
 
 import bml.util.AnotationUtil.SpringAnno
+import bml.util.error.UnsupportedMethodError
+import bml.util.java.ClassNames.JavaxTypes.JavaxValidationTypes
 import bml.util.java.ClassNames.{JavaTypes, SpringTypes}
 import bml.util.java.{ClassNames, JavaPojoUtil}
-import bml.util.persist.SpringVariableTypes.{ValidationAnnotations, ValidationTypes}
+import bml.util.persist.SpringVariableTypes.ValidationAnnotations
 import bml.util.spring.SpringVersion.SpringVersion
-import bml.util.{GeneratorFSUtil, NameSpaces, ServiceTool}
+import bml.util.{GeneratorFSUtil, NameSpaces}
 import io.apibuilder.generator.v0.models.File
-import io.apibuilder.spec.v0.models.Method.{Delete, Get, Post, Put}
+import io.apibuilder.spec.v0.models.Method._
 import io.apibuilder.spec.v0.models._
-import javax.lang.model.element.Modifier
 import lib.Text
+
+import javax.lang.model.element.Modifier
 
 
 class SpringControllers {
@@ -25,28 +28,16 @@ object SpringControllers {
 
   import com.squareup.javapoet._
   import io.apibuilder.spec.v0.models.ParameterLocation._
-  import javax.lang.model.element.Modifier._
 
+  import javax.lang.model.element.Modifier._
   import collection.JavaConverters._
 
   def toControllerName(resource: Resource): String = {
     JavaPojoUtil.toClassName(resource.`type` + "Controller")
   }
 
-  def toControllerName(springVersion: SpringVersion, service: Service, resource: Resource): String = {
-    val prefix = springVersion match {
-      case bml.util.spring.SpringVersion.SIX => ServiceTool.versionedPrefix(service)
-      case bml.util.spring.SpringVersion.FIVE => ""
-    }
-    JavaPojoUtil.toClassName(s"${prefix}-${resource.`type`}-Controller")
-  }
-
   def toControllerName(nameSpaces: NameSpaces, resource: Resource): ClassName = {
     ClassName.get(nameSpaces.controller.nameSpace, toControllerName(resource))
-  }
-
-  def toControllerName(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): ClassName = {
-    ClassName.get(nameSpaces.controller.nameSpace, toControllerName(springVersion, service, resource))
   }
 
 
@@ -59,54 +50,12 @@ object SpringControllers {
   }
 
   def toControllerOperationName(operation: Operation): String = {
-    //    JavaPojoUtil.toMethodName(operation.method.toString.toLowerCase + "_" + operation.path)
     JavaPojoUtil.toMethodName(toOperationClientClassName(operation))
   }
 
 
-  //  def toOperationClientClassName(resource: Resource, operation: Operation): String = {
-  //    val method = operation.method.toString.toLowerCase
-  //    val resourcePath = resource.path.getOrElse(resource.plural)
-  //  }
-
-
   def toOperationClientClassName(operation: Operation): String = {
     val method = operation.method.toString.toLowerCase()
-
-    //resource: Resource,
-
-    //    val paramterAnds = operation.path.split("/").map(
-    //      pathElement =>
-    //        if(pathElement.contains(":")){
-    //          s"By${JavaPojoUtil.toClassName(pathElement.drop(1))}"
-    //        }else{
-    //          s"By${JavaPojoUtil.toClassName(pathElement.drop(1))}"
-    //          JavaPojoUtil.toClassName(pathElement.drop(1))
-    //        }
-    //    )
-
-    //    val paramterAnds = (
-    //      operation.path.split("/").filter(_.contains(":")).filter(_.isEmpty)
-    //        .map(v => "By" + JavaPojoUtil.toClassName(v.drop(1))) ++
-    //        operation.path.split("/").filter(!_.contains(":")).filter(_.isEmpty)
-    //          .map(v => "With" + JavaPojoUtil.toClassName(v))
-    //      ).mkString("")
-
-    //    println(operation.path);
-    //
-    //    val paramterAnds = operation.path.split("/").filter(_.isEmpty).map(
-    //      v => {
-    //        println("Pathe Element = "+v.toString);
-    //        if(v.contains(":")){
-    //          println("By".concat(JavaPojoUtil.toClassName(v.drop(1))))
-    //          "By" + JavaPojoUtil.toClassName(v.drop(1))
-    //        }else{
-    //          println("With".concat(JavaPojoUtil.toClassName(v)))
-    //          "With" + JavaPojoUtil.toClassName(v)
-    //        }
-    //      }
-    //    ).mkString
-
 
     val paramterAnds = (
       operation.path.split("/").filter(_.contains(":"))
@@ -159,17 +108,15 @@ object SpringControllers {
     )
   }
 
+  def undefinedResponseModelExceptionClassName(nameSpaces: NameSpaces) =
+    ClassName.get(nameSpaces.controller.nameSpace, JavaPojoUtil.toClassName("UndefinedResponseModelException"))
 
-  def undefinedResponseModelExcpetionClassName(nameSpaces: NameSpaces) =
-    ClassName.get(nameSpaces.controller.nameSpace, JavaPojoUtil.toClassName("UndefinedResponseModelExcpetion"))
-
-  private def undefinedResponseModelExcpetion(nameSpaces: NameSpaces): TypeSpec = {
-    TypeSpec.classBuilder(undefinedResponseModelExcpetionClassName(nameSpaces))
+  private def undefinedResponseModelException(nameSpaces: NameSpaces): TypeSpec = {
+    TypeSpec.classBuilder(undefinedResponseModelExceptionClassName(nameSpaces))
       .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
       .addSuperinterface(classOf[Exception])
       .build()
   }
-
 
   def controllerOperationNameFields(service: Service, resource: Resource): Seq[FieldSpec] = {
     Seq[FieldSpec](
@@ -189,10 +136,10 @@ object SpringControllers {
   }
 
   def generateController(springVersion: SpringVersion, service: Service, nameSpaces: NameSpaces, resource: Resource): Seq[File] = {
-    val name = SpringControllers.toControllerName(springVersion, service, resource)
+    val name = SpringControllers.toControllerName(resource)
 
-    val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(springVersion, service, resource))
-    val serviceFieldName = Text.initLowerCase(serviceClassName.simpleName())
+    val serviceClassName = ClassName.get(nameSpaces.service.nameSpace, SpringServices.toServiceName(resource))
+    val serviceFieldName = Text.initLowerCase(SpringServices.toServiceName(resource))
 
     val builder = TypeSpec.classBuilder(name)
       .addJavadoc("Holds all the operations for the {@link $L} resource. org=$S app=$S version=$S. ", JavaPojoUtil.toClassName(nameSpaces.model, resource.`type`), service.organization.key, service.name, service.version)
@@ -202,8 +149,7 @@ object SpringControllers {
       .addFields(controllerOperationNameFields(service, resource).asJava)
       .addField(
         FieldSpec.builder(serviceClassName, serviceFieldName, PRIVATE)
-          //.addAnnotation(AnotationUtil.autowired)
-          .addJavadoc("The injected service that provides all buisness logic functionality for this controller.")
+          .addJavadoc("The injected service that provides all business logic functionality for this controller.")
           .build()
       )
       .addMethod(
@@ -288,6 +234,17 @@ object SpringControllers {
     val pathValue = toSpringPath(s"/$version/$path")
     //    var annotation: AnnotationSpec ;
 
+
+    def unsupportedMethodError() =
+      UnsupportedMethodError(
+        message = s"Operation Method ${operation.method.toString} is not supported in this generator.",
+        service = service,
+        nameSpaces = nameSpaces,
+        resource = resource,
+        operation = operation
+      )
+
+
     operation.method match {
       case Get =>
         methodSpec
@@ -301,6 +258,17 @@ object SpringControllers {
       case Delete =>
         methodSpec
           .addAnnotation(SpringAnno.DeleteMappingJson(pathValue))
+      case Head => methodSpec
+        .addAnnotation(SpringAnno.GetMappingJson(pathValue))
+      case Patch => methodSpec
+        .addAnnotation(SpringAnno.PatchMappingJson(pathValue))
+      case _ => throw UnsupportedMethodError(
+        message = s"Operation Method ${operation.method.toString} is not supported in this generator.",
+        service = service,
+        nameSpaces = nameSpaces,
+        resource = resource,
+        operation = operation
+      )
     }
 
 
@@ -327,42 +295,11 @@ object SpringControllers {
               AnnotationSpec.builder(SpringTypes.RequestBody).build()
             )
             .addAnnotation(
-              ValidationTypes.Valid.toClassName(springVersion)
+              JavaxValidationTypes.Valid
             )
             .build()
         )
 
-      //      operation.method match {
-      //        case Get =>
-      //        case Post =>
-      //          val body = operation.body.get
-      //          val bodyDataType = JavaPojoUtil.dataTypeFromField(service, body.`type`, nameSpaces.model)
-      //          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
-      //          val paramName = toControllerParamName(bodyClassName.simpleName())
-      //          methodSpec
-      //            .addParameter(
-      //              ParameterSpec.builder(bodyDataType, paramName, Modifier.FINAL)
-      //                .addAnnotation(
-      //                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
-      //                )
-      //                .addAnnotation(
-      //                  JavaxValidationTypes.Valid
-      //                )
-      //                .build()
-      //            )
-      //        case Put =>
-      //          // add the response body to the controller method params
-      //          val body = operation.body.get
-      //          val bodyClassName = JavaPojoUtil.toClassName(nameSpaces.model, body.`type`)
-      //          val paramName = toControllerParamName(bodyClassName.simpleName())
-      //          methodSpec
-      //            .addParameter(
-      //              ParameterSpec.builder(bodyClassName, paramName, Modifier.FINAL)
-      //                .addAnnotation(
-      //                  AnnotationSpec.builder(SpringTypes.RequestBody).build()
-      //                ).build()
-      //            )
-      //      }
     }
 
     val exceptionClassName = ApiImplementationException.getClassName(nameSpaces);
@@ -399,7 +336,7 @@ object SpringControllers {
       .add(
         "final $T responseModel = $L.$L(\n",
         SpringServices.toResponseSubTypeCLassName(nameSpaces, operation),
-        Text.initLowerCase(SpringServices.toServiceName(springVersion, service, resource)),
+        Text.initLowerCase(SpringServices.toServiceName(resource)),
         methodName
       )
 
