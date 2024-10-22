@@ -13,7 +13,7 @@ class LoggingFilter @Inject ()(implicit val mat: Materializer, ec: ExecutionCont
     nextFilter(requestHeader).map { result =>
       val endTime = System.currentTimeMillis
       val requestTime = endTime - startTime
-      Logger.info(s"${requestHeader.method} ${requestHeader.uri} " +
+      Logger.logger.info(s"${requestHeader.method} ${requestHeader.uri} " +
         s"took ${requestTime}ms and returned ${result.header.status}")
       result.withHeaders("Request-Time" -> requestTime.toString)
     }

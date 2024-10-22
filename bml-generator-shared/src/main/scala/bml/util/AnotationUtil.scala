@@ -102,6 +102,11 @@ object AnotationUtil {
         .addMember("path", "$S", path)
         .build()
     }
+    def PatchMappingJson(path: String): AnnotationSpec = {
+      AnnotationSpec.builder(SpringTypes.PatchMapping)
+        .addMember("path", "$S", path)
+        .build()
+    }
 
 
     /**

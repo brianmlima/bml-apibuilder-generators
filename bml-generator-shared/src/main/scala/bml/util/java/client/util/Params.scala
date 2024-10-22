@@ -34,6 +34,8 @@ class Params(val service: Service, val nameSpaces: NameSpaces, val containerClas
               case ParameterLocation.Query => uriParamClass.paramTypeEnum.query;
               case ParameterLocation.Path => uriParamClass.paramTypeEnum.path;
               case ParameterLocation.Header => uriParamClass.paramTypeEnum.header;
+              case ParameterLocation.Form => null;
+              case ParameterLocation.UNDEFINED(_) => null;
             }
 
             val code = CodeBlock.builder()

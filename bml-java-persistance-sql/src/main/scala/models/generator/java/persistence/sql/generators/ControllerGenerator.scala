@@ -3,7 +3,8 @@ package models.generator.java.persistence.sql.generators
 import bml.util.java.ClassNames.SpringTypes
 import bml.util.java.{ClassNames, JavaPojoUtil}
 import com.squareup.javapoet._
-import io.apibuilder.spec.v0.models.{Method, Operation, Parameter, Service}
+import io.apibuilder.spec.v0.models.{Method, Operation, Parameter, ResponseCodeInt, Service}
+
 import javax.lang.model.element.Modifier.{FINAL, PRIVATE, PUBLIC}
 import lib.Text
 import models.generator.java.persistence.sql.{GenUtils, ResourceData}
@@ -66,7 +67,7 @@ object ControllerGenerator extends JavaPojoUtil {
         + ");"
     ))
 
-    val badRequest = operation.responses.find(_.code == 400);
+    val badRequest = operation.responses.find(_.code.eq(ResponseCodeInt(400)));
     if (badRequest.isDefined) {
       methodBuilder
     }

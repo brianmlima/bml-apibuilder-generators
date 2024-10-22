@@ -1,8 +1,13 @@
+import sbt._
 import scoverage.ScoverageKeys
 
-name := "bml-generator"
+
+name := "generator"
 organization := "bml"
 
+//addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
+
+//ideaPort in Global := 56440
 val scalaVer = "2.12.8"
 scalaVersion in ThisBuild := scalaVer
 

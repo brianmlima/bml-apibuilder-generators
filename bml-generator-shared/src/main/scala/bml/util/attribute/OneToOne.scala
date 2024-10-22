@@ -5,7 +5,7 @@ import bml.util.attribute
 import bml.util.java.ClassNames.JavaxTypes.JavaxPersistanceTypes
 import com.squareup.javapoet.AnnotationSpec
 import io.apibuilder.spec.v0.models.Field
-import javax.persistence.{CascadeType, OneToOne}
+import javax.persistence.CascadeType
 
 
 class OneToOne(val mappedBy: String, cascadeType: Option[CascadeType]) {

@@ -203,8 +203,7 @@ class OpenapiGenerator extends CodeGenerator {
         modelIn => {
           //////////////////////////////////////////////////////////////////////////////////////////////////////////////
           // START OPENAPI SCHEMA
-          val schemaOut = Schema.builder().description(modelIn.description.getOrElse(null))
-
+          val schemaOut = Schema.builder()description(modelIn.description.orNull)
           modelIn.fields.foreach(
             fieldIn => {
               if (fieldIn.required) {

@@ -22,6 +22,9 @@ class JavaClassesSpec extends FunSpec with Matchers with MockitoSugar {
     it("should generate the correct source") {
       val source = generator.generateEnum(Enum("test_enum", "", None, None, Seq(EnumValue("value_1"), EnumValue("value_2"))))
 
+
+
+
       assertValidJavaSourceFile(source)
       source.name shouldBe "TestEnum.java"
       source.dir shouldBe Some("com/jkenny/test/models")
@@ -39,8 +42,10 @@ class JavaClassesSpec extends FunSpec with Matchers with MockitoSugar {
       val source = generator.generateEnum(Enum("test_enum", "", Some("A nice description"), None, Seq(EnumValue("value_1", Some("Nice description for 1")), EnumValue("value_2", Some("Nice description for 2")))))
 
       assertValidJavaSourceFile(source)
+
       source.name shouldBe "TestEnum.java"
       source.dir shouldBe Some("com/jkenny/test/models")
+
       source.contents shouldBe
         """/** Test Header */
           |package com.jkenny.test.models;
@@ -95,6 +100,8 @@ class JavaClassesSpec extends FunSpec with Matchers with MockitoSugar {
   describe("generateUndefinedUnionType") {
     it("should generate the correct source") {
       val source = generator.generateUndefinedUnionType(Union("test_union", "", None, None, None, Seq.empty[UnionType]))
+
+      println(source.contents)
 
       assertValidJavaSourceFile(source)
       source.name shouldBe "TestUnionUndefinedType.java"

@@ -66,7 +66,8 @@ package io.apibuilder.generator.v0.models {
    * @param files A collection of source files
    */
   final case class Invocation(
-    @deprecated("Use files instead") source: String,
+    //@deprecated("Use files instead","") source: String,
+     source: String,
     files: Seq[io.apibuilder.generator.v0.models.File]
   )
 
